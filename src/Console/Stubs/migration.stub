@@ -1,0 +1,31 @@
+<?php
+
+use Swilen\Console\Database\SwilenMigration;
+use Swilen\Petiole\Facades\DB;
+
+class {{ className }} extends SwilenMigration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up()
+    {
+        DB::statement("CREATE TABLE foo (
+            id INT NOT NULL UNIQUE PRIMARY KEY AUTO_INCREMENT,
+            created_at TIMESTAMP,
+            updated_at TIMESTAMP
+        )");
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down()
+    {
+        DB::statement("DROP TABLE IF EXISTS foo");
+    }
+}
