@@ -162,12 +162,31 @@ final class CoreExceptionHandler
     protected function newLogRecord($error)
     {
         $record = sprintf('[%s]: %s' . PHP_EOL . PHP_EOL, date('Y-m-d H:i:s'), (string) $error);
+        $filename = $this->determineLogFilename();
 
-        if (is_file(app_path('storage/logs/swilen.log'))) {
-            error_log($record, 3, app_path('storage/logs/swilen.log'));
+        if ($filename !== false) {
+            error_log($record, 3, $filename);
         } else {
             error_log($record);
         }
+    }
+
+    /**
+     * Determine log filename append date
+     *
+     * @return string|false
+     */
+    protected function determineLogFilename()
+    {
+        $filename = app_path('storage/logs/swilen-' . date('Y-m-d') . '.log');
+
+        if (is_file($filename) && is_writable($filename)) {
+            return $filename;
+        }
+
+        if (@touch($filename)) return $filename;
+
+        return false || is_writable($filename);
     }
 
     /**
