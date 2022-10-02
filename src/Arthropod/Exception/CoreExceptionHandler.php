@@ -38,10 +38,15 @@ final class CoreExceptionHandler
     {
         $this->app = $app;
 
-        $this->enableExceptionHandling();
+        $this->enableExceptionHandler();
     }
 
-    private function enableExceptionHandling()
+    /**
+     * Enable exception handler and log manager
+     *
+     * @return void
+     */
+    private function enableExceptionHandler()
     {
         if (!$this->app->isDevelopmentMode()) {
             ini_set('display_errors', 0);
@@ -49,7 +54,7 @@ final class CoreExceptionHandler
 
         $this->normalizeErrorsToException();
 
-        error_reporting(-1);
+        error_reporting(\E_ALL);
 
         set_exception_handler(function (\Throwable $exception) {
             if (!$exception instanceof HttpException) {
@@ -73,14 +78,14 @@ final class CoreExceptionHandler
         register_shutdown_function(function () {
             $error = error_get_last();
             if ($error !== null) {
-                $e = new \ErrorException(
+                $exception = new \ErrorException(
                     $error['message'],
                     0,
                     $error['type'],
                     $error['file'],
                     $error['line']
                 );
-                $this->handleException($e);
+                $this->handleException($exception);
             }
         });
     }
@@ -135,6 +140,11 @@ final class CoreExceptionHandler
         return 500;
     }
 
+    /**
+     * Format exception as array
+     *
+     * @return array
+     */
     protected function formatExceptionFragment(\Throwable $exception)
     {
         return [
@@ -153,13 +163,21 @@ final class CoreExceptionHandler
     {
         $record = sprintf('[%s]: %s' . PHP_EOL . PHP_EOL, date('Y-m-d H:i:s'), (string) $error);
 
-        if (is_file(app_path('storage/logs/Swilen.log'))) {
-            error_log($record, 3, app_path('storage/logs/Swilen.log'));
+        if (is_file(app_path('storage/logs/swilen.log'))) {
+            error_log($record, 3, app_path('storage/logs/swilen.log'));
         } else {
             error_log($record);
         }
     }
 
+    /**
+     * Alias for encode content with default flags
+     *
+     * @param mixed $content
+     * @param int $flags
+     *
+     * @return string|false
+     */
     protected function json_encode($content, $flags = 0)
     {
         return \json_encode($content, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | $flags);
