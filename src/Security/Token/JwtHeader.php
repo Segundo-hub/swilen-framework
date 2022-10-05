@@ -34,7 +34,8 @@ class JwtHeader implements TokenJsonable
 
     /**
      * @param string $data
-     * @return self
+     *
+     * @return $this
      */
     public function fromJson($data)
     {
