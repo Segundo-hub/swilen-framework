@@ -87,14 +87,15 @@ final class ArgvInput implements Jsonable
      * Explode option and return { key: value }
      *
      * @param string $option
+     * @param bool $expectValue
      *
      * @return array
      */
-    protected function explodeOption($option)
+    protected function explodeOption($option, bool $expectValue = true)
     {
         [$key, $value] = explode('=', $option);
 
-        if ($value === '' || $value === "") {
+        if ($expectValue && ($value === '' || $value === "")) {
             throw new \InvalidArgumentException(sprintf(' Missing option "%s" need a value', $key), 2);
         }
 

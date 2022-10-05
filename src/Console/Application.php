@@ -5,10 +5,11 @@ namespace Swilen\Console;
 use Swilen\Console\Input\ArgvInput;
 use Swilen\Console\Output\ConsoleOutput;
 use Swilen\Container\Container;
+use Swilen\Contracts\Console\Application as ConsoleApplication;
 use Swilen\Database\DatabaseServiceProvider;
 use Swilen\Petiole\Facades\Facade;
 
-final class Application extends Container
+class Application extends Container implements ConsoleApplication
 {
     /**
      * @var \Swilen\Console\Input\ArgvInput
@@ -45,6 +46,8 @@ final class Application extends Container
 
     public function __construct(string $path)
     {
+        $this->output = new ConsoleOutput();
+
         $this->definePaths($path);
         $this->configureExceptionHandler();
         $this->bootstrap();
@@ -56,18 +59,26 @@ final class Application extends Container
         $this->stubPath = dirname(__FILE__) . DIRECTORY_SEPARATOR . "Stubs";
     }
 
+    public function appPath(string $path = '')
+    {
+
+    }
+
+    public function basePath(string $path = '')
+    {
+
+    }
+
     /**
      * Execute current commad
      *
      * @param \Swilen\Console\Input\ArgvInput $input
-     * @param \Swilen\Console\Output\ConsoleOutput $output
      *
      * @return int
      */
-    public function exec(ArgvInput $input, ConsoleOutput $output)
+    public function exec(ArgvInput $input)
     {
         $this->input = $input;
-        $this->output = $output;
         $this->handle();
 
         return $this->getCode();
