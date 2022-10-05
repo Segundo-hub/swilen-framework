@@ -14,6 +14,8 @@ class HeaderHunt implements Enumerable
     protected $headers = [];
 
     /**
+     * Create new HeaderHunt collection instance
+     *
      * @param array<string, mixed> $headers
      *
      * @return void
@@ -25,32 +27,77 @@ class HeaderHunt implements Enumerable
         }
     }
 
+    /**
+     * Set new header to collection
+     *
+     * @param string $key
+     * @param mixed $value
+     *
+     * @return void
+     */
     public function set($key, $value)
     {
         $this->headers[$key] = $value;
     }
 
+    /**
+     * alias for set new header to collection
+     *
+     * @param string $key
+     * @param mixed $value
+     *
+     * @return void
+     */
     public function add($key, $value)
     {
         $this->set($key, $value);
     }
 
-
+    /**
+     * Remove a header from collection searched by key
+     *
+     * @param string $key
+     *
+     * @return void
+     */
     public function remove($key)
     {
         unset($this->headers[$key]);
     }
 
+    /**
+     * Check if header is exists in collection
+     *
+     * @param string $key
+     *
+     * @return bool
+     */
     public function has($key)
     {
         return isset($this->headers[$key]);
     }
 
+    /**
+     * Replace existing header in collection
+     *
+     * @param string $key
+     * @param mixed $replaced
+     *
+     * @return bool
+     */
     public function replace($key, $replaced)
     {
         $this->headers[$key] = $replaced;
     }
 
+     /**
+     * Get one header from collection or null if not exists
+     *
+     * @param string $key
+     * @param mixed $default
+     *
+     * @return mixed
+     */
     public function get(string $key, $default = null)
     {
         return $this->has($key) ? $this->headers[$key] : $default;

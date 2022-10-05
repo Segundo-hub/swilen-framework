@@ -284,7 +284,7 @@ class Response extends HttpResponseSupport
         }
 
         foreach ($this->headers->all() as $key => $value) {
-            header("$key: $value", true, $this->statusCode());
+            header($key.':'.$value, true, $this->statusCode());
         }
 
         header($this->transformHeader(), true, $this->statusCode());
