@@ -20,31 +20,40 @@ final class Application extends Container
      */
     private $output;
 
+    /**
+     * @var int
+     */
+    protected $exitCode = 0;
+
+    /**
+     * @var string
+     */
     protected $basePath;
 
+    /**
+     * @var string
+     */
     protected $stubPath;
 
     protected $commands = [
         \Swilen\Console\Commands\MigrationCommand::class,
         \Swilen\Console\Commands\MigratorCommand::class,
+        \Swilen\Console\Commands\KeySecretCommand::class,
     ];
 
     protected $booted = [];
 
     public function __construct(string $path)
     {
-        $this->basePath = rtrim($path, '\/');
-        $this->stubPath = rtrim(dirname(__FILE__) . DIRECTORY_SEPARATOR . "Stubs", '\/');
+        $this->definePaths($path);
+        $this->configureExceptionHandler();
         $this->bootstrap();
-        set_exception_handler(function (\Throwable $th) {
-            $errorLength = strlen(get_class($th) . ": " . $th->getMessage());
-            $message = PHP_EOL .
-                " " . str_pad('-', $errorLength + 4, '-') . " " . PHP_EOL .
-                " | " . get_class($th) . ": " . $th->getMessage() . " | " . PHP_EOL .
-                " " . str_pad('-', $errorLength + 4, '-') . " ";
+    }
 
-            (new ConsoleOutput)->prepare($message, 'light_gray', 'red')->print();
-        });
+    protected function definePaths(string $path)
+    {
+        $this->basePath = rtrim($path, '\/');
+        $this->stubPath = dirname(__FILE__) . DIRECTORY_SEPARATOR . "Stubs";
     }
 
     /**
@@ -61,7 +70,7 @@ final class Application extends Container
         $this->output = $output;
         $this->handle();
 
-        return 0;
+        return $this->getCode();
     }
 
     protected function handle()
@@ -80,7 +89,7 @@ final class Application extends Container
 
     public function bootstrap()
     {
-        $this->instance('config', require_once($this->path('app/app.config.php')));
+        $this->instance('config', require_once($this->configPath()));
 
         static::setInstance($this);
 
@@ -96,6 +105,29 @@ final class Application extends Container
         }
     }
 
+    /**
+     * Configure application exception
+     */
+    protected function configureExceptionHandler()
+    {
+        set_exception_handler(function (\Throwable $th) {
+            $message = get_class($th) . ": " . $th->getMessage();
+            $stringPadding = str_pad('-', strlen($message) + 4, '-');
+
+            $finalMessage = PHP_EOL .
+                " " . $stringPadding . " " . PHP_EOL .
+                " | " . $message . " | " . PHP_EOL .
+                " " . $stringPadding . " ";
+
+            (new ConsoleOutput)->prepare($finalMessage, 'light_gray', 'red')->print();
+        });
+    }
+
+    public function configPath()
+    {
+        return $this->path('app.config.php');
+    }
+
     public function path($path = '')
     {
         return $this->basePath . ($path ? DIRECTORY_SEPARATOR . $path : '');
@@ -106,12 +138,32 @@ final class Application extends Container
         return $this->stubPath . ($name ? DIRECTORY_SEPARATOR . $name : '');
     }
 
-    public function writeTimeExecuted()
+    /**
+     * Terminate Console Application
+     *
+     * @return int
+     */
+    public function terminate()
     {
-        $this->output->printExecutionTime();
+        $this->output->terminateSwilenScript();
+
+        return $this->getCode();
+    }
+
+    /**
+     * @return int
+     */
+    public function getCode()
+    {
+        return $this->exitCode ?: 0;
     }
 
     public function getInput()
+    {
+        return $this->input;
+    }
+
+    public function input()
     {
         return $this->input;
     }

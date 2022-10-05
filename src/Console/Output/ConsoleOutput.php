@@ -57,7 +57,7 @@ final class ConsoleOutput implements Printable
             $colorized .= "\033[" . Color::BACKGROUND_COLORS[$this->background] . "m";
         }
 
-        $colorized .= $this->terminateScriptWithTime($colorized);
+        $colorized .= $this->consoleOutput() . "\033[0m" . PHP_EOL;
 
         return $colorized;
     }
@@ -67,25 +67,34 @@ final class ConsoleOutput implements Printable
         return $this->consoleOutput ?? 'ARGUMENTS NOT FOUND';
     }
 
+    /**
+     * Get elapsed time of command execution
+     *
+     * @return string
+     */
     protected function getElapsedTime()
     {
-        return str_pad(sprintf("Execution time: %.5f seconds.", microtime(true) - Swilen_CMD_START), 80, ' ', STR_PAD_RIGHT);
+        define('SWILEN_CMD_END', microtime(true));
+
+        return str_pad(sprintf("Execution time: %.5f seconds.", SWILEN_CMD_END - SWILEN_CMD_START), 80, ' ', STR_PAD_RIGHT);
     }
 
+    /**
+     * Get memory usage of command
+     *
+     * @return string
+     */
     protected function getMemoryUsage()
     {
-        $memory = memory_get_usage(true);
-        return str_pad(sprintf("Memory usage: %s KB.",  round($memory / 1024)), 80, ' ', STR_PAD_RIGHT);
+        return str_pad(sprintf("Memory usage: %s KB.",  round(memory_get_usage(true) / 1024)), 80, ' ', STR_PAD_RIGHT);
     }
 
-    private function terminateScriptWithTime(string $prepend)
-    {
-        $prepend .= $this->consoleOutput() . "\033[0m" . PHP_EOL;
-
-        return $prepend;
-    }
-
-    public function printExecutionTime()
+    /**
+     * Termina command and print banner with system resource usage
+     *
+     * @return void
+     */
+    public function terminateSwilenScript()
     {
         $this->streamOutput->writeln(
             PHP_EOL . "\033[" . Color::FOREGROUND_COLORS['green'] . "m" .

@@ -20,18 +20,18 @@ class MigrationCommand extends SwilenCommand
     {
         $migration = $this->migrationName();
 
-        $handle = fopen($this->Swilen->path('app/storage/migrations/' . $migration->final), 'w+');
+        $handle = fopen($this->app->path('app/storage/migrations/' . $migration->final), 'w+');
 
         @fwrite($handle, $this->getMigrateTemplate($migration->pascal));
 
         fclose($handle);
 
-        $this->Swilen->getOutput()->prepare(sprintf(' 0 Created migration: %s ', $migration->final), 'blue')->print();
+        $this->app->getOutput()->prepare(sprintf(' 0 Created migration: %s ', $migration->final), 'blue')->print();
     }
 
     public function migrationName()
     {
-        $commands = $this->Swilen->getInput()->getCommands();
+        $commands = $this->app->getInput()->getCommands();
 
         if (!$name = $commands[1]) {
             throw new \Error("Is necesary name for migration ", 1);
@@ -46,7 +46,7 @@ class MigrationCommand extends SwilenCommand
 
     protected function getMigrateTemplate(string $name)
     {
-        $stub = fopen($this->Swilen->stub('migration.stub'), 'r');
+        $stub = fopen($this->app->stub('migration.stub'), 'r');
         $template = str_replace('{{ className }}', $name, stream_get_contents($stub));
 
         fclose($stub);

@@ -24,23 +24,23 @@ class MigratorCommand extends SwilenCommand
             include_once($file->name);
 
             $start = microtime(true);
-            $this->Swilen->getOutput()->prepare(sprintf(' Migrating: %s', basename($file->name)), 'blue')->print();
+            $this->app->getOutput()->prepare(sprintf(' Migrating: %s', basename($file->name)), 'blue')->print();
 
-            $method = key_exists('--rollback', $this->Swilen->getInput()->getFlags()) ? 'down' : 'up';
+            $method = key_exists('--rollback', $this->app->getInput()->getFlags()) ? 'down' : 'up';
 
             $this->runMethod(new $file->class, $method);
 
-            $this->Swilen->getOutput()->prepare(sprintf(' Migrated:  %s (%.5f sec)', basename($file->name), microtime(true) - $start), 'purple')->print();
+            $this->app->getOutput()->prepare(sprintf(' Migrated:  %s (%.5f sec)', basename($file->name), microtime(true) - $start), 'purple')->print();
         }
     }
 
     public function getMigrationFiles()
     {
         $files = [];
-        foreach (glob($this->Swilen->path('app/storage/migrations/*.php')) as $value) {
+        foreach (glob($this->app->path('app/storage/migrations/*.php')) as $value) {
             $files[] = (object) [
-                'name' => $value,
-                'class' =>  $this->getClassName($value)
+                'name'  => $value,
+                'class' => $this->getClassName($value)
             ];
         }
 

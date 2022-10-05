@@ -43,3 +43,11 @@ it('Replace variable in env var has found', function () {
 it('Replace All variables founded', function () {
     expect(enviroment('NESTED_URI'))->toBe('http://localhost:8080/api/v1/testing');
 });
+
+it('App secret decoded succesfully as Swilen', function () {
+    expect(enviroment('APP_SECRET'))->toBe('a9bb6de2d1e03e3e7e4c2c14e990e3a5');
+})->skip();
+
+it('App secret decoded successfuly as base64', function () {
+    expect(enviroment('APP_SECRET_64'))->toBe('8f62183d7e8c5ec2c446137515b173d3');
+})->skip();
