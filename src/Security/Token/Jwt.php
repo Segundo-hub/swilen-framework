@@ -64,9 +64,9 @@ final class Jwt
         $headers = $this->headers->serialize();
         $payload = $jwtPayload->serialize();
 
-        $signature = $this->makeSignature($headers . "." . $payload, $secret);
+        $signature = $this->makeSignature($headers.'.'.$payload, $secret);
 
-        return new JwtSignedExpression(($headers . '.' . $payload . '.' . $signature), $jwtPayload);
+        return new JwtSignedExpression($headers.'.'.$payload.'.'.$signature, $jwtPayload);
     }
 
     /**
@@ -83,7 +83,7 @@ final class Jwt
         $headers = JwtUtil::url_encode($decoded->header);
         $payload = JwtUtil::url_encode($decoded->payload);
 
-        $signature = $this->makeSignature($headers . "." . $payload, $secret);
+        $signature = $this->makeSignature($headers.'.'.$payload, $secret);
 
         $payload = (new JwtPayload())->fromJson($decoded->payload);
 
@@ -135,9 +135,9 @@ final class Jwt
      */
     protected function isValidHashSignature(string $left, string $right)
     {
-        // if (function_exists('hash_equals')) {
-        //     return hash_equals($left, $right);
-        // }
+        if (function_exists('hash_equals')) {
+            return hash_equals($left, $right);
+        }
 
         $len = min(strlen($left), strlen($right));
 

@@ -8,9 +8,9 @@ use Swilen\Http\Request;
 use Swilen\Petiole\Facades\Facade;
 use Swilen\Pipeline\Pipeline;
 use Swilen\Container\Container;
-use Swilen\Contracts\Arthropod\Application as ApplicationContract;
+use Swilen\Contracts\Arthropod\Application as ArthropodApplication;
 
-class Application extends Container implements ApplicationContract
+class Application extends Container implements ArthropodApplication
 {
     /**
      * The Swilen current version
