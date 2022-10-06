@@ -10,7 +10,7 @@ function enviroment(string $key, $default = null)
 }
 
 beforeAll(function () {
-    (new Env())->createFrom(dirname(__FILE__))->config([
+    (new Env())->createFrom(dirname(__DIR__))->config([
         'file' => '.env'
     ])->load();
 });

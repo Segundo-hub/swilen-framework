@@ -147,10 +147,7 @@ class Router
         $route = $this->newRoute($method, $uri, $action);
 
         if ($this->hasGroupStack()) {
-            $atributes = end($this->groupStack);
-            if (isset($atributes['middleware'])) {
-                $route->use($atributes['middleware']);
-            }
+            $this->mergeSharedRouteAttributes($route);
         }
 
         return $this->routes->add($route);
@@ -170,6 +167,19 @@ class Router
         return (new Route($method, $this->prefix($uri), $action))
             ->setContainer($this->container)
             ->setRouter($this);
+    }
+
+    /**
+     * Merge attributes into route
+     *
+     * @param \Swilen\Routing\Route $route
+     */
+    protected function mergeSharedRouteAttributes(Route $route)
+    {
+        $attributes = end($this->groupStack);
+        $middlewares = $attributes['middleware'] ?? $attributes['use'] ?? [];
+
+        $route->use($middlewares);
     }
 
     /**
@@ -342,6 +352,11 @@ class Router
         }
 
         return (new Response($response))->prepare($request);
+    }
+
+    public function allRoutes()
+    {
+        return $this->routes->toArray();
     }
 
     /**

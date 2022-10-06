@@ -2,7 +2,7 @@
 
 use Swilen\Validation\Validator;
 
-uses()->group('validation');
+uses()->group('Validation');
 
 /**
  * @property \Swilen\Validation\Validator $validate
