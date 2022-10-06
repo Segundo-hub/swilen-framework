@@ -2,7 +2,7 @@
     "name": "swilen/framework",
     "description": "Fast Routing inspired in Laravel and Expressjs",
     "license": "MIT",
-    "version": "0.0.3-dev",
+    "version": "0.1.0-dev",
     "keywords": ["routing", "framework", "micro-framework", "swilen"],
     "homepage": "https://segundo-hub.github.io/swilen/",
     "autoload": {

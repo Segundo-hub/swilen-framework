@@ -17,7 +17,7 @@ class Application extends Container implements ArthropodApplication
      *
      * @var string
      */
-    public const VERSION = '0.0.1-dev';
+    public const VERSION = '0.1.0-dev';
 
     /**
      * Indicates if the application has been bootstrapped before.
