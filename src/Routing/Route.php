@@ -47,9 +47,9 @@ final class Route implements Arrayable, JsonSerializable
     private $middleware = [];
 
     /**
-     * @var string
+     * @var bool
      */
-    public const UNMATCH_ROUTE = null;
+    public const UNMATCH_ROUTE = false;
 
     /**
      * @var string
@@ -83,7 +83,7 @@ final class Route implements Arrayable, JsonSerializable
     public function __construct(string $method, string $uri, $action)
     {
         $this->method     = $method;
-        $this->match      = $this->matchFrom($uri);
+        // $this->match      = $this->matchFrom($uri);
         $this->uri        = $uri;
         $this->action     = $action;
     }
@@ -197,6 +197,16 @@ final class Route implements Arrayable, JsonSerializable
     }
 
     /**
+     * Get regex for route matching
+     *
+     * @return string
+     */
+    protected function getRegex()
+    {
+        return $this->matchFrom($this->getUri());
+    }
+
+    /**
      * Compile segmented URL via uri with regex pattern
      *
      * @param string $uri
@@ -245,11 +255,12 @@ final class Route implements Arrayable, JsonSerializable
      *
      * @param string $action
      *
-     * @return \Swilen\Routing\Route|int
+     * @return \Swilen\Routing\Route|bool
      */
     public function matches(string $action)
     {
         $matched = static::UNMATCH_ROUTE;
+        $this->match = $this->getRegex();
 
         if (preg_match("#^{$this->match}$#", rawurldecode($action), $matches)) {
             $this->compileParameters($matches);
