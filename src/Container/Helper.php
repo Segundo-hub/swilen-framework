@@ -3,7 +3,7 @@
 namespace Swilen\Container;
 
 /**
- * @internal
+ * @internal Package
  */
 final class Helper
 {

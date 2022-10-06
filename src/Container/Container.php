@@ -2,9 +2,10 @@
 
 namespace Swilen\Container;
 
+use Psr\Container\ContainerInterface;
 use Swilen\Contracts\Container\Container as ContainerContract;
 
-class Container implements \ArrayAccess, ContainerContract
+class Container implements \ArrayAccess, ContainerContract, ContainerInterface
 {
     /**
      * The current globally available container (if any).
@@ -461,16 +462,6 @@ class Container implements \ArrayAccess, ContainerContract
     }
 
     /**
-     * Add instance to container singleton
-     *
-     * @paramstatic $container
-     */
-    public static function setInstance($container = null)
-    {
-        return static::$instance = $container;
-    }
-
-    /**
      * Remove an alias from the contextual binding alias cache.
      *
      * @param string  $searched
@@ -688,17 +679,12 @@ class Container implements \ArrayAccess, ContainerContract
      *
      * @param string|callable  $abstract
      * @param array  $parameters
-     * @param bool  $raiseEvents
-     * @return mixed
      *
+     * @return mixed
      */
-    protected function resolve($abstract, $parameters = [], $raiseEvents = true)
+    protected function resolve($abstract, $parameters = [])
     {
         $abstract = $this->getAlias($abstract);
-
-        if ($raiseEvents) {
-            $this->fireBeforeResolvingCallbacks($abstract, $parameters);
-        }
 
         $concrete = $this->getContextualConcrete($abstract);
 
@@ -729,10 +715,6 @@ class Container implements \ArrayAccess, ContainerContract
         // Make is shared and use as singleton
         if ($this->isShared($abstract) && !$needsContextualBuild) {
             $this->instances[$abstract] = $object;
-        }
-
-        if ($raiseEvents) {
-            $this->fireResolvingCallbacks($abstract, $object);
         }
 
         // Make resolved as true
@@ -819,7 +801,7 @@ class Container implements \ArrayAccess, ContainerContract
         try {
             $reflector = new \ReflectionClass($concrete);
         } catch (\ReflectionException $e) {
-            throw new \RuntimeException("Target class [$concrete] does not exist.", 0, $e);
+            throw new EntryNotFoundException("Target class [$concrete] does not exist.", 0, $e);
         }
 
         // Verify if this object is not instantiable
@@ -1027,170 +1009,6 @@ class Container implements \ArrayAccess, ContainerContract
     }
 
     /**
-     * Register a new before resolving callback for all types.
-     *
-     * @param \Closure|string  $abstract
-     * @param \Closure|null  $callback
-     * @return void
-     */
-    public function beforeResolving($abstract, \Closure $callback = null)
-    {
-        if (is_string($abstract)) {
-            $abstract = $this->getAlias($abstract);
-        }
-
-        if ($abstract instanceof \Closure && is_null($callback)) {
-            $this->globalBeforeResolvingCallbacks[] = $abstract;
-        } else {
-            $this->beforeResolvingCallbacks[$abstract][] = $callback;
-        }
-    }
-
-    /**
-     * Register a new resolving callback.
-     *
-     * @param \Closure|string  $abstract
-     * @param \Closure|null  $callback
-     * @return void
-     */
-    public function resolving($abstract, \Closure $callback = null)
-    {
-        if (is_string($abstract)) {
-            $abstract = $this->getAlias($abstract);
-        }
-
-        if (is_null($callback) && $abstract instanceof \Closure) {
-            $this->globalResolvingCallbacks[] = $abstract;
-        } else {
-            $this->resolvingCallbacks[$abstract][] = $callback;
-        }
-    }
-
-    /**
-     * Register a new after resolving callback for all types.
-     *
-     * @param \Closure|string  $abstract
-     * @param \Closure|null  $callback
-     * @return void
-     */
-    public function afterResolving($abstract, \Closure $callback = null)
-    {
-        if (is_string($abstract)) {
-            $abstract = $this->getAlias($abstract);
-        }
-
-        if ($abstract instanceof \Closure && is_null($callback)) {
-            $this->globalAfterResolvingCallbacks[] = $abstract;
-        } else {
-            $this->afterResolvingCallbacks[$abstract][] = $callback;
-        }
-    }
-
-    /**
-     * Fire all of the before resolving callbacks.
-     *
-     * @param string  $abstract
-     * @param array  $parameters
-     * @return void
-     */
-    protected function fireBeforeResolvingCallbacks($abstract, $parameters = [])
-    {
-        $this->fireBeforeCallbackArray($abstract, $parameters, $this->globalBeforeResolvingCallbacks);
-
-        foreach ($this->beforeResolvingCallbacks as $type => $callbacks) {
-            if ($type === $abstract || is_subclass_of($abstract, $type)) {
-                $this->fireBeforeCallbackArray($abstract, $parameters, $callbacks);
-            }
-        }
-    }
-
-    /**
-     * Fire an array of callbacks with an object.
-     *
-     * @param string  $abstract
-     * @param array  $parameters
-     * @param array  $callbacks
-     * @return void
-     */
-    protected function fireBeforeCallbackArray($abstract, $parameters, array $callbacks)
-    {
-        foreach ($callbacks as $callback) {
-            $callback($abstract, $parameters, $this);
-        }
-    }
-
-    /**
-     * Fire all of the resolving callbacks.
-     *
-     * @param string  $abstract
-     * @param mixed  $object
-     * @return void
-     */
-    protected function fireResolvingCallbacks($abstract, $object)
-    {
-        $this->fireCallbackArray($object, $this->globalResolvingCallbacks);
-
-        $this->fireCallbackArray(
-            $object,
-            $this->getCallbacksForType($abstract, $object, $this->resolvingCallbacks)
-        );
-
-        $this->fireAfterResolvingCallbacks($abstract, $object);
-    }
-
-    /**
-     * Fire all of the after resolving callbacks.
-     *
-     * @param string  $abstract
-     * @param mixed  $object
-     * @return void
-     */
-    protected function fireAfterResolvingCallbacks($abstract, $object)
-    {
-        $this->fireCallbackArray($object, $this->globalAfterResolvingCallbacks);
-
-        $this->fireCallbackArray(
-            $object,
-            $this->getCallbacksForType($abstract, $object, $this->afterResolvingCallbacks)
-        );
-    }
-
-    /**
-     * Get all callbacks for a given type.
-     *
-     * @param string  $abstract
-     * @param object  $object
-     * @param array  $callbacksPerType
-     * @return array
-     */
-    protected function getCallbacksForType($abstract, $object, array $callbacksPerType)
-    {
-        $results = [];
-
-        foreach ($callbacksPerType as $type => $callbacks) {
-            if ($type === $abstract || $object instanceof $type) {
-                $results = array_merge($results, $callbacks);
-            }
-        }
-
-        return $results;
-    }
-
-    /**
-     * Fire an array of callbacks with an object.
-     *
-     * @param mixed  $object
-     * @param array  $callbacks
-     * @return void
-     */
-    protected function fireCallbackArray($object, array $callbacks)
-    {
-        foreach ($callbacks as $callback) {
-            $callback($object, $this);
-        }
-    }
-
-    /**
      * Get the container's bindings.
      *
      * @return array
@@ -1238,7 +1056,8 @@ class Container implements \ArrayAccess, ContainerContract
     /**
      * Drop all of the stale instances and aliases.
      *
-     * @param string  $abstract
+     * @param string $abstract
+     *
      * @return void
      */
     protected function dropStaleInstances($abstract)
@@ -1249,7 +1068,8 @@ class Container implements \ArrayAccess, ContainerContract
     /**
      * Remove a resolved instance from the instance cache.
      *
-     * @param string  $abstract
+     * @param string $abstract
+     *
      * @return void
      */
     public function forgetInstance($abstract)
@@ -1292,6 +1112,18 @@ class Container implements \ArrayAccess, ContainerContract
         $this->instances = [];
         $this->abstractAliases = [];
         $this->scopedInstances = [];
+    }
+
+    /**
+     * Add instance to container singleton
+     *
+     * @param \Swilen\Contracts\Container\Container $container
+     *
+     * @return void
+     */
+    public static function setInstance($container)
+    {
+        static::$instance = $container;
     }
 
     /**

@@ -2,13 +2,10 @@
 
 namespace Swilen\Container;
 
-use Closure;
-use InvalidArgumentException;
-use ReflectionFunction;
-use ReflectionMethod;
-use RuntimeException;
-
-class BoundMethod
+/**
+ * @internal Package
+ */
+final class BoundMethod
 {
     /**
      * Call the given Closure / class@method and inject its dependencies.
@@ -56,7 +53,7 @@ class BoundMethod
             ? $segments[1] : $defaultMethod;
 
         if (is_null($method)) {
-            throw new InvalidArgumentException('Method not provided.');
+            throw new \InvalidArgumentException('Method not provided.');
         }
 
         return static::call(
@@ -135,13 +132,13 @@ class BoundMethod
     {
         if (is_string($callback) && strpos($callback, '::') !== false) {
             $callback = explode('::', $callback);
-        } elseif (is_object($callback) && !$callback instanceof Closure) {
+        } elseif (is_object($callback) && !$callback instanceof \Closure) {
             $callback = [$callback, '__invoke'];
         }
 
         return is_array($callback)
-            ? new ReflectionMethod($callback[0], $callback[1])
-            : new ReflectionFunction($callback);
+            ? new \ReflectionMethod($callback[0], $callback[1])
+            : new \ReflectionFunction($callback);
     }
 
     /**
@@ -185,7 +182,7 @@ class BoundMethod
         } elseif (!$parameter->isOptional() && !array_key_exists($paramName, $parameters)) {
             $message = "Unable to resolve dependency [{$parameter}] in class {$parameter->getDeclaringClass()->getName()}";
 
-            throw new RuntimeException($message);
+            throw new \RuntimeException($message);
         }
     }
 

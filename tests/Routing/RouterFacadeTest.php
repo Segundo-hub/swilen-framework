@@ -8,7 +8,7 @@ use Swilen\Routing\Router;
 
 uses()->group('Routing');
 
-it('Facade Router registered succesfully', function () {
+beforeAll(function() {
     $app = Container::getInstance();
 
     $app->singleton('router', function ($app) {
@@ -16,6 +16,9 @@ it('Facade Router registered succesfully', function () {
     });
 
     Facade::setFacadeApplication($app);
+});
+
+it('Facade Router registered succesfully', function () {
 
     $response = Route::get('/hola', function () {
         return ['hola' => 'Mundo'];

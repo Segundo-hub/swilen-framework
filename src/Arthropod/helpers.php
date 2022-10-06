@@ -117,33 +117,3 @@ if (!function_exists('env')) {
         return Env::get($key, $default);
     }
 }
-
-if (!function_exists('isJson')) {
-    /**
-     * @param mixed $target
-     * @return bool
-     */
-    function isJson($target)
-    {
-        json_decode($target);
-        return json_last_error() === JSON_ERROR_NONE;
-    }
-}
-
-if (!function_exists('strpos_arr')) {
-    /**
-     * Find string post in array
-     *
-     * @param string $haystack
-     * @param mixed[]|mixed $needle
-     */
-    function strpos_arr($haystack, $needle)
-    {
-        if (!is_array($needle)) $needle = array($needle);
-        $min = false;
-        foreach ($needle as $what)
-            if (($pos = strpos($haystack, $what)) !== false && ($min == false || $pos < $min))
-                $min = $pos;
-        return $min;
-    }
-}
