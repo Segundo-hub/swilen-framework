@@ -20,7 +20,7 @@ class JwtSignedExpression
     public $exp;
 
     /**
-     * @param \Swilen\Auth\Token\JwtPayload $payload
+     * @param \Swilen\Security\Token\JwtPayload $payload
      */
     public function __construct($token, JwtPayload $payload)
     {

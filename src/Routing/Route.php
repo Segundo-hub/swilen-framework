@@ -49,7 +49,7 @@ final class Route implements Arrayable, JsonSerializable
     /**
      * @var string
      */
-    public const UNMATCH_ROUTE = 0;
+    public const UNMATCH_ROUTE = null;
 
     /**
      * @var string
@@ -127,10 +127,10 @@ final class Route implements Arrayable, JsonSerializable
         $this->container = $this->container ?: new Container;
 
         try {
-            if ($this->isControllerAction()) {
-                return $this->runRouteWithController();
+            if ($this->actionIsController()) {
+                return $this->runRouteActionAsController();
             }
-            return $this->runRouteWithClosure();
+            return $this->runRouteActionAsClosure();
         } catch (HttpResponseException $e) {
             return $e->getMessage();
         }
@@ -141,7 +141,7 @@ final class Route implements Arrayable, JsonSerializable
      *
      * @return mixed
      */
-    private function runRouteWithController()
+    private function runRouteActionAsController()
     {
         $controller = $this->container->make($this->action['class']);
 
@@ -156,7 +156,7 @@ final class Route implements Arrayable, JsonSerializable
      *
      * @return mixed
      */
-    private function runRouteWithClosure()
+    private function runRouteActionAsClosure()
     {
         return $this->container->call($this->action, $this->getParameters());
     }
@@ -168,12 +168,11 @@ final class Route implements Arrayable, JsonSerializable
      *
      * @throws \Swilen\Routing\Exception\InvalidHttpHandlerException
      */
-    private function isControllerAction()
+    private function actionIsController()
     {
         if (is_array($this->action) || is_string($this->action)) {
             [$class, $method] = !is_string($this->action)
-                ? $this->action
-                : explode('@', (string) $this->action);
+                ? $this->action : explode('@', (string) $this->action);
 
             if (!method_exists($class, $method)) {
                 throw new InvalidHttpHandlerException();
@@ -206,22 +205,22 @@ final class Route implements Arrayable, JsonSerializable
      */
     private function compileSegmentedParameters($uri)
     {
-        $segmentedParameters = $this->transformParametersToArray($uri);
+        $segments = $this->transformParametersToArray($uri);
 
-        foreach ($segmentedParameters as $segment) {
+        foreach ($segments as $segment) {
             $value = trim($segment, '{\}');
             if (strpos($value, ':') !== false) {
                 [$type, $valued] = explode(':', $value);
 
                 if ($type === 'int') {
-                    $uri = str_replace("{{$type}:{$valued}}", "(?P<{$valued}>[0-9]+)", $uri);
+                    $uri = str_replace('{'.$type.':'.$valued.'}', '(?P<'.$valued.'>[0-9]+)', $uri);
                 }
 
                 if ($type === 'string') {
-                    $uri = str_replace("{{$type}:{$valued}}", "(?P<{$valued}>[a-zA-Z0-9]+)", $uri);
+                    $uri = str_replace('{'.$type.':'.$valued.'}', '(?P<'.$valued.'>[a-zA-Z0-9]+)', $uri);
                 }
             } else {
-                $uri = str_replace("{{$value}}", "(?P<{$value}>.*)", $uri);
+                $uri = str_replace('{'.$value.'}', '(?P<'.$value.'>.*)', $uri);
             }
         }
 
@@ -246,12 +245,13 @@ final class Route implements Arrayable, JsonSerializable
      *
      * @param string $action
      *
-     * @return \Swilen\Routing\Route|null
+     * @return \Swilen\Routing\Route|int
      */
     public function matches(string $action)
     {
         $matched = static::UNMATCH_ROUTE;
-        if (preg_match("#^{$this->match}$#", $action, $matches)) {
+
+        if (preg_match("#^{$this->match}$#", rawurldecode($action), $matches)) {
             $this->compileParameters($matches);
             $matched = $this;
         }

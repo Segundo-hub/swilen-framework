@@ -2,7 +2,6 @@
 
 namespace Swilen\Pipeline;
 
-use Swilen\Arthropod\Application;
 use Swilen\Container\Container;
 
 final class Pipeline
@@ -38,10 +37,10 @@ final class Pipeline
     /**
      * Create a new class instance.
      *
-     * @param \Swilen\Arthropod\Application|null $container
+     * @param \Swilen\Container\Container|null $container
      * @return void
      */
-    public function __construct(Application $container = null)
+    public function __construct(Container $container = null)
     {
         $this->container = $container;
     }

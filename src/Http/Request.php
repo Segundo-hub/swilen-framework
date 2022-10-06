@@ -97,27 +97,27 @@ final class Request implements \ArrayAccess, Arrayable
      * @var array<string, string>
      */
     protected $requestMimeTypes = [
-        'html'  => ['text/html', 'application/xhtml+xml'],
-        'txt'   => ['text/plain'],
-        'js'    => ['application/javascript', 'application/x-javascript', 'text/javascript'],
-        'css'   => ['text/css'],
-        'json'  => ['application/json', 'application/x-json'],
-        'xml'   => ['text/xml', 'application/xml', 'application/x-xml'],
-        'rdf'   => ['application/rdf+xml'],
-        'atom'  => ['application/atom+xml'],
-        'rss'   => ['application/rss+xml'],
-        'form'  => ['application/x-www-form-urlencoded', 'multipart/form-data'],
+        'html'   => ['text/html', 'application/xhtml+xml'],
+        'txt'    => ['text/plain'],
+        'js'     => ['application/javascript', 'application/x-javascript', 'text/javascript'],
+        'css'    => ['text/css'],
+        'json'   => ['application/json', 'application/x-json'],
+        'xml'    => ['text/xml', 'application/xml', 'application/x-xml'],
+        'rdf'    => ['application/rdf+xml'],
+        'atom'   => ['application/atom+xml'],
+        'rss'    => ['application/rss+xml'],
+        'form'   => ['application/x-www-form-urlencoded', 'multipart/form-data'],
         'jsonld' => ['application/ld+json'],
     ];
 
     /**
      * Create new request instance from incoming request
      *
-     * @param array $server The server variables collection
-     * @param array $headers
-     * @param array $files
-     * @param array $request
-     * @param array $query
+     * @param array $server   The server variables collection
+     * @param array $headers  The request headers collection
+     * @param array $files    The request files collection
+     * @param array $request  The request variables sending from client collection
+     * @param array $query    The request query params or send from client into form
      *
      * @return void
      */
@@ -141,6 +141,20 @@ final class Request implements \ArrayAccess, Arrayable
     }
 
     /**
+     * Set method for request
+     *
+     * @param string $method
+     *
+     * @return $this
+     */
+    public function setMethod(string $method)
+    {
+        $this->method = strtoupper($method);
+
+        return $this;
+    }
+
+    /**
      * Get request method
      *
      * @return string
@@ -149,7 +163,7 @@ final class Request implements \ArrayAccess, Arrayable
      */
     public function getMethod()
     {
-        $this->method = strtoupper($this->server->filter('REQUEST_METHOD', 'GET'));
+        $this->method = strtoupper($this->server->get('REQUEST_METHOD', 'GET'));
 
         if ($this->method !== 'POST') {
             return $this->method;

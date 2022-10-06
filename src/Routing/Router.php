@@ -4,6 +4,7 @@ namespace Swilen\Routing;
 
 use Swilen\Container\Container;
 use Swilen\Contracts\Support\Arrayable;
+use Swilen\Contracts\Support\Enumerable;
 use Swilen\Http\Request;
 use Swilen\Http\Response;
 use Swilen\Pipeline\Pipeline;
@@ -77,7 +78,7 @@ class Router
      */
     public function get(string $uri, $action)
     {
-        return $this->addRoute("GET", $uri, $action);
+        return $this->addRoute('GET', $uri, $action);
     }
 
     /**
@@ -90,7 +91,7 @@ class Router
      */
     public function post(string $uri, $action)
     {
-        return $this->addRoute("POST", $uri, $action);
+        return $this->addRoute('POST', $uri, $action);
     }
 
     /**
@@ -103,7 +104,7 @@ class Router
      */
     public function put(string $uri, $action)
     {
-        return $this->addRoute("PUT", $uri, $action);
+        return $this->addRoute('PUT', $uri, $action);
     }
 
     /**
@@ -116,7 +117,7 @@ class Router
      */
     public function path(string $uri, $action)
     {
-        return $this->addRoute("PATCH", $uri, $action);
+        return $this->addRoute('PATCH', $uri, $action);
     }
 
     /**
@@ -129,7 +130,7 @@ class Router
      */
     public function delete(string $uri, $action)
     {
-        return $this->addRoute("DELETE", $uri, $action);
+        return $this->addRoute('DELETE', $uri, $action);
     }
 
     /**
@@ -145,9 +146,14 @@ class Router
     {
         $route = $this->newRoute($method, $uri, $action);
 
-        $this->routes->add($route);
+        if ($this->hasGroupStack()) {
+            $atributes = end($this->groupStack);
+            if (isset($atributes['middleware'])) {
+                $route->use($atributes['middleware']);
+            }
+        }
 
-        return $route;
+        return $this->routes->add($route);
     }
 
     /**
@@ -185,6 +191,13 @@ class Router
         }
     }
 
+    /**
+     * Wrap group routes as array
+     *
+     * @param mixed $routes
+     *
+     * @return array
+     */
     private function wrapGroupRoutes($routes)
     {
         return is_null($routes) ? [] : (is_array($routes) ? $routes : [$routes]);
@@ -245,11 +258,23 @@ class Router
         }
     }
 
+    /**
+     * Prefix group of routes
+     *
+     * @param string $uri
+     *
+     * @return string
+     */
     protected function prefix($uri)
     {
         return '/' . trim(trim($this->getLastGroupPrefix(), '/') . '/' . trim($uri, '/'), '/') ?: '/';
     }
 
+    /**
+     * Get the prefix of the last group or an empty string if not defined
+     *
+     * @return string
+     */
     public function getLastGroupPrefix()
     {
         if ($this->hasGroupStack()) {
@@ -297,24 +322,36 @@ class Router
             });
     }
 
+    /**
+     * Prepare response from incoming request
+     *
+     * @param \Swilen\Http\Request $request
+     * @param mixed $response
+     *
+     * @return \Swilen\Http\Response
+     */
     public function prepareResponse(Request $request, $response)
-    {
-        return static::createResponse($request, $response);
-    }
-
-    public static function createResponse(Request $request, $response)
     {
         if ($response instanceof Response) {
             return $response->prepare($request);
         }
-
         if ($response instanceof Arrayable) {
             $response = $response->toArray();
+        } else if ($response instanceof Enumerable) {
+            $response = $response->all();
         }
 
         return (new Response($response))->prepare($request);
     }
 
+    /**
+     * Call dynamically methods of class
+     *
+     * @param string $method
+     * @param array $arguments
+     *
+     * @return mixed
+     */
     public function __call($method, $arguments)
     {
         if (method_exists($this, $method) && !in_array($method, ['prefix', 'middleware'])) {

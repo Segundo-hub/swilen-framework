@@ -5,7 +5,7 @@ namespace Swilen\Database;
 use Swilen\Database\Exception\DatabaseConnectionException;
 
 use PDO;
-use Swilen\Database\Contracts\ConnectionContract;
+use Swilen\Database\Contract\ConnectionContract;
 
 class Connection implements ConnectionContract
 {

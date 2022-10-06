@@ -62,6 +62,13 @@ final class RouteGroup
         );
     }
 
+    /**
+     * Delete values ​​based on array keys
+     *
+     * @param array $target
+     *
+     * @return array
+     */
     protected static function arrayExcept($target, array $keys)
     {
         foreach ($keys as $key) {

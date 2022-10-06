@@ -36,6 +36,18 @@ final class RouteRegister
         return $this;
     }
 
+     /**
+     * @param string|array $middleware
+     *
+     * @return $this
+     */
+    public function use($middleware)
+    {
+        $this->attributes['middleware'] = $middleware;
+
+        return $this;
+    }
+
     /**
      * Group route callback
      *

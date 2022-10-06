@@ -1,6 +1,6 @@
 <?php
 
-namespace Swilen\Database\Contracts;
+namespace Swilen\Database\Contract;
 
 interface ConnectionContract
 {

@@ -2,11 +2,11 @@
 
 namespace Swilen\Routing;
 
-use Swilen\Contracts\Support\Arrayable;
 use Swilen\Http\Exception\HttpMethodNotAllowedException;
 use Swilen\Http\Exception\HttpNotFoundException;
 
 use Swilen\Http\Request;
+use Swilen\Contracts\Support\Arrayable;
 
 class RouteCollection implements Arrayable
 {
@@ -74,6 +74,7 @@ class RouteCollection implements Arrayable
      * @param \Swilen\Http\Request $request
      *
      * @return \Swilen\Routing\Route
+     * @throws \Swilen\Http\Exception\HttpMethodNotAllowedException
      * @throws \Swilen\Http\Exception\HttpNotFoundException
      */
     public function match(Request $request)
@@ -104,10 +105,22 @@ class RouteCollection implements Arrayable
      */
     protected function get(string $method)
     {
-        if (key_exists($method, $this->routes) && !is_null($this->routes[$method])) {
+        if (isset($this->routes[$method])) {
             return $this->routes[$method];
         }
 
+        return $this->methodNotAllowed($method);
+    }
+
+    /**
+     * Handle exepcion if method not allowed in route collection
+     *
+     * @param string $method
+     *
+     * @throws \Swilen\Http\Exception\HttpMethodNotAllowedException
+     */
+    private function methodNotAllowed(string $method)
+    {
         throw new HttpMethodNotAllowedException(sprintf(
             '%s Method Not Allowed. %s Methods allowed',
             strtoupper($method),
@@ -120,6 +133,14 @@ class RouteCollection implements Arrayable
      */
     public function toArray()
     {
-        return $this->routes;
+        $routes = [];
+
+        foreach ($this->routes as $method => $route) {
+            $routes[$method] = array_map(function ($_route) {
+                return $_route->toArray();
+            }, $route);
+        }
+
+        return $routes;
     }
 }
