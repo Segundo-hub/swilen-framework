@@ -219,8 +219,8 @@ final class Request implements \ArrayAccess, Arrayable
      */
     private function filteredActionRequest()
     {
-        if (getenv('APP_BASE_URI') && !empty(getenv('APP_BASE_URI'))) {
-            return preg_replace('#^' . getenv('APP_BASE_URI') . '#', '', $this->server->get('REQUEST_URI'));
+        if (env('APP_BASE_URI') && !empty(env('APP_BASE_URI'))) {
+            return preg_replace('#^' . env('APP_BASE_URI') . '#', '', $this->server->get('REQUEST_URI'));
         }
 
         return $this->server->get('REQUEST_URI');

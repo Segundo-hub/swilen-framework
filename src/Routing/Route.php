@@ -317,7 +317,7 @@ final class Route implements Arrayable, JsonSerializable
 
     public function getAction()
     {
-        return $this->action;;
+        return $this->action;
     }
 
     public function getMiddleware()

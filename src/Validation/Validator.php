@@ -124,9 +124,9 @@ final class Validator
     }
 
     /**
-     * Set validatable values and return this for validate
+     * Set validatable data
      *
-     * @param object|array $values
+     * @param object|array $data
      * @return $this
      */
     public function from($data)
@@ -138,7 +138,7 @@ final class Validator
     }
 
     /**
-     * Set validatable data and return this for validate
+     * Set validatable data
      *
      * @param object|array $data
      * @return $this
@@ -160,6 +160,6 @@ final class Validator
      */
     public function __get($key)
     {
-        return $this->values[$key] ?: null;
+        return $this->values[$key];
     }
 }

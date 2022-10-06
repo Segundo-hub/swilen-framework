@@ -7,81 +7,76 @@ use Swilen\Contracts\Container\Container as ContainerContract;
 
 uses()->group('Container');
 
-it('Waiting for the \Container instance to be generated successfully', function () {
-    $container = Container::getInstance();
+beforeEach(function () {
+    $this->app = Container::getInstance();
+});
 
-    expect($container)->toBeInstanceOf(Container::class);
-    expect($container)->toBeObject();
+it('Waiting for the \Container instance to be generated successfully', function () {
+    expect($this->app)->toBeInstanceOf(Container::class);
+    expect($this->app)->toBeObject();
 });
 
 it('Waiting for the \Container is instance of Psr\Container\ContainerInterface', function () {
-    $container = Container::getInstance();
-
-    expect($container)->toBeInstanceOf(ContainerInterface::class);
+    expect($this->app)->toBeInstanceOf(ContainerInterface::class);
 });
 
 it('Waiting for the \Container is instance of Swilen\Contracts\Container\Container', function () {
-    $container = Container::getInstance();
-
-    expect($container)->toBeInstanceOf(ContainerContract::class);
+    expect($this->app)->toBeInstanceOf(ContainerContract::class);
 });
 
 it('Resolve class correctly', function () {
-    $instance = Container::getInstance()->make(TestingClass::class);
+    $instance = $this->app->make(TestingClass::class);
 
     expect($instance)->toBeInstanceOf(TestingClass::class);
     expect($instance)->toBeObject();
 });
 
 it('Resolve class correctly with params', function () {
-    $instance = Container::getInstance()->make(TestingClass::class, ['id' => 1]);
+    $instance = $this->app->make(TestingClass::class, ['id' => 1]);
 
     expect($instance)->toBeInstanceOf(TestingClass::class);
     expect($instance->getProperty())->toBeOne();
 });
 
 it('Throw if class entry not found', function () {
-    Container::getInstance()->make('Swilen\Container\EntryNotFound');
+    $this->app->make('Swilen\Container\EntryNotFound');
 })->throws(EntryNotFoundException::class);
 
 it('Register the class as simple binding. Create new instance when done by container', function () {
-    $app = Container::getInstance();
 
-    $app->bind('bind', function ($app) {
+    $this->app->bind('bind', function ($app) {
         return new TestingClass(10);
     });
 
-    $app->make('bind')->increment();
-    $app->make('bind')->increment();
+    $this->app->make('bind')->increment();
+    $this->app->make('bind')->increment();
 
-    expect($app->isShared('bind'))->toBeFalse();
-    expect($app->make('bind')->getProperty())->toBe(10);
+    expect($this->app->isShared('bind'))->toBeFalse();
+    expect($this->app->make('bind')->getProperty())->toBe(10);
 });
 
 it('Register the class as singleton instance. Return only instance when done by container', function () {
-    $app = Container::getInstance();
 
-    $app->singleton('singleton', function ($app) {
+    $this->app->singleton('singleton', function ($app) {
         return new TestingClass(18);
     });
 
-    $app->make('singleton')->increment();
-    $app->make('singleton')->increment();
+    $this->app->make('singleton')->increment();
+    $this->app->make('singleton')->increment();
 
-    expect($app->isShared('singleton'))->toBeTrue();
-    expect($app->make('singleton')->getProperty())->toBe(20);
+    expect($this->app->isShared('singleton'))->toBeTrue();
+    expect($this->app->make('singleton')->getProperty())->toBe(20);
 });
 
 it('Register interface for dependency injection', function () {
-    $app = Container::getInstance();
 
-    $app->bind(MongoRepository::class, function ($app) {
+    $this->app->bind(MongoRepository::class, function ($app) {
         return new UserRepository(100);
     });
 
-    expect($app->isShared(MongoRepository::class))->toBeFalse();
+    expect($this->app->isShared(MongoRepository::class))->toBeFalse();
 
-    expect($app->make(UserService::class)->find())->toBeInt();
+    expect($this->app->make(UserService::class)->find())->toBeInt();
 });
 
 

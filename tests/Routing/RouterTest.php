@@ -34,8 +34,8 @@ it('Match route current request', function ($dataset) {
 
     $response = $this->router->dispatch(newRequest('/test'));
 
-    expect($response instanceof Response)->toBeTrue();
-    expect($response->getContent())->toBe(json_encode($dataset));
+    expect($response)->toBeInstanceOf(Response::class);
+    expect($response->getContent())->toBeJson()->toBe(json_encode($dataset));
 })->with([
     'dataset' => 'test'
 ]);
