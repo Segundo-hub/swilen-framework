@@ -271,8 +271,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
 
             return $container->resolve(
                 $concrete,
-                $parameters,
-                $raiseEvents = false
+                $parameters
             );
         };
     }
@@ -440,21 +439,20 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     /**
      * Register an existing instance as shared in the container.
      *
-     * @param string  $abstract
-     * @param mixed  $instance
+     * @param string $abstract
+     * @param mixed $instance
+     *
      * @return mixed
      */
     public function instance($abstract, $instance)
     {
         $this->removeAbstractAlias($abstract);
 
-        $isBound = $this->bound($abstract);
-
         unset($this->aliases[$abstract]);
 
         $this->instances[$abstract] = $instance;
 
-        if ($isBound) {
+        if ($this->bound($abstract)) {
             $this->rebound($abstract);
         }
 
@@ -464,7 +462,8 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     /**
      * Remove an alias from the contextual binding alias cache.
      *
-     * @param string  $searched
+     * @param string $searched
+     *
      * @return void
      */
     protected function removeAbstractAlias($searched)
@@ -485,8 +484,9 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     /**
      * Assign a set of tags to a given binding.
      *
-     * @param array|string  $abstracts
-     * @param array|mixed  ...$tags
+     * @param array|string $abstracts
+     * @param array|mixed ...$tags
+     *
      * @return void
      */
     public function tag($abstracts, $tags)
@@ -503,13 +503,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
             }
         }
     }
-
-    /**
-     * Resolve all of the bindings for a given tag.
-     *
-     * @param string  $tag
-     * @return iterable
-     */
 
     /**
      * Alias a type to a different name.

@@ -38,7 +38,7 @@ it('Resolve class correctly with params', function () {
     expect($instance->getProperty())->toBeOne();
 });
 
-it('Throw if class entry not found', function () {
+it('Generate exception if service not found', function () {
     $this->app->make('Swilen\Container\EntryNotFound');
 })->throws(EntryNotFoundException::class);
 
@@ -78,6 +78,31 @@ it('Register interface for dependency injection', function () {
 
     expect($this->app->make(UserService::class)->find())->toBeInt();
 });
+
+it('Call function with dependency injection in parameter', function () {
+    $closure = function (MongoRepository $repository) {
+        return $repository->find();
+    };
+
+    $result = $this->app->call($closure);
+
+    expect($result)->toBeInt();
+});
+
+it('Call __invoke function was class is used as function', function () {
+    $class = new class {
+        public function __invoke(MongoRepository $repository)
+        {
+            return $repository->find();
+        }
+    };
+
+    $result = $this->app->call($class);
+
+    expect($result)->toBeInt();
+});
+
+
 
 
 
