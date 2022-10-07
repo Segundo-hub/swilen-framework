@@ -83,7 +83,7 @@ final class Route implements Arrayable, JsonSerializable
     public function __construct(string $method, string $uri, $action)
     {
         $this->method     = $method;
-        // $this->match      = $this->matchFrom($uri);
+        $this->match      = $this->matchFrom($uri);
         $this->uri        = $uri;
         $this->action     = $action;
     }
@@ -260,7 +260,6 @@ final class Route implements Arrayable, JsonSerializable
     public function matches(string $action)
     {
         $matched = static::UNMATCH_ROUTE;
-        $this->match = $this->getRegex();
 
         if (preg_match("#^{$this->match}$#", rawurldecode($action), $matches)) {
             $this->compileParameters($matches);
