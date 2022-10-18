@@ -42,3 +42,7 @@ function fetch(string $uri, string $method = 'GET', array $headers = [], array $
 {
     return \Swilen\Http\Request::make($uri, $method, $parameters, $files, $headers);
 }
+
+function command(string $command) {
+    $_SERVER['argv'] = explode(' ', $command);;
+}

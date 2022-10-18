@@ -9,7 +9,7 @@ use Swilen\Http\Response;
 uses()->group('Application');
 
 beforeAll(function () {
-    $app = new Application(dirname(__FILE__));
+    $app = new Application(dirname(__DIR__));
 
     $app->useEnviromentPath(dirname(__DIR__));
 });

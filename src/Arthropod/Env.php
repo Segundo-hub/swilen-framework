@@ -38,6 +38,13 @@ final class Env
     private static $envStack = [];
 
     /**
+     * The env instance as singleton
+     *
+     * @var static
+     */
+    protected static $instance;
+
+    /**
      * Define path and enviroments variables as inmutable
      *
      * @param string $path
@@ -93,6 +100,8 @@ final class Env
         if (!is_readable($this->path())) {
             throw new \RuntimeException('Env file is not readable ' . $this->path(), 200);
         }
+
+        static::$instance = $this;
 
         $linesFiltered = file($this->path(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
@@ -183,6 +192,14 @@ final class Env
 
         if (is_numeric($primitive) && !$this->contains($value, ['+', '-', '"', '\''])) {
             return (int) $primitive;
+        }
+
+        if ($this->startWith($primitive, 'swilen:')) {
+            return (string) base64_decode(substr($primitive, 7) . '=');
+        }
+
+        if ($this->startWith($primitive, 'base64:')) {
+            return (string) base64_decode(substr($primitive, 7));
         }
 
         return (string) $primitive;
@@ -306,6 +323,21 @@ final class Env
     }
 
     /**
+     * @internal
+     * Check string starts with
+     *
+     * @param string $haystack
+     * @param array|string $needle
+     *
+     * @return bool
+     */
+    protected function startWith(string $haystack, $needle)
+    {
+        return \strpos($haystack, $needle) === 0;
+    }
+
+
+    /**
      * return array of variables values registered
      *
      * @return array<string, mixed>
@@ -323,5 +355,10 @@ final class Env
     public static function stack()
     {
         return static::$envStack;
+    }
+
+    public static function getInstance()
+    {
+        return static::$instance;
     }
 }
