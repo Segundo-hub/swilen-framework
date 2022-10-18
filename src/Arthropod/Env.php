@@ -23,6 +23,13 @@ final class Env
      *
      * @var string[]
      */
+    protected static $envs = [];
+
+    /**
+     * List of all env saved
+     *
+     * @var string[]
+     */
     protected static $store = [];
 
     /**
@@ -45,6 +52,20 @@ final class Env
     protected static $instance;
 
     /**
+     * Create new env instance
+     *
+     * @param string $path
+     * @param bool $isInmutable
+     *
+     * @return void
+     */
+    public function __construct(string $path = null, bool $isInmutable = true)
+    {
+        $this->path = $path;
+        $this->isInmutable = $isInmutable;
+    }
+
+    /**
      * Define path and enviroments variables as inmutable
      *
      * @param string $path
@@ -52,12 +73,9 @@ final class Env
      *
      * @return $this
      */
-    public function createFrom(string $path, bool $isInmutable = true)
+    public static function createFrom(string $path, bool $isInmutable = true)
     {
-        $this->path = $path;
-        $this->isInmutable = $isInmutable;
-
-        return $this;
+        return new static($path, $isInmutable);
     }
 
     /**
@@ -122,10 +140,11 @@ final class Env
      *
      * @param string $key
      * @param string|int|bool|null $value
+     * @param bool $replace
      *
      * @return void
      */
-    protected function compile(string $key, $value)
+    protected function compile(string $key, $value, bool $replace = false)
     {
         $key   = $this->formatKey($key);
         $value = $this->formatValue($value);
@@ -140,7 +159,7 @@ final class Env
             }
         }
 
-        $this->write($key, $value);
+        $this->write($key, $value, $replace);
     }
 
     /**
@@ -164,6 +183,8 @@ final class Env
      */
     private function formatValue($value)
     {
+        if (is_bool($value)) return $value;
+
         if (is_null($value) || empty($value)) return '';
 
         if (($startComment = strpos($value, '#')) !== false) {
@@ -223,17 +244,19 @@ final class Env
      *
      * @param string $key
      * @param mixed $value
+     * @param bool $replace
      *
      * @return void
      */
-    private function write(string $key, $value)
+    private function write(string $key, $value, bool $replace = false)
     {
-        if (!$this->isInmutable()) {
+        if (!$this->isInmutable() || $replace) {
             $this->writeMutableOrInmutable($key, $value);
-        } else {
-            if (!$this->exists($key)) {
-                $this->writeMutableOrInmutable($key, $value);
-            }
+            return;
+        }
+
+        if (!$this->exists($key)) {
+            $this->writeMutableOrInmutable($key, $value);
         }
     }
 
@@ -247,10 +270,9 @@ final class Env
      */
     protected function writeMutableOrInmutable(string $key, $value)
     {
-        putenv(sprintf('%s=%s', $key, $value));
         $_ENV[$key] = $value;
         $_SERVER[$key] = $value;
-        static::$store[$key] = $value;
+        static::$envs[$key] = $value;
     }
 
     /**
@@ -262,7 +284,7 @@ final class Env
      */
     public function exists($key)
     {
-        return (key_exists($key, $_SERVER) && key_exists($key, $_ENV) && key_exists($key, static::$store));
+        return (key_exists($key, $_SERVER) && key_exists($key, $_ENV) && key_exists($key, static::$envs));
     }
 
     /**
@@ -299,7 +321,19 @@ final class Env
      */
     public static function all()
     {
-        return array_merge($_ENV, $_SERVER, static::$store);
+        if (!empty(static::$store)) {
+            return static::$store;
+        }
+
+        return static::$store = array_merge($_ENV, $_SERVER, static::$envs);
+    }
+
+    /**
+     * Force refilling store collection
+     */
+    protected function refillingStore()
+    {
+        static::$store = array_merge($_ENV, $_SERVER, static::$envs);
     }
 
     /**
@@ -336,6 +370,49 @@ final class Env
         return \strpos($haystack, $needle) === 0;
     }
 
+    /**
+     * Return instance for manipule content has singleton
+     *
+     * @return static
+     */
+    public static function getInstance()
+    {
+        return static::$instance;
+    }
+
+    /**
+     * Set enviroment in runtime
+     *
+     * @param string $key
+     * @param mixed $value
+     *
+     * @return void
+     */
+    public static function set($key, $value)
+    {
+        $instance = static::getInstance();
+
+        $instance->compile($key, $value);
+
+        $instance->refillingStore();
+    }
+
+    /**
+     * Set enviroment in runtime
+     *
+     * @param string $key
+     * @param mixed $value
+     *
+     * @return void
+     */
+    public static function replace($key, $value)
+    {
+        $instance = static::getInstance();
+
+        $instance->compile($key, $value, true);
+
+        $instance->refillingStore();
+    }
 
     /**
      * return array of variables values registered
@@ -344,7 +421,7 @@ final class Env
      */
     public static function registered()
     {
-        return static::$store;
+        return static::$envs;
     }
 
     /**
@@ -357,8 +434,19 @@ final class Env
         return static::$envStack;
     }
 
-    public static function getInstance()
+    /**
+     * Reset enviroment
+     */
+    public static function forget()
     {
-        return static::$instance;
+        static::$instance = null;
+
+        foreach (static::$envs as $key => $value) {
+            unset($_ENV[$key]);
+            unset($_SERVER[$key]);
+        }
+
+        static::$envs = [];
+        static::$store = [];
     }
 }

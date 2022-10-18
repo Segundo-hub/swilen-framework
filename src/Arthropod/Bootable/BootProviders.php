@@ -3,9 +3,9 @@
 namespace Swilen\Arthropod\Bootable;
 
 use Swilen\Arthropod\Application;
-use Swilen\Arthropod\Contract\BootableContract;
+use Swilen\Arthropod\Contract\BootableServiceContract;
 
-class BootProviders implements BootableContract
+class BootProviders implements BootableServiceContract
 {
     /**
      * @param \Swilen\Arthropod\Application $app

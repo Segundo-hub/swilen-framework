@@ -14,8 +14,10 @@ $router->get('testf', function (Request $request) {
     return ['Swilen' => 'TESTING'];
 });
 
-$router->get('testa', function (Request $request) {
-    return ['Swilen' => 'TESTING'];
+$router->get('found-error', function (Request $request) {
+    trigger_error(
+        'custom error'
+    );
 });
 
 $router->get('test', function (Request $request) {

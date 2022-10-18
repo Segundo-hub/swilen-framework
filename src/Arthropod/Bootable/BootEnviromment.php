@@ -3,10 +3,10 @@
 namespace Swilen\Arthropod\Bootable;
 
 use Swilen\Arthropod\Application;
-use Swilen\Arthropod\Contract\BootableContract;
+use Swilen\Arthropod\Contract\BootableServiceContract;
 use Swilen\Arthropod\Env;
 
-class BootEnviromment implements BootableContract
+class BootEnviromment implements BootableServiceContract
 {
     /**
      * The application instance

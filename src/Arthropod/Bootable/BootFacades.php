@@ -3,10 +3,10 @@
 namespace Swilen\Arthropod\Bootable;
 
 use Swilen\Arthropod\Application;
-use Swilen\Arthropod\Contract\BootableContract;
+use Swilen\Arthropod\Contract\BootableServiceContract;
 use Swilen\Petiole\Facades\Facade;
 
-class BootFacades implements BootableContract
+class BootFacades implements BootableServiceContract
 {
     /**
      * @param \Swilen\Arthropod\Application $app

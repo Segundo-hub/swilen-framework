@@ -1,6 +1,7 @@
 <?php
 
 use Swilen\Arthropod\Application;
+use Swilen\Arthropod\Env;
 use Swilen\Container\Container;
 use Swilen\Contracts\Arthropod\Application as ArthropodApplication;
 use Swilen\Http\Common\Http;
@@ -16,6 +17,10 @@ beforeAll(function () {
 
 beforeEach(function () {
     $this->app = Application::getInstance();
+});
+
+afterAll(function () {
+    Env::forget();
 });
 
 
@@ -40,7 +45,7 @@ it('The app() helper works correctly', function () {
 
 it('Handle incoming request and return response', function () {
 
-    $response = $this->app->dispatch(fetch('api/test'));
+    $response = $this->app->handle(fetch('api/test'));
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getContent())->toBeJson();
@@ -49,7 +54,7 @@ it('Handle incoming request and return response', function () {
 
 it('Handle incoming request', function () {
 
-    $response = $this->app->dispatch(fetch('api/testing/test'));
+    $response = $this->app->handle(fetch('api/testing/test'));
 
     expect($response)->toBeInstanceOf(Response::class);
     expect($response->getContent())->toBeJson();

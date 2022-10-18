@@ -7,6 +7,10 @@ use Swilen\Contracts\Container\Container as ContainerContract;
 
 uses()->group('Container');
 
+beforeAll(function () {
+    Container::setInstance(new Container);
+});
+
 beforeEach(function () {
     $this->app = Container::getInstance();
 });
@@ -80,6 +84,11 @@ it('Register interface for dependency injection', function () {
 });
 
 it('Call function with dependency injection in parameter', function () {
+
+    $this->app->bind(MongoRepository::class, function ($app) {
+        return new UserRepository(100);
+    });
+
     $closure = function (MongoRepository $repository) {
         return $repository->find();
     };
@@ -90,6 +99,11 @@ it('Call function with dependency injection in parameter', function () {
 });
 
 it('Call __invoke function was class is used as function', function () {
+
+    $this->app->bind(MongoRepository::class, function ($app) {
+        return new UserRepository(100);
+    });
+
     $class = new class {
         public function __invoke(MongoRepository $repository)
         {
@@ -102,6 +116,30 @@ it('Call __invoke function was class is used as function', function () {
     expect($result)->toBeInt();
 });
 
+
+it('Depency resolve with ArrayAccess', function () {
+
+    $this->app->bind(MongoRepository::class, function ($app) {
+        return new UserRepository(100);
+    });
+
+    $this->app['depend'] = function ($app) {
+        return new class {
+            public function __invoke(MongoRepository $repository)
+            {
+                return $repository->find();
+            }
+        };
+    };
+
+    expect($this->app->call($this->app['depend']))->toBeInt();
+
+    $this->app->flush();
+
+    expect($this->app->getBindings())->toBeEmpty();
+
+    expect($this->app['depend'])->toBeNull();
+})->throws(EntryNotFoundException::class);
 
 
 

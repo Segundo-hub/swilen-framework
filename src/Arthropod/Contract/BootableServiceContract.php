@@ -4,7 +4,7 @@ namespace Swilen\Arthropod\Contract;
 
 use Swilen\Arthropod\Application;
 
-interface BootableContract
+interface BootableServiceContract
 {
     /**
      * @param \Swilen\Arthropod\Application $app

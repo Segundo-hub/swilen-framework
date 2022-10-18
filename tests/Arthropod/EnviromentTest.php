@@ -2,47 +2,70 @@
 
 use Swilen\Arthropod\Env;
 
-uses()->group('enviroment');
+uses()->group('Enviroment');
 
 beforeAll(function () {
-    (new Env())->createFrom(dirname(__DIR__))->config([
+    Env::createFrom(dirname(__DIR__))->config([
         'file' => '.env'
     ])->load();
 });
 
+beforeEach(function () {
+    $this->env = Env::getInstance();
+});
 
-it('The dotenv list is expected to be registered as an array', function () {
-    expect(Env::registered())->toBeArray();
+afterAll(function () {
+    Env::forget();
 });
 
 it('The variable is expected to return null if it is not found in the file', function () {
-    expect(env('TEST_NULL_ENV'))->toBeNull();
+    expect($this->env::get('TEST_NULL_ENV'))->toBeNull();
 });
 
 it('Expect a empty string if not found env variable in file', function () {
-    expect(env('TEST_EMPTY_ENV', ''))->toBeEmpty();
+    expect($this->env::get('TEST_EMPTY_ENV', ''))->toBeEmpty();
 });
 
 it('Expect if not found varaiable return default', function () {
-    expect(env('TEST_ENV', '__default'))->toBe('__default');
+    expect($this->env::get('TEST_ENV', '__default'))->toBe('__default');
 });
 
 it('Found a env variable', function () {
-    expect(env('BASE_URL'))->toBe('http://localhost:8080');
+    expect($this->env::get('BASE_URL'))->toBe('http://localhost:8080');
 });
 
 it('Replace variable in env var has found', function () {
-    expect(env('EXTEND_URL'))->toBe('http://localhost:8080/api');
+    expect($this->env::get('EXTEND_URL'))->toBe('http://localhost:8080/api');
+});
+
+it('Insert enviroment variable in runtime', function () {
+    $this->env::set('APP_DEBUGGER', false);
+    expect($this->env::get('APP_DEBUGGER'))->toBeFalse();
+});
+
+it('Replace enviroment variable in runtime', function () {
+
+    $this->env::set('APP_BOOL', 'Hello');
+    $this->env::set('APP_HELLO', '{APP_BOOL} World!');
+
+    expect($this->env::get('APP_HELLO'))->toBe('Hello World!');
+});
+
+it('Replace existing enviroment variable in runtime', function () {
+
+    $this->env::replace('APP_DEBUG', true);
+
+    expect($this->env::get('APP_DEBUG'))->toBeTrue();
 });
 
 it('Replace All variables founded', function () {
-    expect(env('NESTED_URI'))->toBe('http://localhost:8080/api/v1/testing');
+    expect($this->env::get('NESTED_URI'))->toBe('http://localhost:8080/api/v1/testing');
 });
 
 it('App secret decoded succesfully as Swilen', function () {
-    expect(env('APP_SECRET'))->toBe('a9bb6de2d1e03e3e7e4c2c14e990e3a5');
+    expect($this->env::get('APP_SECRET'))->toBe('a9bb6de2d1e03e3e7e4c2c14e990e3a5');
 })->skip('Ignore because the console generates a random key and does not match the cached value.');
 
 it('App secret decoded successfuly as base64', function () {
-    expect(env('APP_SECRET_64'))->toBe('8f62183d7e8c5ec2c446137515b173d3');
+    expect($this->env::get('APP_SECRET_64'))->toBe('8f62183d7e8c5ec2c446137515b173d3');
 })->skip('Ignore because the console generates a random key and does not match the cached value.');

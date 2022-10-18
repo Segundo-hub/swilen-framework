@@ -11,6 +11,7 @@
 *.mo
 debug.log
 error.log
+swilen-*.log
 .phpunit.result.cache
 
 # OS generated files #

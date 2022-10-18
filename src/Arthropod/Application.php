@@ -38,10 +38,11 @@ class Application extends Container implements ArthropodApplication
     /**
      * The bootstrappers collection
      *
-     * @var \Swilen\Arthropod\Contracts\BootableContract[]
+     * @var \Swilen\Arthropod\Contract\BootableServiceContract[]
      */
     protected $bootstrappers = [
         \Swilen\Arthropod\Bootable\BootEnviromment::class,
+        \Swilen\Arthropod\Bootable\BootHandleExceptions::class,
         \Swilen\Arthropod\Bootable\BootFacades::class,
         \Swilen\Arthropod\Bootable\BootProviders::class
     ];
@@ -135,16 +136,6 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Register core exception handler
-     *
-     * @return \Swilen\Arthropod\Exception\Handler
-     */
-    private function registerExceptionHandler()
-    {
-        return new \Swilen\Arthropod\Exception\Handler($this);
-    }
-
-    /**
      * Register base container bindings
      *
      * @return void
@@ -200,7 +191,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Application paths part
+     * Register application path parts
      *
      * @param string $path
      *
@@ -212,7 +203,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Set application paths part
+     * Use application path part
      *
      * @param string $path
      *
@@ -228,7 +219,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Application paths part
+     * Register application path parts
      *
      * @param string $path
      *
@@ -240,7 +231,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Application paths part
+     * Use application path part
      *
      * @param string $path
      *
@@ -256,7 +247,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Application paths part
+     * Register application path parts
      *
      * @param string $path
      *
@@ -268,7 +259,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Application paths part
+     * Use application path part
      *
      * @param string $path
      *
@@ -465,7 +456,7 @@ class Application extends Container implements ArthropodApplication
      * @param \Swilen\Http\Request $request
      * @return \Swilen\Http\Response
      */
-    public function dispatch(Request $request)
+    public function handle(Request $request)
     {
         try {
             $response = $this->dispatchRequestThroughRouter($request);
