@@ -27,5 +27,9 @@ class DatabaseServiceProvider extends ServiceProvider
         $this->app->singleton('db', function ($app) {
             return new DatabaseManager($app);
         });
+
+        $this->app->singleton('db.connection', function ($app) {
+            return $app['db']->getConnection();
+        });
     }
 }

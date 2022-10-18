@@ -13,6 +13,11 @@ class ParameterHunt implements \Countable, Enumerable
      */
     protected $params = [];
 
+    /**
+     * Create new parameterHunt with default params
+     *
+     * @param array $param
+     */
     public function __construct(array $params = [])
     {
         $this->params = $params;

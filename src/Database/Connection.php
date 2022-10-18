@@ -49,14 +49,7 @@ class Connection implements ConnectionContract
      *
      * @var int
      */
-    private $conected = 0;
-
-    /**
-     * Partial PDO statement
-     *
-     * @var \PDOStatement|false
-     */
-    private $stmt;
+    private $connected = 0;
 
     /**
      * The schema for connected
@@ -101,15 +94,15 @@ class Connection implements ConnectionContract
             $config['username'] ?? null, $config['password'] ?? null
         ];
 
-        $this->updateConnectionOptions((object) $config);
+        $this->parseConnectionOptions((object) $config);
 
         try {
             if ($this->isMissingConnection()) {
                 $this->connection = $this->createPdoConnection($this->DSN, $username, $password, $this->options);
-                $this->conected++;
+                $this->connected++;
             }
-        } catch (DatabaseConnectionException $exception) {
-            throw $exception;
+        } catch (\PDOException $e) {
+            throw new DatabaseConnectionException();
         }
     }
 
@@ -120,11 +113,11 @@ class Connection implements ConnectionContract
      *
      * @return void
      */
-    protected function updateConnectionOptions(object $config)
+    protected function parseConnectionOptions(object $config)
     {
-        $this->schema = $config->schema ?? $config->database;
+        $this->schema = $config->schema ?? $config->database ?? '';
 
-        $this->charset = $config->charset;
+        $this->charset = $config->charset ?? 'UTF-8';
 
         $this->port = $config->port ?? null;
 
@@ -160,6 +153,16 @@ class Connection implements ConnectionContract
     protected function createPdoConnection($DSN, $username, $password, $options)
     {
         return new PDO($DSN, $username, $password, $options);
+    }
+
+    /**
+     * Get database connection
+     *
+     * @return \PDO|null
+     */
+    public function getConnection()
+    {
+        return $this->connection;
     }
 
     /**
@@ -303,7 +306,7 @@ class Connection implements ConnectionContract
      */
     public function connectionTimes()
     {
-        return $this->conected;
+        return $this->connected;
     }
 
     /**

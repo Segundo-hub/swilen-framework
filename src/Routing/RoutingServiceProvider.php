@@ -2,7 +2,7 @@
 
 namespace Swilen\Routing;
 
-use Swilen\Http\ResponseFactory;
+use Swilen\Http\Contract\ResponseContract;
 use Swilen\Http\Response;
 use Swilen\Petiole\Facades\Route;
 use Swilen\Petiole\ServiceProvider;
@@ -41,8 +41,8 @@ class RoutingServiceProvider extends ServiceProvider
             return new Response();
         });
 
-        $this->app->bind(ResponseFactory::class, function ($app) {
-            return new ResponseFactory();
+        $this->app->bind(ResponseContract::class, function ($app) {
+            return new Response();
         });
     }
 

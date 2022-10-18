@@ -4,7 +4,7 @@ namespace Swilen\Security\Token;
 
 use Swilen\Security\Exception\JwtMalformedException;
 
-class JwtDecode
+class JwtDecoder
 {
     /**
      * @var string
@@ -49,9 +49,9 @@ class JwtDecode
      */
     protected function decodeAndHandleException($token)
     {
-        $segmented = explode('.', $token);
-
-        if (count($segmented) === 3) return $segmented;
+        if (count($segmented = explode('.', $token)) === 3) {
+            return $segmented;
+        }
 
         throw new JwtMalformedException();
     }

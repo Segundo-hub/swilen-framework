@@ -9,14 +9,14 @@ final class RouteGroup
      *
      * @param array $new
      * @param array $old
-     * @param bool $prependExistingPrefix
+     * @param bool $prependPrefix
      *
      * @return array
      */
-    public static function merge($new, $old, $prependExistingPrefix = true)
+    public static function merge($new, $old, $prependPrefix = true)
     {
         $new = array_merge($new, [
-            'prefix' => static::formatPrefix($new, $old, $prependExistingPrefix),
+            'prefix' => static::formatPrefix($new, $old, $prependPrefix),
             'match' => static::formatMatch($new, $old)
         ]);
 
@@ -31,15 +31,15 @@ final class RouteGroup
      *
      * @param array $new
      * @param array $old
-     * @param bool $prependExistingPrefix
+     * @param bool $prependPrefix
      *
      * @return string|null
      */
-    protected static function formatPrefix($new, $old, bool $prependExistingPrefix = true)
+    protected static function formatPrefix($new, $old, bool $prependPrefix = true)
     {
         $old = $old['prefix'] ?? '';
 
-        if ($prependExistingPrefix) {
+        if ($prependPrefix) {
             return isset($new['prefix']) ? trim($old, '/') . '/' . trim($new['prefix'], '/') : $old;
         }
 

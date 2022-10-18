@@ -37,3 +37,8 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+function fetch(string $uri, string $method = 'GET', array $headers = [], array $files = [], array $parameters = [])
+{
+    return \Swilen\Http\Request::make($uri, $method, $parameters, $files, $headers);
+}

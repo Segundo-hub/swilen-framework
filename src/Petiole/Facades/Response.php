@@ -2,15 +2,13 @@
 
 namespace Swilen\Petiole\Facades;
 
-use Swilen\Http\ResponseFactory;
-
 /**
- * @method static \Swilen\Http\ResponseFactory make(string|resource|array|object $content = '', int $status = 200, array $headers = [])
- * @method static \Swilen\Http\ResponseFactory send(string|resource|array|object $content = '', int $status = 200, array $headers = [])
- * @method static \Swilen\Http\ResponseFactory file(\SplFileInfo|string $file = '', array $headers = [])
- * @method static \Swilen\Http\ResponseFactory download(\SplFileInfo|string $file = '', string $name = ' , array $headers = [])
+ * @method static \Swilen\Http\Response make(string|resource|array|object $content = '', int $status = 200, array $headers = [])
+ * @method static \Swilen\Http\Response send(string|resource|array|object $content = null, int $status = 200, array $headers = [])
+ * @method static \Swilen\Http\Response file(\SplFileInfo|string $file = '', array $headers = [])
+ * @method static \Swilen\Http\Response download(\SplFileInfo|string $file = '', string $name = ' , array $headers = [])
  *
- * @see \Swilen\Http\ResponseFactory
+ * @see \Swilen\Http\Response
  */
 
 class Response extends Facade
@@ -22,6 +20,6 @@ class Response extends Facade
      */
     protected static function getFacadeName()
     {
-        return ResponseFactory::class;
+        return 'response';
     }
 }

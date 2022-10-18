@@ -3,7 +3,6 @@
 use Swilen\Arthropod\Env;
 use Swilen\Container\Container;
 use Swilen\Http\Request;
-use Swilen\Http\ResponseFactory;
 
 if (!function_exists('app')) {
     /**
@@ -30,17 +29,17 @@ if (!function_exists('response')) {
      * @param int $status
      * @param array $headers
      *
-     * @return \Swilen\Http\Contract\ResponseFactoryContract
+     * @return \Swilen\Http\Response
      */
     function response($content = null, int $status = 200, array $headers = [])
     {
         /**
-         * @var \Swilen\Http\Contract\ResponseFactoryContract
+         * @var \Swilen\Http\Response
          */
-        $response = app()->make(ResponseFactory::class);
+        $response = app()->make('response');
 
         if (!is_null($content)) {
-            return $response->make($content, $status, $headers);
+            return $response->send($content, $status, $headers);
         }
 
         return $response;

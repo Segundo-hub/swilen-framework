@@ -82,10 +82,10 @@ final class Route implements Arrayable, JsonSerializable
      */
     public function __construct(string $method, string $uri, $action)
     {
-        $this->method     = $method;
-        $this->match      = $this->matchFrom($uri);
-        $this->uri        = $uri;
-        $this->action     = $action;
+        $this->method = $method;
+        $this->match  = $this->matchFrom($uri);
+        $this->uri    = $uri;
+        $this->action = $action;
     }
 
     /**
@@ -131,8 +131,8 @@ final class Route implements Arrayable, JsonSerializable
                 return $this->runRouteActionAsController();
             }
             return $this->runRouteActionAsClosure();
-        } catch (HttpResponseException $e) {
-            return $e->getMessage();
+        } catch (\Throwable $e) {
+            throw new HttpResponseException($e->getMessage(), $e->getCode(), $e->getPrevious());
         }
     }
 

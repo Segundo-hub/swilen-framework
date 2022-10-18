@@ -13,77 +13,111 @@ final class Jwt
     protected $headers;
 
     /**
-     * @var string
-     */
-    protected $signature;
-
-    /**
-     * @var string
-     */
-    protected $algorithm;
-
-    /**
-     * Create new Jwt instance with default values
+     * The shared secret key
      *
-     * @param array $headers
-     * @param string $algorithm
+     * @var string
      */
-    public function __construct(array $headers = [], string $algorithm = 'SHA256')
+    protected $secretKey;
+
+    /**
+     * The shared singed options
+     *
+     * @var array<string,mixed>
+     */
+    protected $signOptions = [];
+
+    /**
+     * The current algorithm for hashing
+     *
+     * @var string
+     */
+    protected $algorithm = 'HS256';
+
+    /**
+     * Collection of supported algorithms
+     *
+     * @var array<string,string[]>
+     */
+    protected $supportedAlgorithms = [
+        'HS256' => ['hash_hmac', 'SHA256'],
+        'HS384' => ['hash_hmac', 'SHA384'],
+        'HS512' => ['hash_hmac', 'SHA512'],
+    ];
+
+    /**
+     * Indicated if token manager previusly confired with default values
+     *
+     * @var boolean
+     */
+    protected $configured = false;
+
+    public function register(string $secret, array $signOptions = [])
     {
-        $this->headers   = $this->withHeaders($headers);
-        $this->algorithm = $algorithm;
+        $this->secretKey   = $secret;
+        $this->signOptions = $signOptions;
+        $this->configured  = true;
+
+        return $this;
     }
 
     /**
-     * Create new Json Web Token headers
-     *
-     * @param array $headers
+     * @param string $algo
      *
      * @return \Swilen\Security\Token\JwtHeader
+     * @throws \InvalidArgumentException
      */
-    private function withHeaders(array $headers)
+    protected function withAlgorithmHeader(string $algo)
     {
-        return new JwtHeader(array_merge($headers, [
-            'alg' => 'HS256',
-            'typ' => 'JWT'
-        ]));
+        if (isset($this->supportedAlgorithms[$algo])) {
+            $this->algorithm = $algo;
+
+            return $this->header = new JwtHeader(['alg' => $algo, 'typ' => 'JWT']);
+        }
+
+        throw new \InvalidArgumentException(sprintf('"%s" this algorithm is not supported', $algo), 500);
     }
 
     /**
      * Sing Json Web Token from client
      *
      * @param array<string,string> $payload
-     * @param string $secret
+     * @param string|null $secret
+     * @param string $algo
      *
      * @return \Swilen\Security\Token\JwtSignedExpression
      */
-    public function sign(array $payload, string $secret)
+    public function sign(array $payload, $secret = null, $algo = 'HS256')
     {
-        $jwtPayload = new JwtPayload($payload);
+        $this->handleSecretIfConfigured($secret);
 
-        $headers = $this->headers->serialize();
+        $jwtPayload = new JwtPayload(array_merge($payload, $this->signOptions));
+        $jwtHeaders = $this->withAlgorithmHeader($algo);
+
+        $headers = $jwtHeaders->serialize();
         $payload = $jwtPayload->serialize();
 
-        $signature = $this->makeSignature($headers.'.'.$payload, $secret);
+        $signature = $this->buildSignature($this->join($headers, $payload));
 
-        return new JwtSignedExpression($headers.'.'.$payload.'.'.$signature, $jwtPayload);
+        return new JwtSignedExpression($this->join($headers, $payload, $signature), $jwtPayload);
     }
 
     /**
      * Verify if token is valid
      *
      * @param string $token
-     * @param mixed $secret The secret key
+     * @param string|null $secret The secret key
      *
      * @return \Swilen\Security\Token\JwtPayload
      */
-    public function verify(string $token, $secret)
+    public function verify(string $token, $secret = null)
     {
-        $decoded = new JwtDecode($token);
+        $this->handleSecretIfConfigured($secret);
+
+        $decoded = new JwtDecoder($token);
         $headers = JwtUtil::url_encode($decoded->header);
         $payload = JwtUtil::url_encode($decoded->payload);
 
-        $signature = $this->makeSignature($headers.'.'.$payload, $secret);
+        $signature = $this->buildSignature($this->join($headers, $payload));
 
         $payload = (new JwtPayload())->fromJson($decoded->payload);
 
@@ -98,27 +132,29 @@ final class Jwt
      *
      * @return string
      */
-    protected function makeSignature(string $message, string $secret)
+    protected function buildSignature(string $message)
     {
-        return JwtUtil::url_encode(hash_hmac($this->algorithm, $message, $secret, true));
+        [$function, $algorithm] = $this->supportedAlgorithms[$this->algorithm];
+
+        return JwtUtil::url_encode(hash_hmac($algorithm, $message, $this->secretKey, true));
     }
 
     /**
      * Validate rules for incoming token
      *
-     * @param \Swilen\Security\Token\JwtDecode $decoded
+     * @param \Swilen\Security\Token\JwtDecoder $decoded
      * @param \Swilen\Security\Token\JwtPayload $payload
      * @param string $signature
      *
      * @return string
      */
-    protected function validationGuard(JwtDecode $decoded, JwtPayload $payload, $signature)
+    protected function validationGuard(JwtDecoder $decoded, JwtPayload $payload, $signature)
     {
         if (!is_null($payload->expires()) && $payload->expires() < time()) {
             throw new JwtTokenExpiredException();
         }
 
-        if (!$this->isValidHashSignature($decoded->signature, $signature)) {
+        if (!static::isValidHashSignature($decoded->signature, $signature)) {
             throw new JwtInvalidSignatureException();
         }
 
@@ -133,7 +169,7 @@ final class Jwt
      *
      * @return bool
      */
-    protected function isValidHashSignature(string $left, string $right)
+    protected static function isValidHashSignature(string $left, string $right)
     {
         if (function_exists('hash_equals')) {
             return hash_equals($left, $right);
@@ -149,5 +185,31 @@ final class Jwt
         $status |= (strlen($left) ^ strlen($right));
 
         return $status === 0;
+    }
+
+    /**
+     * Join string with dot delimiter
+     *
+     * @param string|string[] ...$args
+     *
+     * @return string
+     */
+    protected function join(...$args)
+    {
+        return implode('.', $args);
+    }
+
+    protected function handleSecretIfConfigured($secret)
+    {
+        if ($this->configured === false) {
+            if (!$secret) {
+                throw new \InvalidArgumentException('Missing secret key', 500);
+            }
+        }
+
+        if ($this->configured === false && !$secret) {
+        } elseif ($this->configured === false) {
+            $this->secretKey = $secret;
+        }
     }
 }

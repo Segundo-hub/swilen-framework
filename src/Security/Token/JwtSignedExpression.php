@@ -10,25 +10,23 @@ class JwtSignedExpression
     public $token;
 
     /**
-     * @var int
+     * @var \Swilen\Security\Token\JwtPayload
      */
-    public $iat;
+    public $payload;
 
     /**
-     * @var int
-     */
-    public $exp;
-
-    /**
+     * @param string $token
      * @param \Swilen\Security\Token\JwtPayload $payload
      */
     public function __construct($token, JwtPayload $payload)
     {
-        $this->token = $token;
-        $this->iat   = $payload->iat();
-        $this->exp   = $payload->expires();
+        $this->token   = $token;
+        $this->payload = $payload;
     }
 
+    /**
+     * @return string
+     */
     public function __toString()
     {
         return $this->token;

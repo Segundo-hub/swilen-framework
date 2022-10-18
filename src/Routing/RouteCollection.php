@@ -29,7 +29,7 @@ class RouteCollection implements Arrayable
      *
      * @var \Swilen\Routing\Route|null
      */
-    protected $matchRoute;
+    protected $matched;
 
     /**
      * The current request action
@@ -81,17 +81,15 @@ class RouteCollection implements Arrayable
     {
         $routes = $this->get($request->getMethod());
 
-        $this->currentRequestAction = $request->getAction();
-
         foreach ($routes as $route) {
-            if ($route->matches($this->currentRequestAction)) {
-                $this->matchRoute = $route;
+            if ($route->matches($request->getPathInfo())) {
+                $this->matched = $route;
                 break;
             }
         }
 
-        if (!is_null($this->matchRoute)) {
-            return $this->matchRoute;
+        if ($this->matched !== null) {
+            return $this->matched;
         }
 
         throw new HttpNotFoundException;

@@ -2,7 +2,7 @@
 
 namespace Swilen\Http\Contract;
 
-interface ResponseFactoryContract
+interface ResponseContract
 {
     /**
      * Create new response from values of params args
@@ -24,7 +24,7 @@ interface ResponseFactoryContract
      *
      * @return \Swilen\Http\Response
      */
-    public function send($content = '', int $status = 200, array $headers = []);
+    public function send($content = null, int $status = 200, array $headers = []);
 
     /**
      * Create response with file and sending to client
@@ -32,7 +32,7 @@ interface ResponseFactoryContract
      * @param \SplFileInfo|string $file
      * @param array $headers
      *
-     * @return \Swilen\Http\BinaryFileResponse
+     * @return \Swilen\Http\Response
      */
     public function file($file, array $headers = []);
 
@@ -55,7 +55,7 @@ interface ResponseFactoryContract
      * @param array $headers
      * @param bool $attachemnt
      *
-     * @return \Swilen\Http\BinaryFileResponse
+     * @return \Swilen\Http\Response
      */
     public function download($file, string $name = null, array $headers = [], bool $attachemnt = true);
 }

@@ -3,6 +3,7 @@
 namespace Swilen\Container;
 
 use Psr\Container\ContainerInterface;
+use Swilen\Container\Exception\EntryNotFoundException;
 use Swilen\Contracts\Container\Container as ContainerContract;
 
 class Container implements \ArrayAccess, ContainerContract, ContainerInterface

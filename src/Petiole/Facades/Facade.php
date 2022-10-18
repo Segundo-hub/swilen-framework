@@ -37,7 +37,7 @@ abstract class Facade
      */
     protected static function getFacadeName()
     {
-        throw new \RuntimeException();
+        throw new \RuntimeException('Missing service facade name');
     }
 
     /**

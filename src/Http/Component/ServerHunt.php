@@ -61,6 +61,6 @@ final class ServerHunt extends ParameterHunt
      */
     public function filter(string $key, $default = null, $filters = FILTER_DEFAULT | FILTER_SANITIZE_ENCODED)
     {
-        return \filter_input(INPUT_SERVER, $key, $filters) ?: $default;
+        return \filter_var($this->get($key, $default), $filters) ?: $default;
     }
 }

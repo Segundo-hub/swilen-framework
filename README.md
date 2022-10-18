@@ -1,15 +1,52 @@
 # Swilen
-`0.0.2-dev`
+
+`v0.2.0`
 
 PHP library inspired in laravel and expressjs
 
-## Application Container
+## Components
+
+[1 Application](#application)
+2 Container
+3 Database
+4 Http
+5 Facades(Petiole)
+6 Routing
+7 Security
+8 Validation
+9 Mail :waxing_crescent_moon:
+10 Console :waxing_crescent_moon:
+
+## Application
+
+`<project-name>/public/index.php`
+
+```PHP
+<?php
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// Create application instance
+$app = new \Swilen\Arthropod\Application(dirname(__DIR__));
+
+// Create request instance for capture server variables
+$request = \Swilen\Request::create();
+
+// Handle incoming HTTP request
+$response = $app->dispatch($request);
+
+// Terminate application
+$response->terminate();
+
+```
+
+## Application Service Container
 
 Dependency Injection Container
 
-#### `Container::make(string $service, array $parameters = [])`
+`Container::make(string $service, array $parameters = [])`
 
-```PHP 
+```PHP
 <?php
 
 use Swilen\Container\Container;
@@ -20,9 +57,9 @@ $repository = app()->make(UserRepository::class);
 
 ```
 
-#### `Container::get(string $id)`
+`Container::get(string $id)`
 
-```PHP 
+```PHP
 <?php
 
 use Swilen\Container\Container;
@@ -32,5 +69,3 @@ $repository = Container::getInstance()->get(UserRepository::class);
 $repository = app()->get(UserRepository::class);
 
 ```
-
-

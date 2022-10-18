@@ -12,9 +12,9 @@ final class Hash
      *
      * @return string
      */
-    public static function make(string $password, $algo = PASSWORD_BCRYPT)
+    public static function make(string $password, $algo = null)
     {
-        return \password_hash($password, $algo, ['cost' => 10]);
+        return \password_hash($password, $algo ?? PASSWORD_BCRYPT, ['cost' => 10]);
     }
 
     /**
@@ -25,7 +25,7 @@ final class Hash
      *
      * @return bool
      */
-    public static function check(string $password, string $hash)
+    public static function verify(string $password, string $hash)
     {
         return \password_verify($password, $hash);
     }

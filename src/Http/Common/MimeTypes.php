@@ -20,6 +20,7 @@ final class MimeTypes
         'xml' => 'application/xml',
         'swf' => 'application/x-shockwave-flash',
         'flv' => 'video/x-flv',
+        'md'  => 'text/markdown',
 
         // images
         'png' => 'image/png',

@@ -115,7 +115,7 @@ class Router
      *
      * @return \Swilen\Routing\Route
      */
-    public function path(string $uri, $action)
+    public function patch(string $uri, $action)
     {
         return $this->addRoute('PATCH', $uri, $action);
     }
@@ -319,16 +319,13 @@ class Router
     {
         $this->currentRoute = $route = $this->routes->match($request);
 
-        $middlewares = $route->getMiddleware() ?? [];
+        $middleware = $route->getMiddleware() ?? [];
 
         return (new Pipeline($this->container))
             ->from($request)
-            ->through($middlewares)
+            ->through($middleware)
             ->then(function ($request) use ($route) {
-                return $this->prepareResponse(
-                    $request,
-                    $route->run()
-                );
+                return $this->prepareResponse($request, $route->run());
             });
     }
 
@@ -352,11 +349,6 @@ class Router
         }
 
         return (new Response($response))->prepare($request);
-    }
-
-    public function allRoutes()
-    {
-        return $this->routes->toArray();
     }
 
     /**

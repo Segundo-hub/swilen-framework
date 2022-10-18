@@ -1,6 +1,6 @@
 <?php
 
-namespace Swilen\Container;
+namespace Swilen\Container\Exception;
 
 use Psr\Container\NotFoundExceptionInterface;
 

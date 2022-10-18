@@ -35,7 +35,7 @@ class BootEnviromment implements BootableContract
     }
 
     /**
-     * Create enviroment from factory
+     * Create enviroment instance from factory
      *
      * @return void
      */
@@ -43,7 +43,10 @@ class BootEnviromment implements BootableContract
     {
         $objectInstance = static::$instance instanceof Env
             ? static::$instance
-            : (new Env())->createFrom($this->app->basePath())->load();
+            : (new Env())->config([
+                'file' => $this->app->enviromentFile(),
+                'path' => $this->app->enviromentPath()
+            ])->load();
 
         $this->app->instance('env', $objectInstance);
     }
@@ -63,7 +66,7 @@ class BootEnviromment implements BootableContract
     /**
      * Use custom enviromment instance
      *
-     * @param Swilen\Arthropod\Env $instance
+     * @param \Swilen\Arthropod\Env $instance
      *
      * @return void
      */

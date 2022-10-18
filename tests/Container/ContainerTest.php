@@ -2,7 +2,7 @@
 
 use Psr\Container\ContainerInterface;
 use Swilen\Container\Container;
-use Swilen\Container\EntryNotFoundException;
+use Swilen\Container\Exception\EntryNotFoundException;
 use Swilen\Contracts\Container\Container as ContainerContract;
 
 uses()->group('Container');

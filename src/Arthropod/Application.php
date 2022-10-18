@@ -2,6 +2,8 @@
 
 namespace Swilen\Arthropod;
 
+use Swilen\Arthropod\Contract\ExceptionHandler;
+use Swilen\Arthropod\Exception\Handler;
 use Swilen\Routing\RoutingServiceProvider;
 use Swilen\Database\DatabaseServiceProvider;
 use Swilen\Http\Request;
@@ -17,7 +19,7 @@ class Application extends Container implements ArthropodApplication
      *
      * @var string
      */
-    public const VERSION = '0.1.0-dev';
+    public const VERSION = '0.2.0';
 
     /**
      * Indicates if the application has been bootstrapped before.
@@ -80,6 +82,20 @@ class Application extends Container implements ArthropodApplication
     protected $appUri;
 
     /**
+     * The application enviroment path
+     *
+     * @var string
+     */
+    protected $enviromentPath;
+
+    /**
+     * The application enviroment file
+     *
+     * @var string
+     */
+    protected $enviromentFile = '.env';
+
+    /**
      * Create application instance and boot necessary packages for dispatch incoming request.
      *
      * @param string $path Define base path for your application.
@@ -113,7 +129,7 @@ class Application extends Container implements ArthropodApplication
      */
     protected function configureCoreApplication(string $path)
     {
-        $this->registerExceptionHandler();
+        $this->singleton(ExceptionHandler::class, Handler::class);
 
         $this->defineBasePath($path);
     }
@@ -121,11 +137,11 @@ class Application extends Container implements ArthropodApplication
     /**
      * Register core exception handler
      *
-     * @return \Swilen\Arthropod\Exception\CoreExceptionHandler
+     * @return \Swilen\Arthropod\Exception\Handler
      */
     private function registerExceptionHandler()
     {
-        return new \Swilen\Arthropod\Exception\CoreExceptionHandler($this);
+        return new \Swilen\Arthropod\Exception\Handler($this);
     }
 
     /**
@@ -220,7 +236,7 @@ class Application extends Container implements ArthropodApplication
      */
     public function appPath(string $path = '')
     {
-        return $this->basePath() . DIRECTORY_SEPARATOR . $this->appPath . ($path ? DIRECTORY_SEPARATOR . $path : $path);
+        return $this->basePath($this->appPath ?: 'app') . ($path ? DIRECTORY_SEPARATOR . $path : $path);
     }
 
     /**
@@ -290,7 +306,7 @@ class Application extends Container implements ArthropodApplication
      */
     public function appUri(string $path = '')
     {
-        return $this->appUri . ($path ? "/$path" : "");
+        return $this->appUri . ($path ? '/' . $path : '');
     }
 
     /**
@@ -308,9 +324,57 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
+     * Retrive enviroment file path
+     *
+     * @return string
+     */
+    public function enviromentPath()
+    {
+        return $this->enviromentPath ?? $this->basePath();
+    }
+
+    /**
+     * Use user defined enviroment file path
+     *
+     * @param string $path
+     *
+     * @return $this
+     */
+    public function useEnviromentPath(string $path)
+    {
+        $this->enviromentPath = $path;
+
+        return $this;
+    }
+
+    /**
+     * Retrive enviroment filename
+     *
+     * @return string
+     */
+    public function enviromentFile()
+    {
+        return $this->enviromentFile ?? '.env';
+    }
+
+    /**
+     * Use user defined enviroment filename
+     *
+     * @param string $filename
+     *
+     * @return $this
+     */
+    public function useEnviromentFile(string $filename)
+    {
+        $this->enviromentFile = $filename;
+
+        return $this;
+    }
+
+    /**
      * Initial register service providers
      *
-     * @param mixed $provider
+     * @param \Swilen\Petiole\ServiceProvider $provider
      */
     public function register($provider)
     {
@@ -395,7 +459,6 @@ class Application extends Container implements ArthropodApplication
         return (bool) env('APP_DEBUG', true);
     }
 
-
     /**
      * Dispatch request and listen http router
      *
@@ -407,10 +470,12 @@ class Application extends Container implements ArthropodApplication
         try {
             $response = $this->dispatchRequestThroughRouter($request);
         } catch (\Throwable $e) {
-            throw $e;
+            $this->reportException($e);
+
+            $response = $this->renderException($e);
         }
 
-        return $response->terminate();
+        return $response;
     }
 
     /**
@@ -433,6 +498,28 @@ class Application extends Container implements ArthropodApplication
             ->then(function ($request) {
                 return $this['router']->dispatch($request);
             });
+    }
+
+    /**
+     * Render exception to response
+     *
+     * @param \Throwable $e
+     *
+     * @return \Swilen\Http\Response
+     */
+    protected function renderException(\Throwable $e)
+    {
+        return $this[ExceptionHandler::class]->render($e);
+    }
+
+    /**
+     * Report exception and write log
+     *
+     * @param \Throwable $e
+     */
+    protected function reportException(\Throwable $e)
+    {
+        $this[ExceptionHandler::class]->report($e);
     }
 
     /**

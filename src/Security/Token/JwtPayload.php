@@ -61,7 +61,6 @@ class JwtPayload implements TokenJsonable, JsonSerializable
         return $this->payload['data'];
     }
 
-
     /**
      * @return int|null
      */

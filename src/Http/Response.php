@@ -2,11 +2,12 @@
 
 namespace Swilen\Http;
 
-use Swilen\Http\Common\HttpResponseSupport;
-use Swilen\Http\Common\HttpTransformJson;
+use Swilen\Http\Common\SupportResponse;
 use Swilen\Http\Component\ResponseHeaderHunt;
+use Swilen\Http\Contract\ResponseContract;
+use Swilen\Http\Factories\{BinaryFileResponseFactory, JsonResponseFactory, RawResponseFactory};
 
-class Response extends HttpResponseSupport
+final class Response extends SupportResponse implements ResponseContract
 {
     /**
      * The response headers collection
@@ -14,6 +15,13 @@ class Response extends HttpResponseSupport
      * @var \Swilen\Http\Component\ResponseHeaderHunt
      */
     public $headers;
+
+    /**
+     * The current respone factory implement
+     *
+     * @var \Swilen\Http\Contract\ResponseFactory
+     */
+    protected $factory;
 
     /**
      * The parsed content as string or resource for put into client
@@ -48,27 +56,7 @@ class Response extends HttpResponseSupport
      *
      * @var string
      */
-    protected $charset;
-
-    /**
-     * The body json encoding options
-     *
-     * @var int
-     */
-    protected $encodingOptions = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
-
-    /**
-     *  Set initial headers for response
-     *
-     *  @var array<string, string>
-     */
-    protected $boot_headers = [
-        'Content-Type' => 'application/json; charset=utf-8',
-        'Access-Control-Allow-Methods' => 'OPTIONS, GET, POST, PUT, PATCH, DELETE, TRACE, CONNECT',
-        'Access-Control-Allow-Origin' => '*',
-        'Access-Control-Allow-Credentials' => true,
-        'Access-Control-Max-Age' => 86400
-    ];
+    protected $charset = 'UTF-8';
 
     /**
      * Create new response instance
@@ -79,31 +67,17 @@ class Response extends HttpResponseSupport
      *
      * @return void
      */
-    public function __construct($content = '', int $status = 200, array $headers = [])
+    public function __construct($content = null, int $status = 200, array $headers = [])
     {
-        $this->headers = $this->initializeHeaders($headers);
-        $this->setContent($this->toJson($content));
-        $this->setStatusCode($status);
+        $this->headers = new ResponseHeaderHunt($headers);
+
+        $this->factory = new JsonResponseFactory($this, $content, $status, $headers);
+
         $this->version = '1.1';
     }
 
     /**
-     * Initialize response with default headers
-     *
-     * @param array $headers
-     *
-     * @return \Swilen\Http\Component\ResponseHeaderHunt
-     */
-    private function initializeHeaders(array $headers = [])
-    {
-        return new ResponseHeaderHunt(array_merge(
-            (array) $headers,
-            (array) $this->boot_headers
-        ));
-    }
-
-    /**
-     * Send content to client
+     * Update default response options
      *
      * @param resource|string|array|object|null $content
      * @param int $status
@@ -111,67 +85,162 @@ class Response extends HttpResponseSupport
      *
      * @return $this
      */
-    public function send($content = null, int $status = 200, array $headers = [])
+    public function withOptions($content = null, int $status = 200, array $headers = [])
     {
-        $this->updateResponseOptions($content, $status, $headers);
-
-        return $this;
-    }
-
-    /**
-     * Update default response options, content, headers and statusCode
-     *
-     * @param resource|string|array|object|null $content
-     * @param int $status
-     * @param array $headers
-     *
-     * @return void
-     */
-    protected function updateResponseOptions($content = null, int $status = 200, array $headers = [])
-    {
-        $this->setContent($this->toJson($content));
+        $this->setContent($content);
 
         $this->setStatusCode($status);
 
-        $this->headers($headers);
+        $this->withHeaders($headers);
+
+        return $this;
     }
 
     /**
-     * Transform response content to json
+     * Create response with raw data encoded
+     * {@inheritdoc}
      *
-     * @param resource|string|array|null $content
-     *
-     * @return string|false
+     * @return $this
      */
-    private function toJson($content = null)
+    public function make($content = '', int $status = 200, array $headers = [])
     {
-        $content = (new HttpTransformJson($content))->encode($this->encodingOptions);
+        $this->factory = new RawResponseFactory($this, $content, $status, $headers);
 
-        return $content;
+        return $this;
     }
 
-    public function prepare(Request $request)
+    /**
+     * Create response with json encoded
+     * {@inheritdoc}
+     *
+     * @return $this
+     */
+    public function send($content = null, int $status = 200, array $headers = [])
     {
-        if ($this->isInformational() || $this->isEmpty()) {
-            $this->setContent(null);
-            $this->headers->remove('Content-Type');
-            $this->headers->remove('Content-Length');
-            ini_set('default_mimetype', '');
-        } else {
-            if ($this->headers->has('Transfer-Encoding')) {
-                $this->headers->remove('Content-Length');
-            }
+        $this->factory = new JsonResponseFactory($this, $content, $status, $headers);
 
-            if ($request->getRealMethod() === 'HEAD') {
-                $length = $this->headers->get('Content-Length');
-                $this->setContent(null);
-                if ($length) {
-                    $this->headers->set('Content-Length', $length);
-                }
-            }
+        return $this;
+    }
+
+    /**
+     * Create response with binary file
+     * {@inheritdoc}
+     *
+     * @return $this
+     */
+    public function file($file, array $headers = [])
+    {
+        $this->factory = new BinaryFileResponseFactory($this, $file, 200, $headers);
+
+        return $this;
+    }
+
+    /**
+     * Create response with downloadable binary file
+     * {@inheritdoc}
+     *
+     * @return $this
+     */
+    public function download($file, $name = null, array $headers = [], bool $attachment = true)
+    {
+        $this->factory = new BinaryFileResponseFactory($this, $file, 200, $headers, $attachment);
+
+        if (!$name) {
+            $this->factory->updateFilename($name);
         }
 
         return $this;
+    }
+
+    /**
+     * @deprecated
+     *
+     * {@inheritdoc}
+     */
+    public function stream($resource, int $status = 200, array $headers = [])
+    {
+        // TODO
+    }
+
+    /**
+     * Determine and prepare response with factory
+     *
+     * @param \Swilen\Http\Request $request
+     */
+    public function prepare(Request $request)
+    {
+        $this->factory->prepare($request);
+
+        return $this;
+    }
+
+    /**
+     * Terminate request and send content and header to client
+     *
+     * @return $this
+     */
+    public function terminate()
+    {
+        $this->sendResponseHeaders();
+
+        $this->sendResponseContent();
+
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } elseif (!in_array(PHP_SAPI, ['cli', 'phpdbg'], true)) {
+            static::closeOutputBuffer(0, true);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Send content into client
+     *
+     * @return \Swilen\Http\Response
+     */
+    public function sendResponseContent()
+    {
+        $this->factory->sendContent();
+
+        return $this;
+    }
+
+    /**
+     * Print data into client
+     *
+     * @return \Swilen\Http\Response
+     */
+    protected function sendResponseHeaders()
+    {
+        if (headers_sent()) {
+            return $this;
+        }
+
+        foreach ($this->headers->all() as $key => $value) {
+            header($key . ':' . $value, true, $this->statusCode());
+        }
+
+        $this->performResponseStatus();
+
+        return $this;
+    }
+
+    /**
+     * Send http status of response
+     *
+     * @return void
+     */
+    protected function performResponseStatus()
+    {
+        $this->statusCode = $this->statusCode ?? 500;
+        $this->statusText = static::STATUS_TEXTS[$this->statusCode()] ?? 'Internal Server Error';
+
+        header(
+            sprintf('HTTP/%s %s %s', $this->getProtocolVersion(), $this->statusCode(), $this->statusText()),
+            true,
+            $this->statusCode()
+        );
     }
 
     /**
@@ -202,38 +271,6 @@ class Response extends HttpResponseSupport
     final public function isEmpty()
     {
         return in_array($this->statusCode, [204, 304]);
-    }
-
-    /**
-     * Terminate request with send content abnd header to client
-     *
-     * @return $this
-     */
-    public function terminate()
-    {
-        $this->sendResponseHeaders();
-
-        $this->sendResponseContent();
-
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } elseif (!in_array(PHP_SAPI, ['cli', 'phpdbg'], true)) {
-            static::closeOutputBuffer(0, true);
-        }
-
-        return $this;
-    }
-
-    /**
-     * Send dataContent into client
-     *
-     * @return \Swilen\Http\Response
-     */
-    protected function sendResponseContent()
-    {
-        echo $this->getContent();
-
-        return $this;
     }
 
     /**
@@ -273,45 +310,13 @@ class Response extends HttpResponseSupport
     }
 
     /**
-     * Print data into client
+     * Set collection response headers
      *
-     * @return \Swilen\Http\Response
+     * @return $this
      */
-    protected function sendResponseHeaders()
+    public function headers(array $headers = [])
     {
-        if (headers_sent()) {
-            return $this;
-        }
-
-        foreach ($this->headers->all() as $key => $value) {
-            header($key.':'.$value, true, $this->statusCode());
-        }
-
-        header($this->transformHeader(), true, $this->statusCode());
-
-        return $this;
-    }
-
-    /**
-     * Transform header for response
-     *
-     * @return string
-     */
-    private function transformHeader()
-    {
-        return sprintf('HTTP/%s %s %s', $this->version(), $this->statusCode(), $this->writeStatusText());
-    }
-
-    /**
-     * To normalize status text for write into header
-     *
-     * @return string|null
-     */
-    protected function writeStatusText()
-    {
-        return isset(static::$statusTexts[$this->statusCode()])
-            ? static::$statusTexts[$this->statusCode()]
-            : NULL;
+        return $this->withHeaders($headers);
     }
 
     /**
@@ -319,7 +324,7 @@ class Response extends HttpResponseSupport
      *
      * @return $this
      */
-    public function headers(array $headers = [])
+    public function withHeaders(array $headers = [])
     {
         foreach ($headers as $key => $value) {
             $this->headers->set($key, $value);
@@ -328,7 +333,28 @@ class Response extends HttpResponseSupport
         return $this;
     }
 
+    /**
+     * Insert one value to headers set
+     *
+     * @param string $key
+     * @param mixed $value
+     *
+     * @return $this
+     */
     public function header($key, $value)
+    {
+        return $this->withHeader($key, $value);
+    }
+
+    /**
+     * Insert one value to headers set
+     *
+     * @param string $key
+     * @param mixed $value
+     *
+     * @return $this
+     */
+    public function withHeader($key, $value)
     {
         $this->headers->set($key, $value);
 
@@ -385,13 +411,20 @@ class Response extends HttpResponseSupport
     /**
      * Returns current HTTP version
      *
-     * @return string
+     * @return void
      */
-    public function version()
+    public function getProtocolVersion()
     {
         return $this->version;
     }
 
+    /**
+     * Set HTTP version
+     *
+     * @param string $version
+     *
+     * @return $this
+     */
     public function setProtocolVersion($version)
     {
         $this->version = $version;

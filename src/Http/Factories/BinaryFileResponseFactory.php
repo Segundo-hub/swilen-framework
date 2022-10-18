@@ -1,11 +1,21 @@
 <?php
 
-namespace Swilen\Http;
+namespace Swilen\Http\Factories;
 
 use Swilen\Http\Component\File\File;
+use Swilen\Http\Contract\ResponseFactory;
+use Swilen\Http\Request;
+use Swilen\Http\Response;
 
-final class BinaryFileResponse extends Response
+final class BinaryFileResponseFactory implements ResponseFactory
 {
+    /**
+     * The response instance
+     *
+     * @var \Swilen\Http\Response
+     */
+    protected $response;
+
     /**
      * The parsed content as string or reource for put into client
      *
@@ -29,53 +39,51 @@ final class BinaryFileResponse extends Response
     protected $chunkSize = 8 * 1024;
 
     /**
-     * Create new response instance
+     * Create new binary file response factory
      *
-     * @param resource|string $file
+     * @param \Swilen\Http\Response $response
+     * @param \SplFileInfo|resource|string $file
      * @param int $status
      * @param array $headers
      * @param bool $attachment
      *
      * @return void
      */
-    public function __construct($file, int $status = 200, array $headers = [], bool $attachment = false)
+    public function __construct(Response $response, $file, int $status = 200, array $headers = [], bool $attachment = false)
     {
-        parent::__construct(null, $status, $headers);
+        $this->response = $response->withOptions(null, $status, $headers);
 
-        $this->setFile($file, $attachment);
+        $this->setBinaryFile($file);
+
+        if ($attachment) {
+            $this->setContentDisposition();
+        }
     }
 
     /**
      * Resolve file instance
      *
-     * @param resource|string|\Swilen\Http\Component\File\File $file
-     * @param bool $attachment
+     * @param \SplFileInfo|resource|string $file
+     *
+     * @return bool
      */
-    protected function setFile($file, bool $attachment)
+    protected function setBinaryFile($file)
     {
         if ($file instanceof File) {
-            $this->$file = $file;
+            $this->file = $file;
         } else {
             $this->file = new File($file, true);
-        }
-
-        if ($attachment) {
-            $this->setContentDisposition('');
         }
     }
 
     /**
      * Make content disposition to file for download
-     *
-     * @param string $filename
      */
-    public function setContentDisposition(string $filename)
+    protected function setContentDisposition()
     {
-        if ($filename === '') {
-            $filename = $this->file->getFilename();
-        }
+        $filename = $this->file->getFilename();
 
-        $this->headers([
+        $this->response->withHeaders([
             'Content-Description' => 'File Transfer',
             'Cache-Control' => 'no-cache, must-revalidate',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
@@ -92,7 +100,7 @@ final class BinaryFileResponse extends Response
      */
     public function updateFilename(string $filename)
     {
-        $this->headers->replace('Content-Disposition', 'attachment; filename="' . $filename . '"',);
+        $this->response->headers->replace('Content-Disposition', 'attachment; filename="' . $filename . '"',);
 
         return $this;
     }
@@ -106,10 +114,10 @@ final class BinaryFileResponse extends Response
      */
     public function prepare(Request $request)
     {
-        $this->headers->set('Content-Type', $this->file->getMimeType() ?: 'application/octet-stream');
+        $this->response->headers->set('Content-Type', $this->file->getMimeType() ?: 'application/octet-stream');
 
         if ('HTTP/1.0' !== $request->server->get('SERVER_PROTOCOL')) {
-            $this->setProtocolVersion('1.1');
+            $this->response->setProtocolVersion('1.1');
         }
 
         $this->offset = 0;
@@ -119,10 +127,10 @@ final class BinaryFileResponse extends Response
             return $this;
         }
 
-        $this->headers->set('Content-Length', $fileSize);
+        $this->response->headers->set('Content-Length', $fileSize);
 
-        if (!$this->headers->has('Accept-Ranges')) {
-            $this->headers->set('Accept-Ranges', $request->isMethodSafe() ? 'bytes' : 'none');
+        if (!$this->response->headers->has('Accept-Ranges')) {
+            $this->response->headers->set('Accept-Ranges', $request->isMethodSafe() ? 'bytes' : 'none');
         }
 
         if ($request->headers->has('Range') && $request->getMethod() === 'GET') {
@@ -145,15 +153,15 @@ final class BinaryFileResponse extends Response
                     if ($start <= $end) {
                         $end = min($end, $fileSize - 1);
                         if ($start < 0 || $start > $end) {
-                            $this->setStatusCode(416);
-                            $this->headers->set('Content-Range', sprintf('bytes */%s', $fileSize));
+                            $this->response->setStatusCode(416);
+                            $this->response->headers->set('Content-Range', sprintf('bytes */%s', $fileSize));
                         } elseif ($end - $start < $fileSize - 1) {
                             $this->maxlen = $end < $fileSize ? $end - $start + 1 : -1;
                             $this->offset = $start;
 
-                            $this->setStatusCode(206);
-                            $this->headers->set('Content-Range', sprintf('bytes %s-%s/%s', $start, $end, $fileSize));
-                            $this->headers->set('Content-Length', $end - $start + 1);
+                            $this->response->setStatusCode(206);
+                            $this->response->headers->set('Content-Range', sprintf('bytes %s-%s/%s', $start, $end, $fileSize));
+                            $this->response->headers->set('Content-Length', $end - $start + 1);
                         }
                     }
                 }
@@ -168,10 +176,10 @@ final class BinaryFileResponse extends Response
      *
      * @return $this
      */
-    protected function sendResponseContent()
+    public function sendContent()
     {
-        if (!$this->isSuccessful()) {
-            return parent::sendResponseContent();
+        if (!$this->response->isSuccessful()) {
+            return $this->response->sendResponseContent();
         }
 
         if (0 === $this->maxlen) return $this;

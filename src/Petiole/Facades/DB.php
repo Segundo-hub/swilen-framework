@@ -3,7 +3,6 @@
 namespace Swilen\Petiole\Facades;
 
 /**
- * @method static \Swilen\Database\Connection raw($value)
  * @method static mixed[] select(string $query, array $bindings = [])
  * @method static mixed selectOne(string $query, array $bindings = [])
  * @method static bool insert(string $query, array $bindings = [])

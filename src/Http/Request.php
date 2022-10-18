@@ -4,15 +4,13 @@ namespace Swilen\Http;
 
 use Swilen\Http\Exception\HttpNotOverridableMethodException;
 
-use Swilen\Http\Component\FileHunt;
-use Swilen\Http\Component\HeaderHunt;
-use Swilen\Http\Component\InputHunt;
-use Swilen\Http\Component\ServerHunt;
+use Swilen\Http\Component\{FileHunt, HeaderHunt, InputHunt, ServerHunt};
 use Swilen\Http\Common\HttpTransformJson;
+use Swilen\Http\Common\SupportRequest;
 use Swilen\Validation\Validator;
 use Swilen\Contracts\Support\Arrayable;
 
-final class Request implements \ArrayAccess, Arrayable
+final class Request extends SupportRequest implements \ArrayAccess, Arrayable
 {
     /**
      * Http request headers collections
@@ -59,7 +57,7 @@ final class Request implements \ArrayAccess, Arrayable
     /**
      * Http request raw body content
      *
-     * @var string|resource|false|null
+     * @var string|resource|boolean|null
      */
     protected $content;
 
@@ -75,7 +73,14 @@ final class Request implements \ArrayAccess, Arrayable
      *
      * @var string
      */
-    protected $currentUri;
+    protected $uri;
+
+    /**
+     * Current http request path info
+     *
+     * @var string
+     */
+    protected $pathInfo;
 
     /**
      * Http body params accepted for override
@@ -92,25 +97,6 @@ final class Request implements \ArrayAccess, Arrayable
     protected $user;
 
     /**
-     * Http request mime-types
-     *
-     * @var array<string, string>
-     */
-    protected $requestMimeTypes = [
-        'html'   => ['text/html', 'application/xhtml+xml'],
-        'txt'    => ['text/plain'],
-        'js'     => ['application/javascript', 'application/x-javascript', 'text/javascript'],
-        'css'    => ['text/css'],
-        'json'   => ['application/json', 'application/x-json'],
-        'xml'    => ['text/xml', 'application/xml', 'application/x-xml'],
-        'rdf'    => ['application/rdf+xml'],
-        'atom'   => ['application/atom+xml'],
-        'rss'    => ['application/rss+xml'],
-        'form'   => ['application/x-www-form-urlencoded', 'multipart/form-data'],
-        'jsonld' => ['application/ld+json'],
-    ];
-
-    /**
      * Create new request instance from incoming request
      *
      * @param array $server   The server variables collection
@@ -118,26 +104,65 @@ final class Request implements \ArrayAccess, Arrayable
      * @param array $files    The request files collection
      * @param array $request  The request variables sending from client collection
      * @param array $query    The request query params or send from client into form
+     * @param string|resource|null $content  The raw body data
      *
      * @return void
      */
-    public function __construct(array $server = [], array $files = [], array $request = [], array $query = [])
+    public function __construct(array $server = [], array $files = [], array $request = [], array $query = [], $content = null)
     {
         $this->server  = new ServerHunt($server);
         $this->headers = new HeaderHunt($this->server->headers());
         $this->files   = new FileHunt($files);
         $this->request = new InputHunt($request);
         $this->query   = new InputHunt($query);
+
+        $this->content = $content;
     }
 
     /**
-     * Create new request instance from static method and initialized with php superglobals
+     * Create new request instance from static method
+     *
+     * @param array $server   The server variables collection
+     * @param array $headers  The request headers collection
+     * @param array $files    The request files collection
+     * @param array $request  The request variables sending from client collection
+     * @param array $query    The request query params or send from client into form
+     * @param string|resource|null $content  The raw body data
+     *
+     * @return \Swilen\Http\Request
+     */
+    public static function createFrom(array $server = [], array $files = [], array $request = [], array $query = [], $content = null)
+    {
+        return new static($server, $files, $request, $query, $content);
+    }
+
+    /**
+     * Create new request instance from PHP SuperGlobals
      *
      * @return \Swilen\Http\Request
      */
     public static function create()
     {
         return new static($_SERVER, $_FILES, $_POST, $_GET);
+    }
+
+    /**
+     * Creates a Request based on a given URI and configuration.
+     *
+     * @param string $uri       The URI
+     * @param string $method    The HTTP method
+     * @param array $parameters The query (GET) or request (POST) parameters
+     * @param array $files      The request files ($_FILES)
+     * @param array $server     The server parameters ($_SERVER)
+     * @param string|resource|null $content  The raw body data
+     *
+     * @return \Swilen\Http\Request
+     */
+    public static function make(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $content = null)
+    {
+        [$server, $files, $request, $query, $content] = parent::makeFetchRequest($uri, $method, $parameters, $files, $server);
+
+        return new static($server, $files, $request, $query, $content);
     }
 
     /**
@@ -150,6 +175,7 @@ final class Request implements \ArrayAccess, Arrayable
     public function setMethod(string $method)
     {
         $this->method = strtoupper($method);
+        $this->server->set('REQUEST_METHOD', $this->method);
 
         return $this;
     }
@@ -163,7 +189,11 @@ final class Request implements \ArrayAccess, Arrayable
      */
     public function getMethod()
     {
-        $this->method = strtoupper($this->server->get('REQUEST_METHOD', 'GET'));
+        if ($this->method !== null) {
+            return $this->method;
+        }
+
+        $this->method = strtoupper($this->server->filter('REQUEST_METHOD', 'GET'));
 
         if ($this->method !== 'POST') {
             return $this->method;
@@ -201,15 +231,17 @@ final class Request implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Make and return request action
+     * Return current request path info
      *
      * @return string
      */
-    public function getAction()
+    public function getPathInfo()
     {
-        $path = preg_replace('/\\?.*/', '', $this->filteredActionRequest());
+        if ($this->pathInfo !== null) {
+            return $this->pathInfo;
+        }
 
-        return $this->trim($path);
+        return $this->pathInfo = $this->trimed(preg_replace('/\\?.*/', '', $this->filteredRequestUri()));
     }
 
     /**
@@ -217,27 +249,25 @@ final class Request implements \ArrayAccess, Arrayable
      *
      * @return string
      */
-    private function filteredActionRequest()
+    private function filteredRequestUri()
     {
         if (env('APP_BASE_URI') && !empty(env('APP_BASE_URI'))) {
-            return preg_replace('#^' . env('APP_BASE_URI') . '#', '', $this->server->get('REQUEST_URI'));
+            return $this->uri = preg_replace('#^' . env('APP_BASE_URI') . '#', '', $this->server->get('REQUEST_URI'));
         }
 
-        return $this->server->get('REQUEST_URI');
+        return $this->uri = $this->server->get('REQUEST_URI');
     }
 
     /**
-     * Strip slashes from current uri
+     * Remove slashes at the beginning and end of the path
      *
-     * @param string $path
+     * @param string|null $path
      *
      * @return string
      */
-    private function trim(string $path)
+    private function trimed($path)
     {
-        $path = ltrim(rtrim($path ?: '', '/'), '/');
-
-        return $path === '/' ? $path : '/' . $path;
+        return '/' . trim($path ?: '/', '\/');
     }
 
     /**
@@ -386,6 +416,16 @@ final class Request implements \ArrayAccess, Arrayable
     }
 
     /**
+     * Get all of the input and files from the request as array
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        return $this->all();
+    }
+
+    /**
      * Validate request values with rules
      *
      * @param array $rules
@@ -395,16 +435,6 @@ final class Request implements \ArrayAccess, Arrayable
     public function validate(array $rules)
     {
         return Validator::make($this->all(), $rules);
-    }
-
-    /**
-     * Get all of the input and files from the request as array
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return $this->all();
     }
 
     /**
@@ -494,8 +524,6 @@ final class Request implements \ArrayAccess, Arrayable
      */
     public function __get($key)
     {
-        $store = (object) $this->all();
-
-        return $store->{$key};
+        return $this->all()[$key];
     }
 }

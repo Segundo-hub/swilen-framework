@@ -72,9 +72,9 @@ final class Validator
                 }
 
                 if (strpos($rule, ':') !== false) {
-                    $list_rule = explode(':', $rule);
-                    if ($list_rule[0] === static::RULE_IN_LIST && !in_array($value, explode(',', $list_rule[1]))) {
-                        $this->addError($atribute, static::RULE_ERRORS[static::RULE_IN_LIST] . $list_rule[1]);
+                    [$rule, $expresion] = explode(':', $rule);
+                    if ($rule === static::RULE_IN_LIST && !in_array($value, explode(',', $expresion))) {
+                        $this->addError($atribute, static::RULE_ERRORS[static::RULE_IN_LIST] . $expresion);
                     }
                 }
             }

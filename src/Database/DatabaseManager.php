@@ -2,6 +2,8 @@
 
 namespace Swilen\Database;
 
+use Swilen\Database\Exception\DatabaseInvalidConfigFormat;
+
 class DatabaseManager extends Connection
 {
     /**
@@ -19,7 +21,8 @@ class DatabaseManager extends Connection
     public function __construct($app)
     {
         $this->app = $app;
-        $this->bootstrapConnection();
+
+        $this->bootstrap();
     }
 
     /**
@@ -27,10 +30,14 @@ class DatabaseManager extends Connection
      *
      * @return void
      */
-    protected function bootstrapConnection()
+    protected function bootstrap()
     {
-        $databaseConfig = app_config('database') ?? [];
+        if ($config = app_config('database')) {
+            parent::__construct($config);
+        }
 
-        parent::__construct($databaseConfig);
+        throw new DatabaseInvalidConfigFormat(sprintf(
+            'Invalid config format. Espect array with {username, password, host, schema|database} keys, found "%s"', gettype($config)
+        ), 500);
     }
 }
