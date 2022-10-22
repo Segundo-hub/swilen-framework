@@ -3,8 +3,9 @@
 namespace Swilen\Pipeline;
 
 use Swilen\Container\Container;
+use Swilen\Pipeline\Contract\PipelineContract;
 
-final class Pipeline
+class Pipeline implements PipelineContract
 {
     /**
      * The container instance.
@@ -18,7 +19,7 @@ final class Pipeline
      *
      * @var mixed
      */
-    protected $passable;
+    protected $target;
 
     /**
      * The array of class pipes.
@@ -46,23 +47,17 @@ final class Pipeline
     }
 
     /**
-     * Set the object being sent through the pipeline.
-     *
-     * @param  mixed  $passable
-     * @return $this
+     * {@inheritdoc}
      */
-    public function from($passable)
+    public function from($target)
     {
-        $this->passable = $passable;
+        $this->target = $target;
 
         return $this;
     }
 
     /**
-     * Set the array of pipes.
-     *
-     * @param  array|mixed  $pipes
-     * @return $this
+     * {@inheritdoc}
      */
     public function through($pipes)
     {
@@ -72,18 +67,27 @@ final class Pipeline
     }
 
     /**
-     * @param  \Closure  $destination
-     * @return mixed
+     * {@inheritdoc}
      */
     public function then(\Closure $destination)
     {
         $pipeline = array_reduce(
             array_reverse($this->pipes()),
-            $this->carry(),
-            $this->prepareDestination($destination)
+            $this->carryPipes(),
+            $this->prepareFinalDestination($destination)
         );
 
-        return $pipeline($this->passable);
+        return $pipeline($this->target);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function viaMethod(string $method)
+    {
+        $this->method = $method;
+
+        return $this;
     }
 
     /**
@@ -92,13 +96,13 @@ final class Pipeline
      * @param  \Closure  $destination
      * @return \Closure
      */
-    protected function prepareDestination(\Closure $destination)
+    protected function prepareFinalDestination(\Closure $destination)
     {
-        return function ($passable) use ($destination) {
+        return function ($target) use ($destination) {
             try {
-                return $destination($passable);
+                return $destination($target);
             } catch (\Throwable $e) {
-                return $this->handleException($passable, $e);
+                return $this->handleException($target, $e);
             }
         };
     }
@@ -108,21 +112,21 @@ final class Pipeline
      *
      * @return \Closure
      */
-    protected function carry()
+    protected function carryPipes()
     {
         return function ($stack, $pipe) {
-            return function ($passable) use ($stack, $pipe) {
+            return function ($target) use ($stack, $pipe) {
                 try {
                     if (is_callable($pipe)) {
-                        return $pipe($passable, $stack);
+                        return $pipe($target, $stack);
                     } elseif (!is_object($pipe)) {
                         [$name, $parameters] = $this->parsePipeString($pipe);
 
                         $pipe = $this->getContainer()->make($name);
 
-                        $parameters = array_merge([$passable, $stack], $parameters);
+                        $parameters = array_merge([$target, $stack], $parameters);
                     } else {
-                        $parameters = [$passable, $stack];
+                        $parameters = [$target, $stack];
                     }
 
                     $carry = method_exists($pipe, $this->method)
@@ -131,7 +135,7 @@ final class Pipeline
 
                     return $this->handleCarry($carry);
                 } catch (\Throwable $e) {
-                    return $this->handleException($passable, $e);
+                    return $this->handleException($target, $e);
                 }
             };
         };
@@ -140,7 +144,7 @@ final class Pipeline
     /**
      * Parse pipe function or method
      *
-     * @param  string  $pipe
+     * @param string $pipe
      * @return array
      */
     protected function parsePipeString($pipe)
@@ -183,7 +187,7 @@ final class Pipeline
     /**
      * Set the container instance.
      *
-     * @param  \Swilen\Container\Container  $container
+     * @param \Swilen\Container\Container  $container
      * @return $this
      */
     public function setContainer(Container $container)
@@ -196,7 +200,7 @@ final class Pipeline
     /**
      * Handle the value returned from each pipe before passing it to the next.
      *
-     * @param  mixed  $carry
+     * @param mixed $carry
      * @return mixed
      */
     protected function handleCarry($carry)
@@ -207,13 +211,13 @@ final class Pipeline
     /**
      * Handle the given exception.
      *
-     * @param  mixed  $passable
-     * @param  \Throwable  $e
-     * @return mixed
+     * @param mixed $target
+     * @param \Throwable $e
      *
+     * @return mixed
      * @throws \Throwable
      */
-    protected function handleException($passable, \Throwable $e)
+    protected function handleException($target, \Throwable $e)
     {
         throw $e;
     }
