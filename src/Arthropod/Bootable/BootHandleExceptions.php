@@ -10,7 +10,7 @@ use Swilen\Arthropod\TypeErrors\FatalError;
 class BootHandleExceptions implements BootableServiceContract
 {
     /**
-     * The appliaction instance
+     * The application instance
      *
      * @var \Swilen\Arthropod\Application
      */
@@ -31,7 +31,7 @@ class BootHandleExceptions implements BootableServiceContract
             @ini_set('display_errors', 'Off');
         }
 
-        error_reporting(E_ALL);
+        \error_reporting(E_ALL);
 
         \set_error_handler(function ($level, $message, $file = '', $line = 0) {
             $this->handelError($message, 0, $level, $file, $line);
@@ -55,6 +55,7 @@ class BootHandleExceptions implements BootableServiceContract
      * @param string $file
      * @param int $line
      *
+     * @return void
      * @throws \ErrorException
      */
     public function handelError($message, $code, $level, $file, $line)
@@ -66,6 +67,8 @@ class BootHandleExceptions implements BootableServiceContract
 
     /**
      * Handle php shutdown script with normalized exception if is fatal
+     *
+     * @return void
      */
     protected function handleShutdown()
     {
@@ -75,7 +78,7 @@ class BootHandleExceptions implements BootableServiceContract
     }
 
     /**
-     * Handle exceptions
+     * Report and render exceptions
      *
      * @param \Throwable $exception
      *
@@ -95,7 +98,7 @@ class BootHandleExceptions implements BootableServiceContract
     /**
      * Determine if the error level is a deprecation.
      *
-     * @param  int  $level
+     * @param int $level
      * @return bool
      */
     protected function isDeprecation($level)
@@ -106,7 +109,7 @@ class BootHandleExceptions implements BootableServiceContract
     /**
      * Determine if the error type is fatal.
      *
-     * @param  int  $type
+     * @param int $type
      * @return bool
      */
     protected function isFatal($type)
@@ -117,8 +120,9 @@ class BootHandleExceptions implements BootableServiceContract
     /**
      * Create a new fatal error instance from an error array.
      *
-     * @param  array  $error
-     * @param  int|null  $traceOffset
+     * @param array $error
+     * @param int|null $traceOffset
+     *
      * @return \Swilen\Arthropod\TypeErrors\FatalError
      */
     protected function toFatalError(array $error)
@@ -143,6 +147,6 @@ class BootHandleExceptions implements BootableServiceContract
      */
     protected function renderHttpResponse(\Throwable $e)
     {
-        $this->getExceptionHandler()->render($e)->terminate();
+        return $this->getExceptionHandler()->render($e)->terminate();
     }
 }

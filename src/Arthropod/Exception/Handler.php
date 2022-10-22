@@ -4,6 +4,7 @@ namespace Swilen\Arthropod\Exception;
 
 use Swilen\Arthropod\Application;
 use Swilen\Arthropod\Contract\ExceptionHandler;
+use Swilen\Arthropod\Logger;
 use Swilen\Http\Contract\ResponseContract;
 use Swilen\Http\Exception\HttpException;
 
@@ -17,14 +18,21 @@ class Handler implements ExceptionHandler
     protected $app;
 
     /**
-     * Application core not report
+     * The psr logger implementation
+     *
+     * @var \Psr\Log\LoggerInterface
+     */
+    protected $logger;
+
+    /**
+     * Exceptions dont report
      *
      * @var array
      */
     protected $skipReport = [];
 
     /**
-     * Application core not report
+     * Internal Exceptions dont report
      *
      * @var array
      */
@@ -40,6 +48,8 @@ class Handler implements ExceptionHandler
     public function __construct(Application $app)
     {
         $this->app = $app;
+
+        $this->logger = new Logger;
     }
 
     /**
@@ -56,17 +66,26 @@ class Handler implements ExceptionHandler
     }
 
     /**
+     * Report exception to log file
+     *
      * {@inheritdoc}
      */
-    public function report(\Throwable $exception)
+    public function report(\Throwable $e)
     {
-        if ($this->isSkippableReport($exception)) {
+        if ($this->isSkippableReport($e)) {
             return;
         }
 
-        $this->log($exception);
+        $this->logger->error($e->getMessage(), ['exception' => $e]);
     }
 
+    /**
+     * Transform incoming exception to json
+     *
+     * @param \Throwable $exception
+     *
+     * @return \Swilen\Arthropod\Exception\JsonFormatter
+     */
     public function transformExceptionToJson(\Throwable $exception)
     {
         return (new JsonFormatter($exception, $this->determineDebugMode()))->format();
@@ -100,39 +119,6 @@ class Handler implements ExceptionHandler
         return !empty(array_filter($skippables, function ($skip) use ($exception) {
             return $exception instanceof $skip;
         }));
-    }
-
-    /**
-     * @param string|\Stringable $error
-     */
-    protected function log($error)
-    {
-        $record = sprintf('[%s]: %s' . PHP_EOL, date('Y-m-d H:i:s'), (string) $error);
-        $filename = $this->determineLogFilename();
-
-        if ($filename !== false) {
-            error_log($record, 3, $filename);
-        } else {
-            error_log($record);
-        }
-    }
-
-    /**
-     * Determine log filename append date
-     *
-     * @return string|false
-     */
-    protected function determineLogFilename()
-    {
-        $filename = app_path('storage/logs/swilen-' . date('Y-m-d') . '.log');
-
-        if (is_file($filename) && is_writable($filename)) {
-            return $filename;
-        }
-
-        if (@touch($filename)) return $filename;
-
-        return false || is_writable($filename);
     }
 
     /**

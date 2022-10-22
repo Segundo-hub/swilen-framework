@@ -115,7 +115,7 @@ final class Env
      */
     public function load()
     {
-        if (!is_readable($this->path())) {
+        if (!is_readable($this->path()) || !is_file($this->path())) {
             throw new \RuntimeException('Env file is not readable ' . $this->path(), 200);
         }
 
@@ -179,13 +179,13 @@ final class Env
      *
      * @param int|string|bool $value
      *
-     * @return int|string|bool
+     * @return bool|int|string
      */
     private function formatValue($value)
     {
-        if (is_bool($value)) return $value;
-
-        if (is_null($value) || empty($value)) return '';
+        if (is_null($value) || $value === '' || $value === "") {
+            return '';
+        }
 
         if (($startComment = strpos($value, '#')) !== false) {
             $value = trim(substr($value, 0, $startComment));
@@ -198,16 +198,22 @@ final class Env
      * Parse values to php primitives
      *
      * @param string|int|bool $value
+     *
+     * @return bool|int|string
      */
     protected function parseToPrimitive($value)
     {
+        if (in_array($value, [true, false, 1, 0], true)) {
+            return (bool) $value;
+        }
+
         $primitive = str_replace(['"', '\''], '', $value);
 
-        if (in_array($primitive, [true, 'true', 'on', 1, '1'], true)) {
+        if (in_array($primitive, ['true', '(true)', 'on', '1'], true)) {
             return (bool) true;
         }
 
-        if (in_array($primitive, [false, 'false', 'off', 0, '0'], true)) {
+        if (in_array($primitive, ['false', '(false)', 'off', '0'], true)) {
             return (bool) false;
         }
 
@@ -282,7 +288,7 @@ final class Env
      *
      * @return bool
      */
-    public function exists($key)
+    protected function exists($key)
     {
         return (key_exists($key, $_SERVER) && key_exists($key, $_ENV) && key_exists($key, static::$envs));
     }
@@ -292,7 +298,7 @@ final class Env
      *
      * @return bool
      */
-    public function isInmutable()
+    protected function isInmutable()
     {
         return (bool) $this->isInmutable;
     }
@@ -330,6 +336,8 @@ final class Env
 
     /**
      * Force refilling store collection
+     *
+     * @return void
      */
     protected function refillingStore()
     {
@@ -373,7 +381,7 @@ final class Env
     /**
      * Return instance for manipule content has singleton
      *
-     * @return static
+     * @return static|null
      */
     public static function getInstance()
     {
@@ -435,7 +443,9 @@ final class Env
     }
 
     /**
-     * Reset enviroment
+     * Forget environement instances and variables stored
+     *
+     * @return void
      */
     public static function forget()
     {

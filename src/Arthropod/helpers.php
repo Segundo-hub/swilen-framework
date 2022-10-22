@@ -116,3 +116,20 @@ if (!function_exists('env')) {
         return Env::get($key, $default);
     }
 }
+
+if (!function_exists('tap')) {
+     /**
+     * Call the given Closure with the given value then return the value.
+     *
+     * @param mixed $target
+     * @param callable $callback
+     *
+     * @return mixed
+     */
+    function tap($target, $callback)
+    {
+        $callback($target);
+
+        return $target;
+    }
+};

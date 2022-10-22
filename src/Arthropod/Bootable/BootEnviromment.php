@@ -31,7 +31,7 @@ class BootEnviromment implements BootableServiceContract
     {
         $this->app = $app;
 
-        $this->factoryEnviromment();
+        $this->loadEnviromment();
     }
 
     /**
@@ -39,7 +39,7 @@ class BootEnviromment implements BootableServiceContract
      *
      * @return void
      */
-    protected function factoryEnviromment()
+    protected function loadEnviromment()
     {
         $objectInstance = static::$instance instanceof Env
             ? static::$instance
@@ -52,7 +52,7 @@ class BootEnviromment implements BootableServiceContract
     }
 
     /**
-     * Use custom enviromment instance
+     * Use custom enviromment instance from factory function
      *
      * @param \Closure $callback
      *
@@ -60,7 +60,7 @@ class BootEnviromment implements BootableServiceContract
      */
     public static function factory(\Closure $callback)
     {
-        static::$instance = $callback();
+        static::$instance = call_user_func($callback);
     }
 
     /**

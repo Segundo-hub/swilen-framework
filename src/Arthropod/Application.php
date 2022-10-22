@@ -3,7 +3,6 @@
 namespace Swilen\Arthropod;
 
 use Swilen\Arthropod\Contract\ExceptionHandler;
-use Swilen\Arthropod\Exception\Handler;
 use Swilen\Routing\RoutingServiceProvider;
 use Swilen\Database\DatabaseServiceProvider;
 use Swilen\Http\Request;
@@ -19,7 +18,7 @@ class Application extends Container implements ArthropodApplication
      *
      * @var string
      */
-    public const VERSION = '0.2.0';
+    public const VERSION = '0.8.0';
 
     /**
      * Indicates if the application has been bootstrapped before.
@@ -36,7 +35,7 @@ class Application extends Container implements ArthropodApplication
     protected $booted = false;
 
     /**
-     * The bootstrappers collection
+     * The bootable services collection
      *
      * @var \Swilen\Arthropod\Contract\BootableServiceContract[]
      */
@@ -53,6 +52,13 @@ class Application extends Container implements ArthropodApplication
      * @var \Swilen\Petiole\ServiceProvider[]
      */
     protected $serviceProviders = [];
+
+    /**
+     * Collection of service providers as registered
+     *
+     * @var array<string,bool>
+     */
+    protected $serviceProvidersRegistered = [];
 
     /**
      * The application base path
@@ -97,7 +103,7 @@ class Application extends Container implements ArthropodApplication
     protected $enviromentFile = '.env';
 
     /**
-     * Create application instance and boot necessary packages for dispatch incoming request.
+     * Create http aplication instance
      *
      * @param string $path Define base path for your application.
      *
@@ -105,7 +111,7 @@ class Application extends Container implements ArthropodApplication
      */
     public function __construct(string $path = '')
     {
-        $this->configureCoreApplication($path);
+        $this->defineBasePath($path);
         $this->registerBaseBindings();
         $this->registerServiceProviders();
         $this->registerCoreContainerAliases();
@@ -119,20 +125,6 @@ class Application extends Container implements ArthropodApplication
     public function version()
     {
         return static::VERSION;
-    }
-
-    /**
-     * Bootstrap core php configuration and insert paths into container
-     *
-     * @param string $path
-     *
-     * @return void
-     */
-    protected function configureCoreApplication(string $path)
-    {
-        $this->singleton(ExceptionHandler::class, Handler::class);
-
-        $this->defineBasePath($path);
     }
 
     /**
@@ -255,7 +247,7 @@ class Application extends Container implements ArthropodApplication
      */
     public function configPath(string $path = '')
     {
-        return $this->guardConfigPath($path);
+        return $this->validateConfigPath($path);
     }
 
     /**
@@ -267,25 +259,28 @@ class Application extends Container implements ArthropodApplication
      */
     public function useConfigPath(string $path = '')
     {
-        $this->configPath = $this->guardConfigPath($path);
+        $this->configPath = $this->validateConfigPath($path);
 
         $this->instance('path.config', $this->configPath);
 
         return $this;
     }
 
-    private function guardConfigPath(string $config = '')
+    /**
+     * Validate config location path
+     *
+     * @param string $config
+     *
+     * @return string
+     * @throws \InvalidArgumentException
+     */
+    private function validateConfigPath(string $config = '')
     {
-        $config = $config ? $config : 'app.config.php';
-
-        if (file_exists($this->appPath($config))) {
+        if (file_exists($this->appPath($config = $config ?: 'app.config.php'))) {
             return $this->appPath($config);
         }
 
-        throw new \InvalidArgumentException(
-            "{$config} filename not found or not correctly resolve. Please check path " . $this->appPath(),
-            500
-        );
+        throw new \InvalidArgumentException("{$config} filename not found or not correctly resolve. Please check path " . $this->appPath(), 500);
     }
 
     /**
@@ -369,15 +364,43 @@ class Application extends Container implements ArthropodApplication
      */
     public function register($provider)
     {
+        $provider = $this->nomalizeServiceProvider($provider);
+
         $provider->register();
 
-        $this->serviceProviders[] = $provider;
+        $this->markServiceAsRegistered($provider);
 
         return $provider;
     }
 
     /**
-     * Bootsatrap the application with packages implimenting BootableContract
+     * Normalize if provider is string for create new instance
+     *
+     * @param \Swilen\Petiole\ServiceProvider|string $provider
+     *
+     * @return \Swilen\Petiole\ServiceProvider
+     */
+    protected function nomalizeServiceProvider($provider)
+    {
+        return is_string($provider) ? new $provider($this) : $provider;
+    }
+
+    /**
+     * Mark service provider as registered
+     *
+     * @param \Swilen\Petiole\ServiceProvider $provider
+     *
+     * @return void
+     */
+    protected function markServiceAsRegistered($provider)
+    {
+        $this->serviceProviders[] = $provider;
+
+        $this->serviceProvidersRegistered[get_class($provider)] = true;
+    }
+
+    /**
+     * Boot the application with packages that implement the bootstrap contract
      *
      * @return void
      */
