@@ -15,8 +15,22 @@ final class ResponseHeaderHunt extends HeaderHunt
     {
         parent::__construct($headers);
 
-        if (!isset($this->headers['date'])) {
+        if (!isset($this->headers['Date'])) {
             $this->set('Date', gmdate('D, d M Y H:i:s') . ' GMT');
         }
+
+        $this->withoutXPoweredBy();
+    }
+
+    /**
+     * Remove php version from headers collection for safe response
+     *
+     * @return void
+     */
+    public function withoutXPoweredBy()
+    {
+        @header_remove('X-Powered-By');
+
+        $this->remove('X-Powered-By');
     }
 }

@@ -175,7 +175,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Terminate request and send content and header to client
+     * Terminate http request and send content to client
      *
      * @return $this
      */
@@ -187,8 +187,9 @@ final class Response extends SupportResponse implements ResponseContract
 
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
-        } elseif (!in_array(PHP_SAPI, ['cli', 'phpdbg'], true)) {
+        } elseif (!in_array(\PHP_SAPI, ['cli', 'phpdbg'], true)) {
             static::closeOutputBuffer(0, true);
+            flush();
         }
 
         return $this;
@@ -207,7 +208,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Print data into client
+     * Send headers to client
      *
      * @return \Swilen\Http\Response
      */
@@ -217,8 +218,9 @@ final class Response extends SupportResponse implements ResponseContract
             return $this;
         }
 
-        foreach ($this->headers->all() as $key => $value) {
-            header($key . ':' . $value, true, $this->statusCode());
+        foreach ($this->headers->all() as $name => $value) {
+            $replace = 0 === strcasecmp($name, 'Content-Type');
+            header($name.': '.$value, $replace, $this->statusCode());
         }
 
         $this->performResponseStatus();

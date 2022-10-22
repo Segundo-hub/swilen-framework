@@ -39,10 +39,10 @@ final class HttpTransformJson
     {
         @json_decode('[]');
 
-        $content = json_encode($this->content, $encodingOptions ?: $this->encodingOptions);
+        $content = @json_encode($this->content, $encodingOptions ?: $this->encodingOptions);
 
         if (!$this->isValidJsonEncoded(json_last_error())) {
-            throw new \JsonException(json_last_error_msg(), json_last_error());
+            throw new \JsonException('Failed encode reponse body: '. json_last_error_msg(), json_last_error());
         }
 
         return $content;
@@ -60,10 +60,10 @@ final class HttpTransformJson
     {
         @json_decode('[]');
 
-        $content = json_decode($this->content, $assoc, 512, $decodingOptions);
+        $content = @json_decode($this->content, $assoc, 512, $decodingOptions);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \JsonException('Could not decode request body: ' . json_last_error_msg(), json_last_error());
+            throw new \JsonException('Failed decode request body: ' . json_last_error_msg(), json_last_error());
         }
 
         return $content;

@@ -2,31 +2,36 @@
 
 namespace Swilen\Http\Exception;
 
-use Swilen\Arthropod\Exception\HandleExceptions;
+use Swilen\Arthropod\Exception\CoreException;
 
-class HttpException extends HandleExceptions
+class HttpException extends CoreException
 {
-    public function getTitle()
-    {
-        return $this->title ?? '';
-    }
+    /**
+     * Headers collection for http response
+     *
+     * @var array<string, string>
+     */
+    protected $headers = [];
 
-    public function setTitle(string $title)
+    /**
+     * Add http headers to exception
+     *
+     * @param array<string, string> $headers
+     */
+    public function withHeaders(array $headers = [])
     {
-        $this->title = $title;
+        foreach ($headers as $key => $value) {
+            $this->headers[$key] = $value;
+        }
 
         return $this;
     }
 
-    public function getDescription()
+    /**
+     * Get all headers registered
+     */
+    public function headers()
     {
-        return $this->description ?? '';
-    }
-
-    public function setDescription(string $description)
-    {
-        $this->description = $description;
-
-        return $this;
+        return $this->headers;
     }
 }
