@@ -37,11 +37,11 @@ class RoutingServiceProvider extends ServiceProvider
      */
     protected function registerResponse()
     {
-        $this->app->bind('response', function ($app) {
+        $this->app->bind('response', function () {
             return new Response();
         });
 
-        $this->app->bind(ResponseContract::class, function ($app) {
+        $this->app->bind(ResponseContract::class, function () {
             return new Response();
         });
     }

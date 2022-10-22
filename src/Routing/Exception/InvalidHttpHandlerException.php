@@ -4,7 +4,7 @@ namespace Swilen\Routing\Exception;
 
 class InvalidHttpHandlerException extends \Exception
 {
-    protected $message = 'Invalid Http Router Handler Exception';
+    protected $message = 'Invalid Route Handler Exception';
 
     protected $code = 500;
 }
