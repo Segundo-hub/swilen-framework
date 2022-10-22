@@ -16,8 +16,7 @@ final class Helper
      */
     public static function arrayWrap($value)
     {
-        return is_null($value)
-            ? [] : (is_array($value) ? $value : [$value]);
+        return is_null($value) ? [] : (is_array($value) ? $value : [$value]);
     }
 
     /**
