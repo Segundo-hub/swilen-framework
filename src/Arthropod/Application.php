@@ -9,7 +9,7 @@ use Swilen\Http\Request;
 use Swilen\Petiole\Facades\Facade;
 use Swilen\Pipeline\Pipeline;
 use Swilen\Container\Container;
-use Swilen\Contracts\Arthropod\Application as ArthropodApplication;
+use Swilen\Shared\Arthropod\Application as ArthropodApplication;
 
 class Application extends Container implements ArthropodApplication
 {
@@ -40,7 +40,7 @@ class Application extends Container implements ArthropodApplication
      * @var \Swilen\Arthropod\Contract\BootableServiceContract[]
      */
     protected $bootstrappers = [
-        \Swilen\Arthropod\Bootable\BootEnviromment::class,
+        \Swilen\Arthropod\Bootable\BootEnvironment::class,
         \Swilen\Arthropod\Bootable\BootHandleExceptions::class,
         \Swilen\Arthropod\Bootable\BootFacades::class,
         \Swilen\Arthropod\Bootable\BootProviders::class
@@ -89,18 +89,18 @@ class Application extends Container implements ArthropodApplication
     protected $appUri;
 
     /**
-     * The application enviroment path
+     * The application environment path
      *
      * @var string
      */
-    protected $enviromentPath;
+    protected $environmentPath;
 
     /**
-     * The application enviroment file
+     * The application environment file
      *
      * @var string
      */
-    protected $enviromentFile = '.env';
+    protected $environmentFile = '.env';
 
     /**
      * Create http aplication instance
@@ -310,49 +310,49 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Retrive enviroment file path
+     * Retrive environment file path
      *
      * @return string
      */
-    public function enviromentPath()
+    public function environmentPath()
     {
-        return $this->enviromentPath ?? $this->basePath();
+        return $this->environmentPath ?? $this->basePath();
     }
 
     /**
-     * Use user defined enviroment file path
+     * Use user defined environment file path
      *
      * @param string $path
      *
      * @return $this
      */
-    public function useEnviromentPath(string $path)
+    public function useEnvironmentPath(string $path)
     {
-        $this->enviromentPath = $path;
+        $this->environmentPath = $path;
 
         return $this;
     }
 
     /**
-     * Retrive enviroment filename
+     * Retrive environment filename
      *
      * @return string
      */
-    public function enviromentFile()
+    public function environmentFile()
     {
-        return $this->enviromentFile ?? '.env';
+        return $this->environmentFile ?? '.env';
     }
 
     /**
-     * Use user defined enviroment filename
+     * Use user defined environment filename
      *
      * @param string $filename
      *
      * @return $this
      */
-    public function useEnviromentFile(string $filename)
+    public function useEnvironmentFile(string $filename)
     {
-        $this->enviromentFile = $filename;
+        $this->environmentFile = $filename;
 
         return $this;
     }

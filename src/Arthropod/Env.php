@@ -66,7 +66,7 @@ final class Env
     }
 
     /**
-     * Define path and enviroments variables as inmutable
+     * Create environment instance from given path
      *
      * @param string $path
      * @param bool $isInmutable
@@ -121,9 +121,9 @@ final class Env
 
         static::$instance = $this;
 
-        $linesFiltered = file($this->path(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $lines = file($this->path(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
-        foreach ($linesFiltered as $line) {
+        foreach ($lines as $line) {
 
             if (strpos(trim($line), '#') === 0) continue;
 

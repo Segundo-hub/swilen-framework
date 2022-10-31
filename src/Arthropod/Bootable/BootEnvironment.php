@@ -6,7 +6,7 @@ use Swilen\Arthropod\Application;
 use Swilen\Arthropod\Contract\BootableServiceContract;
 use Swilen\Arthropod\Env;
 
-class BootEnviromment implements BootableServiceContract
+class BootEnvironment implements BootableServiceContract
 {
     /**
      * The application instance
@@ -31,7 +31,7 @@ class BootEnviromment implements BootableServiceContract
     {
         $this->app = $app;
 
-        $this->loadEnviromment();
+        $this->loadEnvironment();
     }
 
     /**
@@ -39,16 +39,15 @@ class BootEnviromment implements BootableServiceContract
      *
      * @return void
      */
-    protected function loadEnviromment()
+    protected function loadEnvironment()
     {
-        $objectInstance = static::$instance instanceof Env
+        $environment = static::$instance instanceof Env
             ? static::$instance
-            : (new Env())->config([
-                'file' => $this->app->enviromentFile(),
-                'path' => $this->app->enviromentPath()
+            : Env::createFrom($this->app->environmentPath())->config([
+                'file' => $this->app->environmentFile()
             ])->load();
 
-        $this->app->instance('env', $objectInstance);
+        $this->app->instance('env', $environment);
     }
 
     /**

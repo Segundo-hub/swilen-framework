@@ -11,7 +11,7 @@ if (!function_exists('app')) {
      * @param string|null  $abstract
      * @param array $parameters
      *
-     * @return \Swilen\Contracts\Arthropod\Application
+     * @return \Swilen\Shared\Arthropod\Application
      */
     function app($abstract = null, array $parameters = [])
     {
@@ -118,7 +118,7 @@ if (!function_exists('env')) {
 }
 
 if (!function_exists('tap')) {
-     /**
+    /**
      * Call the given Closure with the given value then return the value.
      *
      * @param mixed $target
