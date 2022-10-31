@@ -4,7 +4,7 @@ namespace Swilen\Container;
 
 use Psr\Container\ContainerInterface;
 use Swilen\Container\Exception\EntryNotFoundException;
-use Swilen\Contracts\Container\Container as ContainerContract;
+use Swilen\Shared\Container\Container as ContainerContract;
 
 class Container implements \ArrayAccess, ContainerContract, ContainerInterface
 {
@@ -122,8 +122,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
 
     /**
      * {@inheritdoc}
-     *
-     * @return bool
      */
     public function has(string $id): bool
     {
@@ -564,10 +562,8 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
 
     /**
      * {@inheritdoc}
-     *
-     * @return mixed
      */
-    public function get($id)
+    public function get(string $id)
     {
         try {
             return $this->resolve($id);
@@ -699,6 +695,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      * Instantiate a concrete instance of the given type.
      *
      * @param \Closure|string $concrete
+     *
      * @return mixed
      */
     public function build($concrete)
@@ -747,6 +744,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      * Resolve all of the dependencies from the ReflectionParameters.
      *
      * @param \ReflectionParameter[]  $dependencies
+     *
      * @return array
      */
     protected function resolveDependencies(array $dependencies)
@@ -1027,7 +1025,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     /**
      * Add instance to container singleton
      *
-     * @param \Swilen\Contracts\Container\Container $container
+     * @param \Swilen\Shared\Container\Container $container
      *
      * @return void
      */
