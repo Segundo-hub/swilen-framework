@@ -3,7 +3,7 @@
 use Psr\Container\ContainerInterface;
 use Swilen\Container\Container;
 use Swilen\Container\Exception\EntryNotFoundException;
-use Swilen\Contracts\Container\Container as ContainerContract;
+use Swilen\Shared\Container\Container as ContainerContract;
 
 uses()->group('Container');
 
@@ -15,6 +15,10 @@ beforeEach(function () {
     $this->app = Container::getInstance();
 });
 
+afterAll(function () {
+    Container::getInstance()->flush();
+});
+
 it('Waiting for the \Container instance to be generated successfully', function () {
     expect($this->app)->toBeInstanceOf(Container::class);
     expect($this->app)->toBeObject();
@@ -24,7 +28,7 @@ it('Waiting for the \Container is instance of Psr\Container\ContainerInterface',
     expect($this->app)->toBeInstanceOf(ContainerInterface::class);
 });
 
-it('Waiting for the \Container is instance of Swilen\Contracts\Container\Container', function () {
+it('Waiting for the \Container is instance of Swilen\Shared\Container\Container', function () {
     expect($this->app)->toBeInstanceOf(ContainerContract::class);
 });
 
