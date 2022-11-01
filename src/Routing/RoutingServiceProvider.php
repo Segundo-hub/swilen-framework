@@ -10,11 +10,14 @@ use Swilen\Petiole\ServiceProvider;
 class RoutingServiceProvider extends ServiceProvider
 {
     /**
-     * {@inheritdoc}
+     * Register routing base services
+     *
+     * @return void
      */
     public function register()
     {
         $this->registerRouter();
+
         $this->registerResponse();
     }
 

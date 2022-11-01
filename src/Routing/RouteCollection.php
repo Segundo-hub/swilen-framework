@@ -6,37 +6,23 @@ use Swilen\Http\Exception\HttpMethodNotAllowedException;
 use Swilen\Http\Exception\HttpNotFoundException;
 
 use Swilen\Http\Request;
-use Swilen\Contracts\Support\Arrayable;
+use Swilen\Shared\Support\Arrayable;
 
 class RouteCollection implements Arrayable
 {
     /**
-     * Router instance
-     *
-     * @var \Swilen\Routing\Router
-     */
-    protected $router;
-
-    /**
-     * Collection of routes registered
+     * The routes collection
      *
      * @var array<string, \Swilen\Routing\Route[]>
      */
     protected $routes = [];
 
     /**
-     * The current match route
+     * The current matched route
      *
      * @var \Swilen\Routing\Route|null
      */
-    protected $matched;
-
-    /**
-     * The current request action
-     *
-     * @var string;
-     */
-    protected $currentRequestAction;
+    protected $current;
 
     /**
      * Collection of http verbs alloweb
@@ -55,7 +41,14 @@ class RouteCollection implements Arrayable
     protected $container;
 
     /**
-     * Add new route to RouteCollection
+     * The router instance used by the routes collection.
+     *
+     * @var \Swilen\Routing\Router
+     */
+    protected $router;
+
+    /**
+     * Add new Route to collection
      *
      * @param \Swilen\Routing\Route $route
      *
@@ -83,13 +76,13 @@ class RouteCollection implements Arrayable
 
         foreach ($routes as $route) {
             if ($route->matches($request->getPathInfo())) {
-                $this->matched = $route;
+                $this->current = $route;
                 break;
             }
         }
 
-        if ($this->matched !== null) {
-            return $this->matched;
+        if ($this->current !== null) {
+            return $this->current;
         }
 
         throw new HttpNotFoundException;
@@ -134,8 +127,8 @@ class RouteCollection implements Arrayable
         $routes = [];
 
         foreach ($this->routes as $method => $route) {
-            $routes[$method] = array_map(function ($_route) {
-                return $_route->toArray();
+            $routes[$method] = array_map(function ($e) {
+                return $e->toArray();
             }, $route);
         }
 

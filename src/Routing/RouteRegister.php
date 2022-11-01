@@ -5,15 +5,35 @@ namespace Swilen\Routing;
 final class RouteRegister
 {
     /**
-     * @var string|array<string, string>
+     * The router instance for route register
+     *
+     * @var \Swilen\Routing\Router
+     */
+    private $router;
+
+    /**
+     * The attributes to pass on to the router.
+     *
+     * @var array<string, mixed>
      */
     private $attributes = [];
 
     /**
-     * @var \Swilen\Routing\Router
+     * The attributes that can be set through this class.
+     *
+     * @var string[]
      */
-    private $router;
+    protected $allowedAttributes = [
+        'as',
+        'middleware',
+        'use',
+        'prefix',
+        'where',
+    ];
+
     /**
+     * Create new RouteRegister instance
+     *
      * @param \Swilen\Routing\Router $router
      *
      * @return void
@@ -24,19 +44,28 @@ final class RouteRegister
     }
 
     /**
+     * Set the value for a given attribute.
+     *
      * @param string $key
-     * @param string $value
+     * @param mixed $value
      *
      * @return $this
+     * @throws \InvalidArgumentException
      */
     public function attribute($key, $value)
     {
+        if (!in_array($key, $this->allowedAttributes)) {
+            throw new \InvalidArgumentException("Attribute [{$key}] does not exist.");
+        }
+
         $this->attributes[$key] = $value;
 
         return $this;
     }
 
-     /**
+    /**
+     * Register middleware in current $attributes.
+     *
      * @param string|array $middleware
      *
      * @return $this
@@ -49,12 +78,36 @@ final class RouteRegister
     }
 
     /**
-     * Group route callback
+     * Create a route group with shared attributes.
      *
      * @param string|\Closure $callback
+     *
+     * @return void
      */
     public function group($callback)
     {
-        return $this->router->group($this->attributes, $callback);
+        $this->router->group($this->attributes, $callback);
+    }
+
+    /**
+     * Dynamically handle calls into the route registrar.
+     *
+     * @param string $method
+     * @param array $params
+     *
+     * @return $this
+     * @throws \BadMethodCallException
+     */
+    public function __call($method, $params)
+    {
+        if (in_array($method, $this->allowedAttributes)) {
+            return $this->attribute($method, key_exists(0, $params) ? $params[0] : true);
+        }
+
+        throw new \BadMethodCallException(sprintf(
+            'Method %s::%s does not exist.',
+            static::class,
+            $method
+        ));
     }
 }

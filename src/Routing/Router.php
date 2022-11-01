@@ -2,17 +2,17 @@
 
 namespace Swilen\Routing;
 
+use Swilen\Shared\Support\{Arrayable, Enumerable};
 use Swilen\Container\Container;
-use Swilen\Contracts\Support\Arrayable;
-use Swilen\Contracts\Support\Enumerable;
 use Swilen\Http\Request;
 use Swilen\Http\Response;
 use Swilen\Pipeline\Pipeline;
+use Swilen\Routing\Contract\RouterContract;
 
-class Router
+class Router implements RouterContract
 {
     /**
-     * The container instance
+     * The application container instance
      *
      * @var \Swilen\Container\Container
      */
@@ -47,7 +47,7 @@ class Router
     protected $groupStack = [];
 
     /**
-     *  Http methods
+     * The server HTTP methods
      *
      * @var string[]
      */
@@ -56,7 +56,7 @@ class Router
     ];
 
     /**
-     * Create router instance and inject Service Container
+     * Create new Router instance
      *
      * @param \Swilen\Container\Container|null $container
      *
@@ -72,7 +72,7 @@ class Router
      * Register a new GET route with the router.
      *
      * @param string $uri
-     * @param array|string|callable|null $action
+     * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
      */
@@ -85,7 +85,7 @@ class Router
      * Register a new POST route with the router.
      *
      * @param string $uri
-     * @param array|string|callable|null $action
+     * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
      */
@@ -98,7 +98,7 @@ class Router
      * Register a new PUT route with the router.
      *
      * @param string  $uri
-     * @param array|string|callable|null $action
+     * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
      */
@@ -111,7 +111,7 @@ class Router
      * Register a new PATCH route with the router.
      *
      * @param string  $uri
-     * @param array|string|callable|null $action
+     * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
      */
@@ -124,13 +124,26 @@ class Router
      * Register a new DELETE route with the router.
      *
      * @param string $uri
-     * @param array|string|callable|null $action
+     * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
      */
     public function delete(string $uri, $action)
     {
         return $this->addRoute('DELETE', $uri, $action);
+    }
+
+    /**
+     * Register a new OPTIONS route with the router.
+     *
+     * @param string $uri
+     * @param array|string|callable $action
+     *
+     * @return \Swilen\Routing\Route
+     */
+    public function options(string $uri, $action)
+    {
+        return $this->addRoute('OPTIONS', $uri, $action);
     }
 
     /**
@@ -170,23 +183,10 @@ class Router
     }
 
     /**
-     * Merge attributes into route
-     *
-     * @param \Swilen\Routing\Route $route
-     */
-    protected function mergeSharedRouteAttributes(Route $route)
-    {
-        $attributes = end($this->groupStack);
-        $middlewares = $attributes['middleware'] ?? $attributes['use'] ?? [];
-
-        $route->use($middlewares);
-    }
-
-    /**
      * Create group routes with shared attributes
      *
      * @param array $atributes
-     * @param \Closure|array|null $routes
+     * @param \Closure|array $routes
      *
      * @return void
      */
@@ -199,6 +199,19 @@ class Router
 
             array_pop($this->groupStack);
         }
+    }
+
+    /**
+     * Merge attributes into route
+     *
+     * @param \Swilen\Routing\Route $route
+     */
+    protected function mergeSharedRouteAttributes(Route $route)
+    {
+        $attributes = end($this->groupStack);
+        $middlewares = $attributes['middleware'] ?? $attributes['use'] ?? [];
+
+        $route->use($middlewares);
     }
 
     /**
@@ -290,7 +303,7 @@ class Router
         if ($this->hasGroupStack()) {
             $atribute = end($this->groupStack);
 
-            return $atribute['prefix'] ?: '';
+            return $atribute['prefix'] ?? '';
         }
 
         return '';
@@ -342,17 +355,40 @@ class Router
         if ($response instanceof Response) {
             return $response->prepare($request);
         }
+
         if ($response instanceof Arrayable) {
             $response = $response->toArray();
         } else if ($response instanceof Enumerable) {
             $response = $response->all();
+        } else if ($response instanceof \JsonSerializable) {
+            $response = $response->jsonSerialize();
         }
 
         return (new Response($response))->prepare($request);
     }
 
     /**
-     * Call dynamically methods of class
+     * Return routes collection
+     *
+     * @return \Swilen\Routing\RouteCollection
+     */
+    public function routes()
+    {
+        return $this->routes;
+    }
+
+    /**
+     * Return current route matched
+     *
+     * @return \Swilen\Routing\Route
+     */
+    public function current()
+    {
+        return $this->currentRoute;
+    }
+
+    /**
+     * Dynamically handle calls into the router instance.
      *
      * @param string $method
      * @param array $arguments
@@ -361,10 +397,10 @@ class Router
      */
     public function __call($method, $arguments)
     {
-        if (method_exists($this, $method) && !in_array($method, ['prefix', 'middleware'])) {
-            return $this->{$method}(...$arguments);
+        if ($method === 'middleware' || $method === 'use') {
+            return (new RouteRegister($this))->attribute($method, is_array($arguments[0]) ? $arguments[0] : $arguments);
         }
 
-        return (new RouteRegister($this))->attribute($method, is_array($arguments) ? $arguments[0] : $arguments);
+        return (new RouteRegister($this))->attribute($method, array_key_exists(0, $arguments) ? $arguments[0] : true);
     }
 }

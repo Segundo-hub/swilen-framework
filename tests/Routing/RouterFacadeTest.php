@@ -19,6 +19,10 @@ beforeAll(function() {
     Facade::setFacadeApplication($app);
 });
 
+afterAll(function () {
+    Container::getInstance()->flush();
+});
+
 it('Router Facade registered succesfully', function () {
 
     $route = Route::get('/hola', function () {
