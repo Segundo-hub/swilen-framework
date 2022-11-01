@@ -10,18 +10,18 @@ use Swilen\Http\Factories\{BinaryFileResponseFactory, JsonResponseFactory, RawRe
 final class Response extends SupportResponse implements ResponseContract
 {
     /**
-     * The response headers collection
-     *
-     * @var \Swilen\Http\Component\ResponseHeaderHunt
-     */
-    public $headers;
-
-    /**
      * The current respone factory implement
      *
      * @var \Swilen\Http\Contract\ResponseFactory
      */
     protected $factory;
+
+    /**
+     * The response headers collection
+     *
+     * @var \Swilen\Http\Component\ResponseHeaderHunt
+     */
+    public $headers;
 
     /**
      * The parsed content as string or resource for put into client
@@ -188,7 +188,7 @@ final class Response extends SupportResponse implements ResponseContract
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         } elseif (!in_array(\PHP_SAPI, ['cli', 'phpdbg'], true)) {
-            static::closeOutputBuffer(0, true);
+            parent::closeOutputBuffer(0, true);
             flush();
         }
 
@@ -220,7 +220,8 @@ final class Response extends SupportResponse implements ResponseContract
 
         foreach ($this->headers->all() as $name => $value) {
             $replace = 0 === strcasecmp($name, 'Content-Type');
-            header($name.': '.$value, $replace, $this->statusCode());
+
+            header($name . ': ' . $value, $replace, $this->statusCode());
         }
 
         $this->performResponseStatus();
@@ -312,7 +313,9 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Set collection response headers
+     * Insert header scollection to response
+     *
+     * @param array $headers
      *
      * @return $this
      */
@@ -322,7 +325,9 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Set collection response headers
+     * Alias for `headers(array $headers = [])`
+     *
+     * @param array $headers
      *
      * @return $this
      */
@@ -336,7 +341,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Insert one value to headers set
+     * Insert header to response
      *
      * @param string $key
      * @param mixed $value
@@ -349,7 +354,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Insert one value to headers set
+     * Alias for `header(string key, mixed $value)`
      *
      * @param string $key
      * @param mixed $value
@@ -388,7 +393,6 @@ final class Response extends SupportResponse implements ResponseContract
 
         return $this;
     }
-
 
     /**
      * Returns current status code

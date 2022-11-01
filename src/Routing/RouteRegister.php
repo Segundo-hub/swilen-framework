@@ -2,6 +2,12 @@
 
 namespace Swilen\Routing;
 
+/**
+ * @method \Swilen\Routing\RouteRegister use(array|string|null $middleware)
+ * @method \Swilen\Routing\RouteRegister middleware(array|string|null $middleware)
+ * @method \Swilen\Routing\RouteRegister prefix(string $prefix)
+ * @method \Swilen\Routing\RouteRegister where(array $where)
+ */
 final class RouteRegister
 {
     /**

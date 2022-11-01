@@ -5,6 +5,17 @@ namespace Swilen\Http\Component;
 final class InputHunt extends ParameterHunt
 {
     /**
+     * The names of the attributes that should not be trimmed.
+     *
+     * @var array<int, string>
+     */
+    protected $prevent = [
+        'current_password',
+        'password',
+        'password_confirmation',
+    ];
+
+    /**
      * Create new InputHunt instance and store $params
      *
      * @param array $params
@@ -13,42 +24,39 @@ final class InputHunt extends ParameterHunt
      */
     public function __construct(array $params = [])
     {
-        $this->decoded($params);
-    }
-
-    /**
-     * Store params with decoded
-     *
-     * @param array $params
-     */
-    public function decoded(array $params = [])
-    {
         foreach ($params as $key => $value) {
             parent::set($key, $this->cleanValue($key, $value));
         }
     }
 
     /**
-     * Store params with filtered
+     * Clean the given input values
      *
-     * @param array $params
+     * @param string|in $key
+     * @param mixed $value
+     *
+     * @return mixed
      */
-    public function filtered(array $params = [], $via)
-    {
-        foreach ($params as $key => $_value) {
-            parent::set($key, $this->filterInputHunt($via, $key));
-        }
-    }
-
     protected function cleanValue($key, $value)
     {
         if (is_array($value)) {
-            return $this->cleanArray($value, $key);
+            return $this->cleanArray($value);
+        }
+
+        if (in_array($key, $this->prevent, true)) {
+            return $value;
         }
 
         return $this->transform($key, $value);
     }
 
+    /**
+     * Clean the given input values as array
+     *
+     * @param array $data
+     *
+     * @return array
+     */
     protected function cleanArray(array $data)
     {
         foreach ($data as $key => $value) {
@@ -58,6 +66,13 @@ final class InputHunt extends ParameterHunt
         return $data;
     }
 
+    /**
+     * Tranform values to primitive
+     *
+     * @param mixed $value
+     *
+     * @return mixed
+     */
     protected function transform($key, $value)
     {
         if (in_array($value, ['', 'null', null], true)) {
@@ -73,18 +88,5 @@ final class InputHunt extends ParameterHunt
         }
 
         return is_string($value) ? trim($value) : $value;
-    }
-
-    /**
-     * Filter params
-     *
-     * @param mixed $target
-     * @param int $flags
-     */
-    protected function filterInputHunt($target, int $flags = FILTER_SANITIZE_FULL_SPECIAL_CHARS | FILTER_SANITIZE_ENCODED)
-    {
-        $value = filter_var($target, $flags);
-
-        return rawurldecode($value);
     }
 }

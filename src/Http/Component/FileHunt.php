@@ -23,7 +23,8 @@ final class FileHunt extends ParameterHunt
     public function __construct(array $files = [])
     {
         $this->params = [];
-        $this->add($files);
+
+        $this->addFiles($files);
     }
 
     /**
@@ -34,12 +35,13 @@ final class FileHunt extends ParameterHunt
      * @return void
      * @throws \InvalidArgumentException
      */
-    public function add(array $files = [])
+    public function addFiles(array $files = [])
     {
         foreach ($files as $key => $file) {
             if (!is_array($file) && !$file instanceof UploadedFile) {
-                throw new \InvalidArgumentException(sprintf('Need this file \'%s\' as instance of \'%s\'', $file, UploadedFile::class));
+                throw new \InvalidArgumentException(sprintf('Need this file "%s" as instance of "%s"', $file, UploadedFile::class));
             }
+
             parent::set($key, $this->transformToUploadedFile($file));
         }
     }

@@ -18,13 +18,13 @@ it('Espect \Response instance created succesfully and is instance of \Swilen\Htt
     expect($this->response->getContent())->toBeNull();
 });
 
-it('Expect \Response::file() get file error when file not exists', function () {
-    expect($this->response->file('nothing.txt'))->toBeResource();
-})->throws(FileNotFoundException::class);
-
+/**
+ * Testing binary file response
+ */
 it('Expect \Response::file() get file as resource via stream', function () {
     ob_start();
-    $this->response->file(__DIR__ . '/testing.md')->prepare(Request::make(''))->terminate();
+
+    $this->response->file(__DIR__ . '/fixtures/testing.md')->prepare(Request::make(''))->terminate();
 
     expect(trim(ob_get_clean()))->toBe('Testing Markdown');
     expect($this->response->headers->get('Content-Type'))->toBeIn([
@@ -33,7 +33,14 @@ it('Expect \Response::file() get file as resource via stream', function () {
     expect($this->response->statusCode())->toBe(Http::OK);
 });
 
-it('Expect \Response::send() get content as json', function ($dataset) {
+it('Expect \Response::file() get file generate error when file is not exists', function () {
+    expect($this->response->file(__DIR__ . '/fixtures/nothing.md'))->toBeResource();
+})->throws(FileNotFoundException::class);
+
+/**
+ * Testing json, array response
+ */
+it('Expect \Response::send() send content as json', function ($dataset) {
     ob_start();
     $this->response->send($dataset)->prepare(Request::make(''))->terminate();
 
@@ -54,7 +61,7 @@ it('Expect factory get json prevent encoding', function () {
 });
 
 it('Insert header succesfully', function () {
-    $this->response->withHeader('bar', 'fo');
+    $this->response->withHeader('Fo', 'bar');
 
-    expect($this->response->headers->get('bar'))->toBe('fo');
+    expect($this->response->headers->get('Fo'))->toBe('bar');
 });

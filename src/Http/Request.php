@@ -8,7 +8,7 @@ use Swilen\Http\Component\{FileHunt, HeaderHunt, InputHunt, ServerHunt};
 use Swilen\Http\Common\HttpTransformJson;
 use Swilen\Http\Common\SupportRequest;
 use Swilen\Validation\Validator;
-use Swilen\Contracts\Support\Arrayable;
+use Swilen\Shared\Support\Arrayable;
 
 final class Request extends SupportRequest implements \ArrayAccess, Arrayable
 {
@@ -251,8 +251,8 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
      */
     private function filteredRequestUri()
     {
-        if (env('APP_BASE_URI') && !empty(env('APP_BASE_URI'))) {
-            return $this->uri = preg_replace('#^' . env('APP_BASE_URI') . '#', '', $this->server->get('REQUEST_URI'));
+        if (isset($_ENV['APP_BASE_URI']) && !empty($base = $_ENV['APP_BASE_URI'])) {
+            return $this->uri = preg_replace('#^' . $base . '#', '', $this->server->get('REQUEST_URI'));
         }
 
         return $this->uri = $this->server->get('REQUEST_URI');
@@ -345,18 +345,6 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Return file from filename
-     *
-     * @param string $filename The name of file
-     *
-     * @return \Swilen\Http\Component\UploadedFile|null
-     */
-    public function file(string $filename)
-    {
-        return $this->files->get($filename);
-    }
-
-    /**
      * Get current body content request
      *
      * @return resource|string|false|null
@@ -394,7 +382,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     private function isJsonRequest()
     {
         foreach (['/json', '+json'] as $contentType) {
-            if (strpos($this->headers->get('Content-Type'), $contentType) !== false) {
+            if (mb_strpos($this->headers->get('Content-Type'), $contentType) !== false) {
                 return true;
             }
         }
@@ -413,6 +401,44 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
             (array) $this->query->all(),
             (array) $this->files->all(),
         );
+    }
+
+    /**
+     * Get input value from input source
+     *
+     * @param string|int $key
+     * @param mixed $default
+     *
+     * @return mixed
+     */
+    public function input($key, $default = null)
+    {
+        return $this->getInputSource()->get($key, $default);
+    }
+
+    /**
+     * Get query value from query collection
+     *
+     * @param string|int $key
+     * @param mixed $default
+     *
+     * @return mixed
+     */
+    public function query($key, $default = null)
+    {
+        return $this->query->get($key, $default);
+    }
+
+    /**
+     * Get file(s) from UploadedFiles collection
+     *
+     * @param string $filename The filename
+     *
+     * @return \Swilen\Http\Component\UploadedFile|null
+     */
+    public function file(string $filename)
+    {
+        return $this->files->get($filename);
     }
 
     /**

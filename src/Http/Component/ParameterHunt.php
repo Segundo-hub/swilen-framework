@@ -2,7 +2,7 @@
 
 namespace Swilen\Http\Component;
 
-use Swilen\Contracts\Support\Enumerable;
+use Swilen\Shared\Support\Enumerable;
 
 class ParameterHunt implements \Countable, Enumerable
 {

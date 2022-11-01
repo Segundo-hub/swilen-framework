@@ -1,5 +1,6 @@
 <?php
 
+use Swilen\Http\Exception\HttpNotOverridableMethodException;
 use Swilen\Http\Request;
 
 uses()->group('Http', 'Request');
@@ -46,6 +47,15 @@ it('REQUEST_METHOD override succesfully', function () {
     expect($request->getPathInfo())->toBe('/put-request');
     expect($request->hasQueryString())->toBeFalse();
 });
+
+it('REQUEST_METHOD override failed', function () {
+    $request = Request::make('put-request', 'POST', [], [], [
+        'HTTP_X_METHOD_OVERRIDE' => 'GET'
+    ]);
+
+    expect($request->getMethod())->toBe('PUT');
+    expect($request->getPathInfo())->toBe('/put-request');
+})->throws(HttpNotOverridableMethodException::class);
 
 it('Remove slashes support for REQUEST_URI', function () {
     $request = Request::make('');

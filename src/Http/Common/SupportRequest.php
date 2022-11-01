@@ -13,6 +13,8 @@ class SupportRequest
      * @param array $files      The request files ($_FILES)
      * @param array $server     The server parameters ($_SERVER)
      * @param string|resource|null $content  The raw body data
+     *
+     * @return array
      */
     protected static function makeFetchRequest(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $content = null)
     {
@@ -91,12 +93,12 @@ class SupportRequest
     }
 
     /**
-     * Replace server varaiables for create request
+     * Replace $_SERVER variables with given server values
      *
-     * @param array<string,string> $server
+     * @param array<string, mixed> $server
      * @param string $method
      *
-     * @return array<string,string>
+     * @return array<string, mixed>
      */
     private static function replaceServerVars(array $server = [], string $method = 'GET')
     {

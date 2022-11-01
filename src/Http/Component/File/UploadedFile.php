@@ -76,7 +76,7 @@ final class UploadedFile extends File
      *
      * @return string
      */
-    public function move(string $directory, string $name = null)
+    public function store(string $directory, string $name = null)
     {
         if ($this->isValid()) {
             $target = $this->getTargetFile($directory, $name);
@@ -85,11 +85,13 @@ final class UploadedFile extends File
             set_error_handler(function ($type, $msg) use (&$error) {
                 $error = $msg;
             });
+
             try {
                 $moved = move_uploaded_file($this->getPathname(), $target);
             } finally {
                 restore_error_handler();
             }
+
             if ($moved === false) {
                 throw new FileException(sprintf('Could not move the file "%s" to "%s" (%s).', $this->getPathname(), $target, strip_tags($error)));
             }

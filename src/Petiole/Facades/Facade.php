@@ -7,7 +7,7 @@ abstract class Facade
     /**
      * The application instance
      *
-     * @var \Swilen\Contracts\Arthropod\Application
+     * @var \Swilen\Shared\Arthropod\Application
      */
     protected static $app;
 
@@ -21,7 +21,7 @@ abstract class Facade
     /**
      * Set Facade application
      *
-     * @param \Swilen\Contracts\Arthropod\Application $app
+     * @param \Swilen\Shared\Arthropod\Application $app
      *
      * @return void
      */

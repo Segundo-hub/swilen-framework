@@ -76,7 +76,9 @@ interface Http
 
     /**
      * The http server methods
+     *
      * `'OPTIONS', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'TRACE', 'CONNECT', 'HEAD'`
+     *
      * @var int
      */
     public const OPTIONS = 'OPTIONS',

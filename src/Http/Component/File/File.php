@@ -2,7 +2,7 @@
 
 namespace Swilen\Http\Component\File;
 
-use Swilen\Contracts\Support\Arrayable;
+use Swilen\Shared\Support\Arrayable;
 use Swilen\Http\Common\MimeTypes;
 use Swilen\Http\Exception\FileException;
 use Swilen\Http\Exception\FileNotFoundException;
