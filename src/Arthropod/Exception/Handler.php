@@ -5,39 +5,39 @@ namespace Swilen\Arthropod\Exception;
 use Swilen\Arthropod\Application;
 use Swilen\Arthropod\Contract\ExceptionHandler;
 use Swilen\Arthropod\Logger;
-use Swilen\Http\Contract\ResponseContract;
 use Swilen\Http\Exception\HttpException;
+use Swilen\Http\Response\JsonResponse;
 
 class Handler implements ExceptionHandler
 {
     /**
-     * The appliaction instance
+     * The appliaction instance.
      *
      * @var \Swilen\Arthropod\Application
      */
     protected $app;
 
     /**
-     * The psr logger implementation
+     * The psr logger implementation.
      *
      * @var \Psr\Log\LoggerInterface
      */
     protected $logger;
 
     /**
-     * Exceptions dont report
+     * Exceptions dont report.
      *
      * @var array
      */
     protected $skipReport = [];
 
     /**
-     * Internal Exceptions dont report
+     * Internal Exceptions dont report.
      *
      * @var array
      */
     protected $internalSkipReport = [
-        \Swilen\Http\Exception\HttpException::class
+        \Swilen\Http\Exception\HttpException::class,
     ];
 
     /**
@@ -49,24 +49,26 @@ class Handler implements ExceptionHandler
     {
         $this->app = $app;
 
-        $this->logger = new Logger;
+        $this->logger = new Logger();
     }
 
     /**
-     * Render exception to client
+     * Render exception to client.
      *
      * {@inheritdoc}
      */
     public function render(\Throwable $exception)
     {
-        return $this->app->make(ResponseContract::class)
-            ->make($this->transformExceptionToJson($exception), $this->determineStatusCode($exception), [
-                'Content-Type' => 'application/json; charset=UTF-8'
-            ]);
+        return new JsonResponse(
+            $this->transformExceptionToJson($exception),
+            $this->determineStatusCode($exception),
+            ['Content-Type' => 'application/json; charset=UTF-8'],
+            true
+        );
     }
 
     /**
-     * Report exception to log file
+     * Report exception to log file.
      *
      * {@inheritdoc}
      */
@@ -80,7 +82,7 @@ class Handler implements ExceptionHandler
     }
 
     /**
-     * Transform incoming exception to json
+     * Transform incoming exception to json.
      *
      * @param \Throwable $exception
      *
@@ -92,7 +94,7 @@ class Handler implements ExceptionHandler
     }
 
     /**
-     * Determine status code for exception response
+     * Determine status code for exception response.
      *
      * @param \Throwable $exception
      *
@@ -108,7 +110,7 @@ class Handler implements ExceptionHandler
     }
 
     /**
-     * Determine if exception is skippable
+     * Determine if exception is skippable.
      *
      * @return bool
      */
@@ -122,7 +124,7 @@ class Handler implements ExceptionHandler
     }
 
     /**
-     * Determine app is debug mode
+     * Determine app is debug mode.
      *
      * @return bool
      */

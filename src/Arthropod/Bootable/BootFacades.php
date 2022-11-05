@@ -4,7 +4,7 @@ namespace Swilen\Arthropod\Bootable;
 
 use Swilen\Arthropod\Application;
 use Swilen\Arthropod\Contract\BootableServiceContract;
-use Swilen\Petiole\Facades\Facade;
+use Swilen\Petiole\Facade;
 
 class BootFacades implements BootableServiceContract
 {

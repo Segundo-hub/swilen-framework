@@ -51,11 +51,11 @@ class JsonFormatter implements ExceptionFormatter
     {
         return $this->debugMode
             ? [
-                'type'  => get_class($exception),
+                'type' => get_class($exception),
                 'message' => $exception->getMessage(),
-                'code'  => $exception->getCode(),
-                'file'  => $exception->getFile() . ':' . $exception->getLine(),
-                'trace' => $this->formatTraceFragment()
+                'code' => $exception->getCode(),
+                'file' => $exception->getFile().':'.$exception->getLine(),
+                'trace' => $this->formatTraceFragment(),
             ]
             : [
                 'type' => get_class($exception),
@@ -70,6 +70,7 @@ class JsonFormatter implements ExceptionFormatter
     {
         return array_map(function ($trace) {
             unset($trace['args']);
+
             return $trace;
         }, $this->exception->getTrace());
     }

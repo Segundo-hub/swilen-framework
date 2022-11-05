@@ -1,22 +1,38 @@
 <?php
 
 /* ------------------------------------------------------------------- */
-/*  Swilen configuration rules                                         */
+/*  Swilen configuration rules */
 /* ------------------------------------------------------------------- */
 
 return [
+    // ----------------------------------------------------------------
+    // | BASE APPLICATION CONFIG
+    // ----------------------------------------------------------------
+    'app' => [
+        // APPLICATION SECRET KEY
+        'secret' => env('APP_SECRET', ''),
 
-    'database' => [
-        'driver'    => env('DB_DRIVER'),
-        'host'      => env('DB_HOST'),
-        'schema'    => env('DB_SCHEMA'),
-        'username'  => env('DB_USERNAME'),
-        'password'  => env('DB_PASSWORD'),
-        'charset'   => env('DB_CHARSET', 'utf8mb4'),
-        'collation' => env('DB_COLLATION', 'utf8_unicode_ci'),
-        'prefix'    => env('DB_PREFIX', '')
+        // APPLICATION ENVIRONMENT
+        'env' => env('APP_ENV', 'production'),
     ],
 
+    // ----------------------------------------------------------------
+    // | DATABASE CONNECTION CONFIG
+    // ----------------------------------------------------------------
+    'database' => [
+        'driver' => env('DB_DRIVER'),
+        'host' => env('DB_HOST'),
+        'schema' => env('DB_SCHEMA'),
+        'username' => env('DB_USERNAME'),
+        'password' => env('DB_PASSWORD'),
+        'charset' => env('DB_CHARSET', 'utf8mb4'),
+        'collation' => env('DB_COLLATION', 'utf8_unicode_ci'),
+        'prefix' => env('DB_PREFIX', ''),
+    ],
+
+    // ----------------------------------------------------------------
+    // | CORS CONFIG
+    // ----------------------------------------------------------------
     'cors' => [
         'Access-Control-Allow-Origin' => '*',
         'Access-Control-Allow-Headers' => 'X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method',
@@ -26,7 +42,12 @@ return [
         'Allow' => 'GET, POST, OPTIONS, PUT, DELETE',
     ],
 
+    // ----------------------------------------------------------------
+    // | MAILERS LIST AND CONFIGS
+    // ----------------------------------------------------------------
     'mailers' => [
+        'default' => 'sendmail',
+
         'smtp' => [
             'transport' => 'smtp',
             'host' => env('MAIL_HOST', 'smtp.mailgun.org'),
@@ -42,5 +63,8 @@ return [
             'transport' => 'sendmail',
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -t -i'),
         ],
+    ],
+
+    'providers' => [
     ],
 ];

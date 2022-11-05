@@ -5,57 +5,57 @@ namespace Swilen\Arthropod;
 final class Env
 {
     /**
-     * The directory for load .env file
+     * The directory for load .env file.
      *
      * @var string
      */
-    protected $path;
+    private $path;
 
     /**
-     * The file name
+     * The file name.
      *
      * @var string
      */
-    protected $filename = '.env';
+    private $filename = '.env';
 
     /**
-     * List of env saved
+     * List of env saved.
      *
      * @var string[]
      */
-    protected static $envs = [];
+    private static $envs = [];
 
     /**
-     * List of all env saved
+     * List of all env saved.
      *
      * @var string[]
      */
-    protected static $store = [];
+    private static $store = [];
 
     /**
      * @var bool
      */
-    protected $isInmutable = true;
+    private $isInmutable = true;
 
     /**
-     * The stack variables resolved
+     * The stack variables resolved.
      *
      * @var array
      */
     private static $envStack = [];
 
     /**
-     * The env instance as singleton
+     * The env instance as singleton.
      *
      * @var static
      */
-    protected static $instance;
+    private static $instance;
 
     /**
-     * Create new env instance
+     * Create new env instance.
      *
      * @param string $path
-     * @param bool $isInmutable
+     * @param bool   $isInmutable
      *
      * @return void
      */
@@ -66,10 +66,10 @@ final class Env
     }
 
     /**
-     * Create environment instance from given path
+     * Create environment instance from given path.
      *
      * @param string $path
-     * @param bool $isInmutable
+     * @param bool   $isInmutable
      *
      * @return $this
      */
@@ -79,17 +79,17 @@ final class Env
     }
 
     /**
-     * Return path of env file
+     * Return path of env file.
      *
      * @return string
      */
     public function path()
     {
-        return $this->path . DIRECTORY_SEPARATOR . $this->filename;
+        return $this->path.DIRECTORY_SEPARATOR.$this->filename;
     }
 
     /**
-     * Config the enviroment needed configuation
+     * Config the enviroment needed configuation.
      *
      * @param array $config
      *
@@ -109,14 +109,14 @@ final class Env
     }
 
     /**
-     * Load variables from defined path
+     * Load variables from defined path.
      *
      * @return $this
      */
     public function load()
     {
         if (!is_readable($this->path()) || !is_file($this->path())) {
-            throw new \RuntimeException('Env file is not readable ' . $this->path(), 200);
+            throw new \RuntimeException('Env file is not readable '.$this->path(), 200);
         }
 
         static::$instance = $this;
@@ -124,8 +124,9 @@ final class Env
         $lines = file($this->path(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
         foreach ($lines as $line) {
-
-            if (strpos(trim($line), '#') === 0) continue;
+            if (strpos(trim($line), '#') === 0) {
+                continue;
+            }
 
             [$key, $value] = explode('=', $line, 2);
 
@@ -136,17 +137,17 @@ final class Env
     }
 
     /**
-     * Compile variables with variables replaced
+     * Compile variables with variables replaced.
      *
-     * @param string $key
+     * @param string               $key
      * @param string|int|bool|null $value
-     * @param bool $replace
+     * @param bool                 $replace
      *
      * @return void
      */
-    protected function compile(string $key, $value, bool $replace = false)
+    private function compile(string $key, $value, bool $replace = false)
     {
-        $key   = $this->formatKey($key);
+        $key = $this->formatKey($key);
         $value = $this->formatValue($value);
 
         static::$envStack[$key] = $value;
@@ -163,7 +164,7 @@ final class Env
     }
 
     /**
-     * Format key and replace special characters
+     * Format key and replace special characters.
      *
      * @param string $key
      *
@@ -171,11 +172,11 @@ final class Env
      */
     private function formatKey(string $key)
     {
-        return str_replace(['-', '_'], '_', strtoupper(trim($key)));
+        return str_replace('-', '_', strtoupper(trim($key)));
     }
 
     /**
-     * Format value and remove comments
+     * Format value and remove comments.
      *
      * @param int|string|bool $value
      *
@@ -183,7 +184,7 @@ final class Env
      */
     private function formatValue($value)
     {
-        if (is_null($value) || $value === '' || $value === "") {
+        if (is_null($value) || $value === '') {
             return '';
         }
 
@@ -195,13 +196,13 @@ final class Env
     }
 
     /**
-     * Parse values to php primitives
+     * Parse values to php primitives.
      *
      * @param string|int|bool $value
      *
      * @return bool|int|string
      */
-    protected function parseToPrimitive($value)
+    private function parseToPrimitive($value)
     {
         if (in_array($value, [true, false, 1, 0], true)) {
             return (bool) $value;
@@ -222,7 +223,7 @@ final class Env
         }
 
         if ($this->startWith($primitive, 'swilen:')) {
-            return (string) base64_decode(substr($primitive, 7) . '=');
+            return (string) base64_decode(substr($primitive, 7).'=');
         }
 
         if ($this->startWith($primitive, 'base64:')) {
@@ -234,7 +235,7 @@ final class Env
 
     /**
      * Find key into env stack and
-     * return empty if value not exists
+     * return empty if value not exists.
      *
      * @param string|int $key
      *
@@ -246,11 +247,11 @@ final class Env
     }
 
     /**
-     * Write value to env collection with mutability checked
+     * Write value to env collection with mutability checked.
      *
      * @param string $key
-     * @param mixed $value
-     * @param bool $replace
+     * @param mixed  $value
+     * @param bool   $replace
      *
      * @return void
      */
@@ -258,6 +259,7 @@ final class Env
     {
         if (!$this->isInmutable() || $replace) {
             $this->writeMutableOrInmutable($key, $value);
+
             return;
         }
 
@@ -267,14 +269,14 @@ final class Env
     }
 
     /**
-     * Write value to env collection, $_ENV and $_SERVER
+     * Write value to env collection, $_ENV and $_SERVER.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return void
      */
-    protected function writeMutableOrInmutable(string $key, $value)
+    private function writeMutableOrInmutable(string $key, $value)
     {
         $_ENV[$key] = $value;
         $_SERVER[$key] = $value;
@@ -282,31 +284,31 @@ final class Env
     }
 
     /**
-     * Check key exists into enn collection
+     * Check key exists into enn collection.
      *
      * @param string|int $key
      *
      * @return bool
      */
-    protected function exists($key)
+    private function exists($key)
     {
-        return (key_exists($key, $_SERVER) && key_exists($key, $_ENV) && key_exists($key, static::$envs));
+        return key_exists($key, $_SERVER) && key_exists($key, $_ENV) && key_exists($key, static::$envs);
     }
 
     /**
-     * Check if enviroment is inmutable
+     * Check if enviroment is inmutable.
      *
      * @return bool
      */
-    protected function isInmutable()
+    private function isInmutable()
     {
         return (bool) $this->isInmutable;
     }
 
     /**
-     * Get value with keyed from stored env variables
+     * Get value with keyed from stored env variables.
      *
-     * @param string|int $key
+     * @param string|int           $key
      * @param string|int|bool|null $default
      *
      * @return string|int|null
@@ -321,7 +323,7 @@ final class Env
     }
 
     /**
-     * Return all env variables
+     * Return all env variables.
      *
      * @return array
      */
@@ -335,11 +337,11 @@ final class Env
     }
 
     /**
-     * Force refilling store collection
+     * Force refilling store collection.
      *
      * @return void
      */
-    protected function refillingStore()
+    private function refillingStore()
     {
         static::$store = array_merge($_ENV, $_SERVER, static::$envs);
     }
@@ -348,15 +350,15 @@ final class Env
      * @internal
      * Check string exists into string
      *
-     * @param string $haystack
+     * @param string       $haystack
      * @param array|string $needle
      *
      * @return bool
      */
-    protected function contains(string $haystack, $needle)
+    private function contains(string $haystack, $needle)
     {
         foreach ((array) $needle as $what) {
-            if (strpos($haystack, $what) !== false) {
+            if (mb_strpos($haystack, $what) !== false) {
                 return true;
             }
         }
@@ -368,18 +370,18 @@ final class Env
      * @internal
      * Check string starts with
      *
-     * @param string $haystack
+     * @param string       $haystack
      * @param array|string $needle
      *
      * @return bool
      */
-    protected function startWith(string $haystack, $needle)
+    private function startWith(string $haystack, $needle)
     {
-        return \strpos($haystack, $needle) === 0;
+        return mb_strpos($haystack, $needle) === 0;
     }
 
     /**
-     * Return instance for manipule content has singleton
+     * Return instance for manipule content has singleton.
      *
      * @return static|null
      */
@@ -389,10 +391,10 @@ final class Env
     }
 
     /**
-     * Set enviroment in runtime
+     * Set enviroment in runtime.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return void
      */
@@ -406,10 +408,10 @@ final class Env
     }
 
     /**
-     * Set enviroment in runtime
+     * Set enviroment in runtime.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return void
      */
@@ -423,7 +425,7 @@ final class Env
     }
 
     /**
-     * return array of variables values registered
+     * return array of variables values registered.
      *
      * @return array<string, mixed>
      */
@@ -433,7 +435,7 @@ final class Env
     }
 
     /**
-     * Return stack with variables resolved
+     * Return stack with variables resolved.
      *
      * @return array<string, mixed>
      */
@@ -443,7 +445,7 @@ final class Env
     }
 
     /**
-     * Forget environement instances and variables stored
+     * Forget environement instances and variables stored.
      *
      * @return void
      */

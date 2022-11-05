@@ -8,7 +8,7 @@ use Swilen\Shared\Container\Container as ContainerContract;
 uses()->group('Container');
 
 beforeAll(function () {
-    Container::setInstance(new Container);
+    Container::setInstance(new Container());
 });
 
 beforeEach(function () {
@@ -51,7 +51,6 @@ it('Generate exception if service not found', function () {
 })->throws(EntryNotFoundException::class);
 
 it('Register the class as simple binding. Create new instance when done by container', function () {
-
     $this->app->bind('bind', function ($app) {
         return new TestingClass(10);
     });
@@ -64,7 +63,6 @@ it('Register the class as simple binding. Create new instance when done by conta
 });
 
 it('Register the class as singleton instance. Return only instance when done by container', function () {
-
     $this->app->singleton('singleton', function ($app) {
         return new TestingClass(18);
     });
@@ -77,7 +75,6 @@ it('Register the class as singleton instance. Return only instance when done by 
 });
 
 it('Register interface for dependency injection', function () {
-
     $this->app->bind(MongoRepository::class, function ($app) {
         return new UserRepository(100);
     });
@@ -88,7 +85,6 @@ it('Register interface for dependency injection', function () {
 });
 
 it('Call function with dependency injection in parameter', function () {
-
     $this->app->bind(MongoRepository::class, function ($app) {
         return new UserRepository(100);
     });
@@ -103,12 +99,11 @@ it('Call function with dependency injection in parameter', function () {
 });
 
 it('Call __invoke function was class is used as function', function () {
-
     $this->app->bind(MongoRepository::class, function ($app) {
         return new UserRepository(100);
     });
 
-    $class = new class {
+    $class = new class() {
         public function __invoke(MongoRepository $repository)
         {
             return $repository->find();
@@ -120,15 +115,13 @@ it('Call __invoke function was class is used as function', function () {
     expect($result)->toBeInt();
 });
 
-
 it('Depency resolve with ArrayAccess', function () {
-
     $this->app->bind(MongoRepository::class, function ($app) {
         return new UserRepository(100);
     });
 
     $this->app['depend'] = function ($app) {
-        return new class {
+        return new class() {
             public function __invoke(MongoRepository $repository)
             {
                 return $repository->find();
@@ -145,11 +138,8 @@ it('Depency resolve with ArrayAccess', function () {
     expect($this->app['depend'])->toBeNull();
 })->throws(EntryNotFoundException::class);
 
-
-
-
 /**
- * Testing clases
+ * Testing clases.
  */
 class TestingClass
 {
@@ -167,7 +157,7 @@ class TestingClass
 
     public function increment()
     {
-        $this->property++;
+        ++$this->property;
     }
 }
 
@@ -177,7 +167,6 @@ interface MongoRepository
 
     public function find(): int;
 }
-
 
 class UserRepository implements MongoRepository
 {
@@ -201,7 +190,7 @@ class UserRepository implements MongoRepository
 
 final class UserService
 {
-    protected $repository;
+    private $repository;
 
     public function __construct(MongoRepository $repository)
     {

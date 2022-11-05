@@ -5,9 +5,13 @@ use Swilen\Arthropod\Env;
 uses()->group('Enviroment');
 
 beforeAll(function () {
+    define('ENVIROMENT_START', hrtime(true));
+
     Env::createFrom(dirname(__DIR__))->config([
-        'file' => '.env'
+        'file' => '.env',
     ])->load();
+
+    define('ENVIROMENT_LOADED', hrtime(true));
 });
 
 beforeEach(function () {
@@ -40,11 +44,11 @@ it('Replace variable in env var has found', function () {
 
 it('Insert enviroment variable in runtime', function () {
     $this->env::set('APP_DEBUGGER', false);
+
     expect($this->env::get('APP_DEBUGGER'))->toBeFalse();
 });
 
 it('Replace enviroment variable in runtime', function () {
-
     $this->env::set('APP_BOOL', 'Hello');
     $this->env::set('APP_HELLO', '{APP_BOOL} World!');
 
@@ -52,7 +56,6 @@ it('Replace enviroment variable in runtime', function () {
 });
 
 it('Replace existing enviroment variable in runtime', function () {
-
     $this->env::replace('APP_DEBUG', true);
 
     expect($this->env::get('APP_DEBUG'))->toBeTrue();
@@ -63,9 +66,13 @@ it('Replace All variables founded', function () {
 });
 
 it('App secret decoded succesfully as Swilen', function () {
-    expect($this->env::get('APP_SECRET'))->toBe('a9bb6de2d1e03e3e7e4c2c14e990e3a5');
-})->skip('Ignore because the console generates a random key and does not match the cached value.');
+    $this->env::set('APP_KEYED', 'swilen:NzMxYTA2MjM3YzM5ZGFhYzQyM2I5N2E4NWZmOTI3Yzc');
+
+    expect($this->env::get('APP_KEYED'))->toBe('731a06237c39daac423b97a85ff927c7');
+});
 
 it('App secret decoded successfuly as base64', function () {
-    expect($this->env::get('APP_SECRET_64'))->toBe('8f62183d7e8c5ec2c446137515b173d3');
-})->skip('Ignore because the console generates a random key and does not match the cached value.');
+    $this->env::set('APP_KEYED_64', 'base64:NzMxYTA2MjM3YzM5ZGFhYzQyM2I5N2E4NWZmOTI3Yzc=');
+
+    expect($this->env::get('APP_KEYED_64'))->toBe('731a06237c39daac423b97a85ff927c7');
+});

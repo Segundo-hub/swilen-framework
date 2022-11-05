@@ -9,14 +9,14 @@ use Swilen\Arthropod\Env;
 class BootEnvironment implements BootableServiceContract
 {
     /**
-     * The application instance
+     * The application instance.
      *
      * @var \Swilen\Arthropod\Application
      */
     protected $app;
 
     /**
-     * Env instance if defined or null by default
+     * Env instance if defined or null by default.
      *
      * @var \Swilen\Arthropod\Env|null
      */
@@ -35,23 +35,21 @@ class BootEnvironment implements BootableServiceContract
     }
 
     /**
-     * Create enviroment instance from factory
+     * Create enviroment instance from factory.
      *
      * @return void
      */
     protected function loadEnvironment()
     {
-        $environment = static::$instance instanceof Env
+        static::$instance instanceof Env
             ? static::$instance
             : Env::createFrom($this->app->environmentPath())->config([
-                'file' => $this->app->environmentFile()
+                'file' => $this->app->environmentFile(),
             ])->load();
-
-        $this->app->instance('env', $environment);
     }
 
     /**
-     * Use custom enviromment instance from factory function
+     * Use custom enviromment instance from factory function.
      *
      * @param \Closure $callback
      *
@@ -59,11 +57,15 @@ class BootEnvironment implements BootableServiceContract
      */
     public static function factory(\Closure $callback)
     {
-        static::$instance = call_user_func($callback);
+        if (($instance = $callback()) && !$instance instanceof Env) {
+            throw new \TypeError('The callback must return an instance of '.Env::class);
+        }
+
+        static::$instance = $instance;
     }
 
     /**
-     * Use custom enviromment instance
+     * Use custom enviromment instance.
      *
      * @param \Swilen\Arthropod\Env $instance
      *

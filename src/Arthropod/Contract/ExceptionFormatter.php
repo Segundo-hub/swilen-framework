@@ -5,7 +5,7 @@ namespace Swilen\Arthropod\Contract;
 interface ExceptionFormatter
 {
     /**
-     * Format and transform exception
+     * Format and transform exception.
      *
      * @return string
      */

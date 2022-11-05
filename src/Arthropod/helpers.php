@@ -3,13 +3,14 @@
 use Swilen\Arthropod\Env;
 use Swilen\Container\Container;
 use Swilen\Http\Request;
+use Swilen\Routing\Contract\ResponseFactory;
 
 if (!function_exists('app')) {
     /**
      * Get the available container instance.
      *
-     * @param string|null  $abstract
-     * @param array $parameters
+     * @param string|null $abstract
+     * @param array       $parameters
      *
      * @return \Swilen\Shared\Arthropod\Application
      */
@@ -25,8 +26,8 @@ if (!function_exists('app')) {
 
 if (!function_exists('response')) {
     /**
-     * @param resource|string|array|object|null $content
-     * @param int $status
+     * @param mixed $content
+     * @param int   $status
      * @param array $headers
      *
      * @return \Swilen\Http\Response
@@ -34,12 +35,12 @@ if (!function_exists('response')) {
     function response($content = null, int $status = 200, array $headers = [])
     {
         /**
-         * @var \Swilen\Http\Response
+         * @var \Swilen\Routing\Contract\ResponseFactory
          */
-        $response = app()->make('response');
+        $response = app()->make(ResponseFactory::class);
 
         if (!is_null($content)) {
-            return $response->send($content, $status, $headers);
+            return $response->make($content, $status, $headers);
         }
 
         return $response;
@@ -100,18 +101,18 @@ if (!function_exists('storage_path')) {
      */
     function storage_path($path = '')
     {
-        return app_path('storage') . ($path ? DIRECTORY_SEPARATOR . $path : '');
+        return app_path('storage').($path ? DIRECTORY_SEPARATOR.$path : '');
     }
 }
 
 if (!function_exists('env')) {
     /**
-     * @param string|int $key
+     * @param string|int      $key
      * @param string|int|bool $default
      *
      * @return string|int|null
      */
-    function env($key, $default = NULL)
+    function env($key, $default = null)
     {
         return Env::get($key, $default);
     }
@@ -121,7 +122,7 @@ if (!function_exists('tap')) {
     /**
      * Call the given Closure with the given value then return the value.
      *
-     * @param mixed $target
+     * @param mixed    $target
      * @param callable $callback
      *
      * @return mixed
@@ -132,4 +133,4 @@ if (!function_exists('tap')) {
 
         return $target;
     }
-};
+}

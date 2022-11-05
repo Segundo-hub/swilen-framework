@@ -5,7 +5,7 @@ namespace Swilen\Arthropod\Exception;
 abstract class CoreException extends \Exception
 {
     /**
-     * Get exception title if exists
+     * Get exception title if exists.
      *
      * @return string
      */
@@ -15,7 +15,7 @@ abstract class CoreException extends \Exception
     }
 
     /**
-     * Get exception description if exists
+     * Get exception description if exists.
      *
      * @return string
      */

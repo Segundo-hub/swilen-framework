@@ -8,21 +8,21 @@ use Psr\Log\LogLevel;
 class Logger extends AbstractLogger
 {
     /**
-     * Local directory path for write logs
+     * Local directory path for write logs.
      *
      * @var string
      */
     protected $directory;
 
     /**
-     * Log time format
+     * Log time format.
      *
      * @var string
      */
     protected $timeFormat = 'Y-m-d H:i:s';
 
     /**
-     * Create new Psr logger instance
+     * Create new Psr logger instance.
      *
      * @return void
      */
@@ -40,6 +40,7 @@ class Logger extends AbstractLogger
 
         if ($filename = $this->ensureLogFilename()) {
             \error_log($record, 3, $filename);
+
             return;
         }
 
@@ -47,26 +48,28 @@ class Logger extends AbstractLogger
     }
 
     /**
-     * Determine log filename append date
+     * Determine log filename append date.
      *
      * @return string|void
      */
     protected function ensureLogFilename()
     {
-        $filename = $this->directory . DIRECTORY_SEPARATOR . ('swilen-' . date('Y-m-d') . '.log');
+        $filename = $this->directory.DIRECTORY_SEPARATOR.('swilen-'.date('Y-m-d').'.log');
 
         if (file_exists($filename) && is_writable($filename)) {
             return $filename;
         }
 
-        if (@touch($filename)) return $filename;
+        if (@touch($filename)) {
+            return $filename;
+        }
     }
 
     /**
-     * Create new log record
+     * Create new log record.
      *
-     * @param string|null|LogLevel::* $level
-     * @param string $message
+     * @param string|LogLevel::*|null $level
+     * @param string                  $message
      *
      * @return string
      */
@@ -76,23 +79,23 @@ class Logger extends AbstractLogger
         $context = isset($context['exception']) ? $this->formatException($context['exception']) : '';
         $level = $this->determineContextLogging($level ?? LogLevel::WARNING);
 
-        return sprintf('[%s] %s: %s.  %s' . PHP_EOL, $datetime, $level, (string) $message, $context);
+        return sprintf('[%s] %s: %s.  %s'.PHP_EOL, $datetime, $level, (string) $message, $context);
     }
 
     /**
-     * Determine context logging
+     * Determine context logging.
      *
-     * @param string|null|LogLevel::* $level
+     * @param string|LogLevel::*|null $level
      *
      * @return string
      */
     private function determineContextLogging($level)
     {
-        return 'local.[' . strtoupper($level) . ']';
+        return 'local.['.strtoupper($level).']';
     }
 
     /**
-     * Format exception for write to log file
+     * Format exception for write to log file.
      *
      * @param \Throwable $e
      *
@@ -100,9 +103,9 @@ class Logger extends AbstractLogger
      */
     private function formatException(\Throwable $e)
     {
-        $formatted = '"[object] (' . get_class($e) . '(code: ' . $e->getCode() . ')": ' .
-            $e->getMessage() . ' at ' . $e->getFile() . ':' . $e->getLine() . ')';
+        $formatted = '"[object] ('.get_class($e).'(code: '.$e->getCode().')": '.
+            $e->getMessage().' at '.$e->getFile().':'.$e->getLine().')';
 
-        return $formatted .= PHP_EOL . '[stacktrace]' . PHP_EOL . $e->getTraceAsString() . PHP_EOL;
+        return $formatted .= PHP_EOL.'[stacktrace]'.PHP_EOL.$e->getTraceAsString().PHP_EOL;
     }
 }

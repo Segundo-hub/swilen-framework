@@ -3,18 +3,18 @@
 namespace Swilen\Arthropod;
 
 use Swilen\Arthropod\Contract\ExceptionHandler;
-use Swilen\Routing\RoutingServiceProvider;
+use Swilen\Container\Container;
 use Swilen\Database\DatabaseServiceProvider;
 use Swilen\Http\Request;
-use Swilen\Petiole\Facades\Facade;
+use Swilen\Petiole\Facade;
 use Swilen\Pipeline\Pipeline;
-use Swilen\Container\Container;
+use Swilen\Routing\RoutingServiceProvider;
 use Swilen\Shared\Arthropod\Application as ArthropodApplication;
 
 class Application extends Container implements ArthropodApplication
 {
     /**
-     * The Swilen current version
+     * The Swilen current version.
      *
      * @var string
      */
@@ -35,77 +35,78 @@ class Application extends Container implements ArthropodApplication
     protected $booted = false;
 
     /**
-     * The bootable services collection
+     * The bootable services collection.
      *
      * @var \Swilen\Arthropod\Contract\BootableServiceContract[]
      */
     protected $bootstrappers = [
         \Swilen\Arthropod\Bootable\BootEnvironment::class,
+        \Swilen\Arthropod\Bootable\BootConfiguration::class,
         \Swilen\Arthropod\Bootable\BootHandleExceptions::class,
         \Swilen\Arthropod\Bootable\BootFacades::class,
-        \Swilen\Arthropod\Bootable\BootProviders::class
+        \Swilen\Arthropod\Bootable\BootProviders::class,
     ];
 
     /**
-     * Resolved service provider collection for boot
+     * Resolved service provider collection for boot.
      *
      * @var \Swilen\Petiole\ServiceProvider[]
      */
     protected $serviceProviders = [];
 
     /**
-     * Collection of service providers as registered
+     * Collection of service providers as registered.
      *
      * @var array<string,bool>
      */
     protected $serviceProvidersRegistered = [];
 
     /**
-     * The application base path
+     * The application base path.
      *
      * @var string
      */
     protected $basePath;
 
     /**
-     * The application app path
+     * The application app path.
      *
      * @var string
      */
     protected $appPath = 'app';
 
     /**
-     * The application config path
+     * The application config path.
      *
      * @var string
      */
     protected $configPath;
 
     /**
-     * The application base uri
+     * The application base uri.
      *
      * @var string
      */
     protected $appUri;
 
     /**
-     * The application environment path
+     * The application environment path.
      *
      * @var string
      */
     protected $environmentPath;
 
     /**
-     * The application environment file
+     * The application environment file.
      *
      * @var string
      */
     protected $environmentFile = '.env';
 
     /**
-     * Create http aplication instance
+     * Create http aplication instance.
      *
-     * @param string $path Define base path for your application.
+     * @param string $path define base path for your application
      *
      * @return void
      */
@@ -118,7 +119,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Return version of Swilen
+     * Return version of Swilen.
      *
      * @return string
      */
@@ -128,7 +129,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Register base container bindings
+     * Register base container bindings.
      *
      * @return void
      */
@@ -137,14 +138,11 @@ class Application extends Container implements ArthropodApplication
         static::setInstance($this);
 
         $this->instance('app', $this);
-
         $this->instance(Container::class, $this);
-
-        $this->instance('config', require_once($this->make('path.config')));
     }
 
     /**
-     * Register base service providers
+     * Register base service providers.
      *
      * @return void
      */
@@ -155,7 +153,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Create and define Application base path
+     * Create and define Application base path.
      *
      * @param string $basePath
      *
@@ -171,7 +169,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Register application paths
+     * Register application paths.
      *
      * @return void
      */
@@ -183,7 +181,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Register application path parts
+     * Register application path parts.
      *
      * @param string $path
      *
@@ -191,11 +189,11 @@ class Application extends Container implements ArthropodApplication
      */
     public function basePath(string $path = '')
     {
-        return $this->basePath . ($path ? DIRECTORY_SEPARATOR . $path : $path);
+        return $this->basePath.($path ? DIRECTORY_SEPARATOR.$path : $path);
     }
 
     /**
-     * Use application path part
+     * Use application path part.
      *
      * @param string $path
      *
@@ -211,7 +209,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Register application path parts
+     * Register application path parts.
      *
      * @param string $path
      *
@@ -219,11 +217,11 @@ class Application extends Container implements ArthropodApplication
      */
     public function appPath(string $path = '')
     {
-        return $this->basePath($this->appPath ?: 'app') . ($path ? DIRECTORY_SEPARATOR . $path : $path);
+        return $this->basePath($this->appPath ?: 'app').($path ? DIRECTORY_SEPARATOR.$path : $path);
     }
 
     /**
-     * Use application path part
+     * Use application path part.
      *
      * @param string $path
      *
@@ -239,7 +237,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Register application path parts
+     * Register application path parts.
      *
      * @param string $path
      *
@@ -251,7 +249,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Use application path part
+     * Use application path part.
      *
      * @param string $path
      *
@@ -267,11 +265,12 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Validate config location path
+     * Validate config location path.
      *
      * @param string $config
      *
      * @return string
+     *
      * @throws \InvalidArgumentException
      */
     private function validateConfigPath(string $config = '')
@@ -280,11 +279,11 @@ class Application extends Container implements ArthropodApplication
             return $this->appPath($config);
         }
 
-        throw new \InvalidArgumentException("{$config} filename not found or not correctly resolve. Please check path " . $this->appPath(), 500);
+        throw new \InvalidArgumentException("{$config} filename not found or not correctly resolve. Please check path ".$this->appPath(), 500);
     }
 
     /**
-     * Return application base uri
+     * Return application base uri.
      *
      * @param string $path
      *
@@ -292,11 +291,11 @@ class Application extends Container implements ArthropodApplication
      */
     public function appUri(string $path = '')
     {
-        return $this->appUri . ($path ? '/' . $path : '');
+        return $this->appUri.($path ? '/'.$path : '');
     }
 
     /**
-     * Replace application uri provided from param
+     * Replace application uri provided from param.
      *
      * @param string $uri
      *
@@ -310,7 +309,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Retrive environment file path
+     * Retrive environment file path.
      *
      * @return string
      */
@@ -320,7 +319,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Use user defined environment file path
+     * Use user defined environment file path.
      *
      * @param string $path
      *
@@ -334,7 +333,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Retrive environment filename
+     * Retrive environment filename.
      *
      * @return string
      */
@@ -344,7 +343,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Use user defined environment filename
+     * Use user defined environment filename.
      *
      * @param string $filename
      *
@@ -358,7 +357,19 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Initial register service providers
+     * Set application environment.
+     *
+     * @param string $env The Environment valid `production|development`
+     *
+     * @return $this
+     */
+    public function useEnvironment(string $env)
+    {
+        $this->instance('env', $env);
+    }
+
+    /**
+     * Initial register service providers.
      *
      * @param \Swilen\Petiole\ServiceProvider $provider
      */
@@ -374,7 +385,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Normalize if provider is string for create new instance
+     * Normalize if provider is string for create new instance.
      *
      * @param \Swilen\Petiole\ServiceProvider|string $provider
      *
@@ -386,7 +397,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Mark service provider as registered
+     * Mark service provider as registered.
      *
      * @param \Swilen\Petiole\ServiceProvider $provider
      *
@@ -400,13 +411,15 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Boot the application with packages that implement the bootstrap contract
+     * Boot the application with packages that implement the bootstrap contract.
      *
      * @return void
      */
     protected function bootstrap()
     {
-        if ($this->hasBeenBootstrapped()) return;
+        if ($this->hasBeenBootstrapped()) {
+            return;
+        }
 
         foreach ($this->bootstrappers as $bootstrap) {
             $this->make($bootstrap)->puriyboot($this);
@@ -426,13 +439,15 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Boot application with boot method into service containers
+     * Boot application with boot method into service containers.
      *
      * @return void
      */
     public function boot()
     {
-        if ($this->isBooted()) return;
+        if ($this->isBooted()) {
+            return;
+        }
 
         foreach ($this->serviceProviders as $provider) {
             if (method_exists($provider, 'boot')) {
@@ -444,7 +459,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Verify if the application is booted
+     * Verify if the application is booted.
      *
      * @return bool
      */
@@ -454,7 +469,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Verify the application is development mode
+     * Verify the application is development mode.
      *
      * @return bool
      */
@@ -464,7 +479,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Verify the application is debug mode
+     * Verify the application is debug mode.
      *
      * @return bool
      */
@@ -474,9 +489,10 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Dispatch request and listen http router
+     * Dispatch request and listen http router.
      *
      * @param \Swilen\Http\Request $request
+     *
      * @return \Swilen\Http\Response
      */
     public function handle(Request $request)
@@ -493,9 +509,10 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Handle for dispatch request for route
+     * Handle for dispatch request for route.
      *
      * @param \Swilen\Http\Request $request
+     *
      * @return \Swilen\Http\Response
      */
     protected function dispatchRequestThroughRouter(Request $request)
@@ -515,7 +532,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Render exception to response
+     * Render exception to response.
      *
      * @param \Throwable $e
      *
@@ -527,7 +544,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Report exception and write log
+     * Report exception and write log.
      *
      * @param \Throwable $e
      */
@@ -537,7 +554,7 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
-     * Register core aliases into container
+     * Register core aliases into container.
      *
      * @return void
      */
@@ -546,7 +563,7 @@ class Application extends Container implements ArthropodApplication
         foreach ([
             'app' => \Swilen\Arthropod\Application::class,
             'request' => \Swilen\Http\Request::class,
-            'response' => \Swilen\Http\Response::class
+            'response' => \Swilen\Http\Response::class,
         ] as $key => $value) {
             $this->alias($key, $value);
         }
