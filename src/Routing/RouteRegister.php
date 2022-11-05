@@ -11,7 +11,7 @@ namespace Swilen\Routing;
 final class RouteRegister
 {
     /**
-     * The router instance for route register
+     * The router instance for route register.
      *
      * @var \Swilen\Routing\Router
      */
@@ -29,7 +29,7 @@ final class RouteRegister
      *
      * @var string[]
      */
-    protected $allowedAttributes = [
+    private $allowedAttributes = [
         'as',
         'middleware',
         'use',
@@ -38,7 +38,7 @@ final class RouteRegister
     ];
 
     /**
-     * Create new RouteRegister instance
+     * Create new RouteRegister instance.
      *
      * @param \Swilen\Routing\Router $router
      *
@@ -53,9 +53,10 @@ final class RouteRegister
      * Set the value for a given attribute.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return $this
+     *
      * @throws \InvalidArgumentException
      */
     public function attribute($key, $value)
@@ -99,9 +100,10 @@ final class RouteRegister
      * Dynamically handle calls into the route registrar.
      *
      * @param string $method
-     * @param array $params
+     * @param array  $params
      *
      * @return $this
+     *
      * @throws \BadMethodCallException
      */
     public function __call($method, $params)
@@ -110,10 +112,6 @@ final class RouteRegister
             return $this->attribute($method, key_exists(0, $params) ? $params[0] : true);
         }
 
-        throw new \BadMethodCallException(sprintf(
-            'Method %s::%s does not exist.',
-            static::class,
-            $method
-        ));
+        throw new \BadMethodCallException(sprintf('Method %s::%s does not exist.', static::class, $method));
     }
 }

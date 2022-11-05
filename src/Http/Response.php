@@ -5,65 +5,57 @@ namespace Swilen\Http;
 use Swilen\Http\Common\SupportResponse;
 use Swilen\Http\Component\ResponseHeaderHunt;
 use Swilen\Http\Contract\ResponseContract;
-use Swilen\Http\Factories\{BinaryFileResponseFactory, JsonResponseFactory, RawResponseFactory};
 
-final class Response extends SupportResponse implements ResponseContract
+class Response extends SupportResponse implements ResponseContract
 {
     /**
-     * The current respone factory implement
-     *
-     * @var \Swilen\Http\Contract\ResponseFactory
-     */
-    protected $factory;
-
-    /**
-     * The response headers collection
+     * The response headers collection.
      *
      * @var \Swilen\Http\Component\ResponseHeaderHunt
      */
     public $headers;
 
     /**
-     * The parsed content as string or resource for put into client
+     * The parsed content as string or resource for put into client.
      *
      * @var string|resource
      */
     protected $content;
 
     /**
-     * The http version for the response
+     * The http version for the response.
      *
      * @var string
      */
     protected $version;
 
     /**
-     * The status code for response
+     * The status code for response.
      *
      * @var int
      */
     protected $statusCode;
 
     /**
-     * The status text for response
+     * The status text for response.
      *
      * @var string
      */
     protected $statusText;
 
     /**
-     * The charset encoding for response
+     * The charset encoding for response.
      *
      * @var string
      */
     protected $charset = 'UTF-8';
 
     /**
-     * Create new response instance
+     * Create new response instance.
      *
-     * @param resource|string|array|object|null $content
-     * @param int $status
-     * @param array $headers
+     * @param mixed $content The content for send client
+     * @param int   $status  The http status for response
+     * @param array $headers The headers collection for response
      *
      * @return void
      */
@@ -71,111 +63,64 @@ final class Response extends SupportResponse implements ResponseContract
     {
         $this->headers = new ResponseHeaderHunt($headers);
 
-        $this->factory = new JsonResponseFactory($this, $content, $status, $headers);
-
-        $this->version = '1.1';
-    }
-
-    /**
-     * Update default response options
-     *
-     * @param resource|string|array|object|null $content
-     * @param int $status
-     * @param array $headers
-     *
-     * @return $this
-     */
-    public function withOptions($content = null, int $status = 200, array $headers = [])
-    {
-        $this->setContent($content);
-
         $this->setStatusCode($status);
-
-        $this->withHeaders($headers);
-
-        return $this;
+        $this->setContent($content);
+        $this->setProtocolVersion('1.0');
     }
 
     /**
-     * Create response with raw data encoded
-     * {@inheritdoc}
+     * Prepares the Response before it is sent to the client.
+     *
+     * @param \Swilen\Http\Request $request
      *
      * @return $this
      */
-    public function make($content = '', int $status = 200, array $headers = [])
+    public function prepare(Request $request)
     {
-        $this->factory = new RawResponseFactory($this, $content, $status, $headers);
+        $charset = $this->charset ?: 'UTF-8';
 
-        return $this;
-    }
+        if ($this->isInformational() || $this->isEmpty()) {
+            $this->setContent(null);
+            $this->headers->remove('Content-Type');
+            $this->headers->remove('Content-Length');
+            // prevent PHP from sending the Content-Type header based on default_mimetype
+            @ini_set('default_mimetype', '');
+        } else {
+            if (!$this->headers->has('Content-Type')) {
+                $this->headers->set('Content-Type', 'text/html; charset='.$charset);
+            } elseif (stripos($this->headers->get('Content-Type'), 'text/') === 0 && stripos($this->headers->get('Content-Type'), 'charset') === false) {
+                // add the charset
+                $this->headers->set('Content-Type', $this->headers->get('Content-Type').'; charset='.$charset);
+            }
 
-    /**
-     * Create response with json encoded
-     * {@inheritdoc}
-     *
-     * @return $this
-     */
-    public function send($content = null, int $status = 200, array $headers = [])
-    {
-        $this->factory = new JsonResponseFactory($this, $content, $status, $headers);
+            // Fix Content-Length
+            if ($this->headers->has('Transfer-Encoding')) {
+                $this->headers->remove('Content-Length');
+            }
 
-        return $this;
-    }
+            if ($request->getMethod() === 'HEAD') {
+                $this->setContent(null);
+                $length = $this->headers->get('Content-Length');
+                if ($length) {
+                    $this->headers->set('Content-Length', $length);
+                }
+            }
+        }
 
-    /**
-     * Create response with binary file
-     * {@inheritdoc}
-     *
-     * @return $this
-     */
-    public function file($file, array $headers = [])
-    {
-        $this->factory = new BinaryFileResponseFactory($this, $file, 200, $headers);
+        if ('HTTP/1.0' != $request->server->get('SERVER_PROTOCOL')) {
+            $this->setProtocolVersion('1.1');
+        }
 
-        return $this;
-    }
-
-    /**
-     * Create response with downloadable binary file
-     * {@inheritdoc}
-     *
-     * @return $this
-     */
-    public function download($file, $name = null, array $headers = [], bool $attachment = true)
-    {
-        $this->factory = new BinaryFileResponseFactory($this, $file, 200, $headers, $attachment);
-
-        if (!$name) {
-            $this->factory->updateFilename($name);
+        if ('1.1' == $this->getProtocolVersion() && mb_strpos($this->headers->get('Cache-Control', ''), 'no-cache') !== false) {
+            $this->headers->set('pragma', 'no-cache');
+            $this->headers->set('expires', -1);
         }
 
         return $this;
     }
 
     /**
-     * @deprecated
-     *
-     * {@inheritdoc}
-     */
-    public function stream($resource, int $status = 200, array $headers = [])
-    {
-        // TODO
-    }
-
-    /**
-     * Determine and prepare response with factory
-     *
-     * @param \Swilen\Http\Request $request
-     */
-    public function prepare(Request $request)
-    {
-        $this->factory->prepare($request);
-
-        return $this;
-    }
-
-    /**
-     * Terminate http request and send content to client
+     * Terminate http request and send content to client.
      *
      * @return $this
      */
@@ -196,21 +141,21 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Send content into client
+     * Sends content for the current web response.
      *
-     * @return \Swilen\Http\Response
+     * @return $this
      */
-    public function sendResponseContent()
+    protected function sendResponseContent()
     {
-        $this->factory->sendContent();
+        $this->morphWriteContent($this->content);
 
         return $this;
     }
 
     /**
-     * Send headers to client
+     * Sends HTTP headers for the current web response.
      *
-     * @return \Swilen\Http\Response
+     * @return $this
      */
     protected function sendResponseHeaders()
     {
@@ -219,31 +164,98 @@ final class Response extends SupportResponse implements ResponseContract
         }
 
         foreach ($this->headers->all() as $name => $value) {
-            $replace = 0 === strcasecmp($name, 'Content-Type');
+            $replace = strcasecmp($name, 'Content-Type') === 0;
 
-            header($name . ': ' . $value, $replace, $this->statusCode());
+            header($name.': '.$value, $replace, $this->statusCode());
         }
 
-        $this->performResponseStatus();
+        header(
+            sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText), true, $this->statusCode
+        );
 
         return $this;
     }
 
     /**
-     * Send http status of response
+     * Morph write content to client.
+     *
+     * @param mixed $content
      *
      * @return void
      */
-    protected function performResponseStatus()
+    private function morphWriteContent($content)
     {
-        $this->statusCode = $this->statusCode ?? 500;
-        $this->statusText = static::STATUS_TEXTS[$this->statusCode()] ?? 'Internal Server Error';
+        echo (string) $content;
+    }
 
-        header(
-            sprintf('HTTP/%s %s %s', $this->getProtocolVersion(), $this->statusCode(), $this->statusText()),
-            true,
-            $this->statusCode()
-        );
+    /**
+     * Is response invalid?
+     *
+     * @return bool
+     */
+    final public function isInvalid()
+    {
+        return $this->statusCode < 100 || $this->statusCode >= 600;
+    }
+
+    /**
+     * Is the response a redirect?
+     *
+     * @return bool
+     */
+    final public function isRedirection()
+    {
+        return $this->statusCode >= 300 && $this->statusCode < 400;
+    }
+
+    /**
+     * Is there a client error?
+     *
+     * @return bool
+     */
+    final public function isClientError()
+    {
+        return $this->statusCode >= 400 && $this->statusCode < 500;
+    }
+
+    /**
+     * Was there a server side error?
+     *
+     * @return bool
+     */
+    final public function isServerError()
+    {
+        return $this->statusCode >= 500 && $this->statusCode < 600;
+    }
+
+    /**
+     * Is the response OK?
+     *
+     * @return bool
+     */
+    final public function isOk()
+    {
+        return $this->statusCode === 200;
+    }
+
+    /**
+     * Is the response forbidden?
+     *
+     * @return bool
+     */
+    final public function isForbidden()
+    {
+        return $this->statusCode === 403;
+    }
+
+    /**
+     * Is the response a not found error?
+     *
+     * @return bool
+     */
+    final public function isNotFound()
+    {
+        return $this->statusCode === 404;
     }
 
     /**
@@ -277,7 +289,25 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Get current content
+     * Modifies the response so that it conforms to the rules defined for a 304 status code.
+     *
+     * @return $this
+     */
+    final public function setNotModified()
+    {
+        $this->setStatusCode(304);
+        $this->setContent(null);
+
+        // remove headers that MUST NOT be included with 304 Not Modified responses
+        foreach (['Allow', 'Content-Encoding', 'Content-Language', 'Content-Length', 'Content-MD5', 'Content-Type', 'Last-Modified'] as $header) {
+            $this->headers->remove($header);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get current content.
      *
      * @return mixed
      */
@@ -287,7 +317,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Set new content or override if exists content
+     * Set new content or override if exists content.
      *
      * @param mixed $content
      *
@@ -299,7 +329,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Alias for setContent and return this instance
+     * Alias for setContent and return this instance.
      *
      * @param mixed $content
      *
@@ -313,9 +343,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Insert header scollection to response
-     *
-     * @param array $headers
+     * Insert header scollection to response.
      *
      * @return $this
      */
@@ -325,9 +353,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Alias for `headers(array $headers = [])`
-     *
-     * @param array $headers
+     * Alias for `headers(array $headers = [])`.
      *
      * @return $this
      */
@@ -341,10 +367,10 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Insert header to response
+     * Insert header to response.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return $this
      */
@@ -354,10 +380,10 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Alias for `header(string key, mixed $value)`
+     * Alias for `header(string key, mixed $value)`.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return $this
      */
@@ -369,33 +395,32 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Set status code
+     * Set status code.
      *
-     * @param int $status
+     * @param string $text
      *
      * @return void
      */
-    public function setStatusCode(int $status)
+    final public function setStatusCode(int $status, string $text = null)
     {
         $this->statusCode = $status;
+        $this->statusText = $text ?? static::STATUS_TEXTS[$this->statusCode()] ?? 'Internal Server Error';
     }
 
     /**
-     * Set status code and return this instance
-     *
-     * @param int $status
+     * Set status code and return this instance.
      *
      * @return $this
      */
     public function status(int $status)
     {
-        $this->statusCode = $status;
+        $this->setStatusCode($status);
 
         return $this;
     }
 
     /**
-     * Returns current status code
+     * Returns current status code.
      *
      * @return int
      */
@@ -405,7 +430,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Returns current status text
+     * Returns current status text.
      *
      * @return string
      */
@@ -415,7 +440,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Returns current HTTP version
+     * Returns current HTTP version.
      *
      * @return void
      */
@@ -425,7 +450,7 @@ final class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Set HTTP version
+     * Set HTTP version.
      *
      * @param string $version
      *

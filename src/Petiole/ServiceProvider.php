@@ -5,14 +5,14 @@ namespace Swilen\Petiole;
 abstract class ServiceProvider
 {
     /**
-     * The application instance
+     * The application instance.
      *
-     * @var \Swilen\Contracts\Arthropod\Application
+     * @var \Swilen\Shared\Arthropod\Application
      */
     protected $app;
 
     /**
-     * @param \Swilen\Contracts\Arthropod\Application $app
+     * @param \Swilen\Shared\Arthropod\Application $app
      *
      * @return void
      */
@@ -22,7 +22,7 @@ abstract class ServiceProvider
     }
 
     /**
-     * Overwritable public function to register the dependencies or logic needed to start this service
+     * Overwritable public function to register the dependencies or logic needed to start this service.
      *
      * @return void
      */

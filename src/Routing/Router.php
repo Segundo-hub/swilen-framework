@@ -2,61 +2,63 @@
 
 namespace Swilen\Routing;
 
-use Swilen\Shared\Support\{Arrayable, Enumerable};
 use Swilen\Container\Container;
+use Swilen\Http\Common\Http;
+use Swilen\Http\Common\HttpTransformJson;
 use Swilen\Http\Request;
 use Swilen\Http\Response;
+use Swilen\Http\Response\JsonResponse;
 use Swilen\Pipeline\Pipeline;
 use Swilen\Routing\Contract\RouterContract;
 
 class Router implements RouterContract
 {
     /**
-     * The application container instance
+     * The application container instance.
      *
      * @var \Swilen\Container\Container
      */
     private $container;
 
     /**
-     * Collection of routes
+     * Collection of routes.
      *
      * @var \Swilen\Routing\RouteCollection
      */
     protected $routes;
 
     /**
-     * Current Route
+     * Current Route.
      *
      * @var \Swilen\Routing\Route
      */
     protected $currentRoute;
 
     /**
-     * Current http Request
+     * Current http Request.
      *
      * @var \Swilen\Http\Request
      */
     protected $currentRequest;
 
     /**
-     * Route group atributes
+     * Route group atributes.
      *
      * @var array<string, mixed>
      */
     protected $groupStack = [];
 
     /**
-     * The server HTTP methods
+     * The server HTTP methods.
      *
      * @var string[]
      */
     protected const SERVER_METHODS = [
-        'OPTIONS', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'TRACE', 'CONNECT', 'HEAD'
+        'OPTIONS', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'TRACE', 'CONNECT', 'HEAD',
     ];
 
     /**
-     * Create new Router instance
+     * Create new Router instance.
      *
      * @param \Swilen\Container\Container|null $container
      *
@@ -64,14 +66,14 @@ class Router implements RouterContract
      */
     public function __construct($container = null)
     {
-        $this->container = $container ?: new Container;
-        $this->routes    = new RouteCollection;
+        $this->container = $container ?: new Container();
+        $this->routes = new RouteCollection();
     }
 
     /**
      * Register a new GET route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -84,7 +86,7 @@ class Router implements RouterContract
     /**
      * Register a new POST route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -97,7 +99,7 @@ class Router implements RouterContract
     /**
      * Register a new PUT route with the router.
      *
-     * @param string  $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -110,7 +112,7 @@ class Router implements RouterContract
     /**
      * Register a new PATCH route with the router.
      *
-     * @param string  $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -123,7 +125,7 @@ class Router implements RouterContract
     /**
      * Register a new DELETE route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -136,7 +138,7 @@ class Router implements RouterContract
     /**
      * Register a new OPTIONS route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -147,10 +149,10 @@ class Router implements RouterContract
     }
 
     /**
-     * Add new route to route collection
+     * Add new route to route collection.
      *
-     * @param string $method
-     * @param string $uri
+     * @param string                $method
+     * @param string                $uri
      * @param string|array|\Closure $action
      *
      * @return \Swilen\Routing\Route
@@ -167,10 +169,10 @@ class Router implements RouterContract
     }
 
     /**
-     * Create new Route
+     * Create new Route.
      *
-     * @param string $method
-     * @param string $uri
+     * @param string                $method
+     * @param string                $uri
      * @param string|array|\Closure $action
      *
      * @return \Swilen\Routing\Route
@@ -183,9 +185,9 @@ class Router implements RouterContract
     }
 
     /**
-     * Create group routes with shared attributes
+     * Create group routes with shared attributes.
      *
-     * @param array $atributes
+     * @param array          $atributes
      * @param \Closure|array $routes
      *
      * @return void
@@ -202,7 +204,7 @@ class Router implements RouterContract
     }
 
     /**
-     * Merge attributes into route
+     * Merge attributes into route.
      *
      * @param \Swilen\Routing\Route $route
      */
@@ -215,7 +217,7 @@ class Router implements RouterContract
     }
 
     /**
-     * Wrap group routes as array
+     * Wrap group routes as array.
      *
      * @param mixed $routes
      *
@@ -256,7 +258,7 @@ class Router implements RouterContract
      * Merge the given array with the last group stack.
      *
      * @param array $new
-     * @param bool $prependExistingPrefix
+     * @param bool  $prependExistingPrefix
      *
      * @return array
      */
@@ -266,7 +268,7 @@ class Router implements RouterContract
     }
 
     /**
-     * Load routes
+     * Load routes.
      *
      * @param \Closure|string $routes
      *
@@ -282,7 +284,7 @@ class Router implements RouterContract
     }
 
     /**
-     * Prefix group of routes
+     * Prefix group of routes.
      *
      * @param string $uri
      *
@@ -290,11 +292,11 @@ class Router implements RouterContract
      */
     protected function prefix($uri)
     {
-        return '/' . trim(trim($this->getLastGroupPrefix(), '/') . '/' . trim($uri, '/'), '/') ?: '/';
+        return '/'.trim(trim($this->getLastGroupPrefix(), '/').'/'.trim($uri, '/'), '/') ?: '/';
     }
 
     /**
-     * Get the prefix of the last group or an empty string if not defined
+     * Get the prefix of the last group or an empty string if not defined.
      *
      * @return string
      */
@@ -310,9 +312,10 @@ class Router implements RouterContract
     }
 
     /**
-     * Handle incoming request and dispatch to route
+     * Handle incoming request and dispatch to route.
      *
      * @param \Swilen\Http\Request $request
+     *
      * @return \Swilen\Http\Response
      */
     public function dispatch(Request $request)
@@ -323,9 +326,10 @@ class Router implements RouterContract
     }
 
     /**
-     * Send the current request to the route that matches the action
+     * Send the current request to the route that matches the action.
      *
      * @param \Swilen\Http\Request $request
+     *
      * @return \Swilen\Http\Response
      */
     protected function dispatchToRoute(Request $request)
@@ -343,10 +347,10 @@ class Router implements RouterContract
     }
 
     /**
-     * Prepare response from incoming request
+     * Prepare response from incoming request.
      *
      * @param \Swilen\Http\Request $request
-     * @param mixed $response
+     * @param mixed                $response
      *
      * @return \Swilen\Http\Response
      */
@@ -356,19 +360,23 @@ class Router implements RouterContract
             return $response->prepare($request);
         }
 
-        if ($response instanceof Arrayable) {
-            $response = $response->toArray();
-        } else if ($response instanceof Enumerable) {
-            $response = $response->all();
-        } else if ($response instanceof \JsonSerializable) {
-            $response = $response->jsonSerialize();
+        if ($response instanceof \Stringable) {
+            $response = new Response($response->__toString(), 200, ['Content-Type' => 'text/html']);
+        } elseif (HttpTransformJson::shouldBeJson($response)) {
+            $response = new JsonResponse($response);
+        } else {
+            $response = new Response($response);
         }
 
-        return (new Response($response))->prepare($request);
+        if ($response->statusCode() === Http::NOT_MODIFIED) {
+            $response->setNotModified();
+        }
+
+        return $response->prepare($request);
     }
 
     /**
-     * Return routes collection
+     * Return routes collection.
      *
      * @return \Swilen\Routing\RouteCollection
      */
@@ -378,7 +386,7 @@ class Router implements RouterContract
     }
 
     /**
-     * Return current route matched
+     * Return current route matched.
      *
      * @return \Swilen\Routing\Route
      */
@@ -391,7 +399,7 @@ class Router implements RouterContract
      * Dynamically handle calls into the router instance.
      *
      * @param string $method
-     * @param array $arguments
+     * @param array  $arguments
      *
      * @return mixed
      */

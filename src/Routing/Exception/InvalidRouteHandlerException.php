@@ -5,10 +5,10 @@ namespace Swilen\Routing\Exception;
 class InvalidRouteHandlerException extends \Exception
 {
     /**
-     * Create exception for action is callable
+     * Create exception for action is callable.
      *
      * @param string $message
-     * @param int $code
+     * @param int    $code
      *
      * @return static
      */
@@ -18,11 +18,11 @@ class InvalidRouteHandlerException extends \Exception
     }
 
     /**
-     * Create exception for action is controller method
+     * Create exception for action is controller method.
      *
      * @param string $class
      * @param string $method
-     * @param int $code
+     * @param int    $code
      *
      * @return static
      */

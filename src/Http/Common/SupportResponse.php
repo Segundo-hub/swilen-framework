@@ -109,9 +109,9 @@ class SupportResponse implements Http
     ];
 
     /**
-     * Close buffers when the content has already been sent
+     * Close buffers when the content has already been sent.
      *
-     * @param int $targetLevel
+     * @param int  $targetLevel
      * @param bool $flush
      *
      * @return void

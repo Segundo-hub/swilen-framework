@@ -1,23 +1,15 @@
 <?php
 
-namespace Swilen\Http\Factories;
+namespace Swilen\Http\Response;
 
 use Swilen\Http\Component\File\File;
-use Swilen\Http\Contract\ResponseFactory;
 use Swilen\Http\Request;
 use Swilen\Http\Response;
 
-final class BinaryFileResponseFactory implements ResponseFactory
+class BinaryFileResponse extends Response
 {
     /**
-     * The response instance
-     *
-     * @var \Swilen\Http\Response
-     */
-    protected $response;
-
-    /**
-     * The parsed content as string or reource for put into client
+     * The parsed content as string or reource for put into client.
      *
      * @var \Swilen\Http\Component\File\File
      */
@@ -39,19 +31,16 @@ final class BinaryFileResponseFactory implements ResponseFactory
     protected $chunkSize = 8 * 1024;
 
     /**
-     * Create new binary file response factory
+     * Create new binary file response factory.
      *
-     * @param \Swilen\Http\Response $response
-     * @param \SplFileInfo|resource|string $file
-     * @param int $status
-     * @param array $headers
-     * @param bool $attachment
+     * @param \SplFileInfo|string $file       The file: filepath or File instance
+     * @param bool                $attachment The disposition for send file
      *
      * @return void
      */
-    public function __construct(Response $response, $file, int $status = 200, array $headers = [], bool $attachment = false)
+    public function __construct($file, int $status = 200, array $headers = [], bool $attachment = false)
     {
-        $this->response = $response->withOptions(null, $status, $headers);
+        parent::__construct(null, $status, $headers);
 
         $this->setBinaryFile($file);
 
@@ -61,7 +50,7 @@ final class BinaryFileResponseFactory implements ResponseFactory
     }
 
     /**
-     * Resolve file instance
+     * Resolve file instance.
      *
      * @param \SplFileInfo|resource|string $file
      *
@@ -77,22 +66,22 @@ final class BinaryFileResponseFactory implements ResponseFactory
     }
 
     /**
-     * Make content disposition to file for download
+     * Make content disposition to file for download.
      */
     protected function setContentDisposition()
     {
         $filename = $this->file->getFilename();
 
-        $this->response->withHeaders([
+        $this->withHeaders([
             'Content-Description' => 'File Transfer',
             'Cache-Control' => 'no-cache, must-revalidate',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Pragma' => 'public'
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Pragma' => 'public',
         ]);
     }
 
     /**
-     * Update filename for to send
+     * Update filename for to send.
      *
      * @param string $filename
      *
@@ -100,13 +89,13 @@ final class BinaryFileResponseFactory implements ResponseFactory
      */
     public function updateFilename(string $filename)
     {
-        $this->response->headers->replace('Content-Disposition', 'attachment; filename="' . $filename . '"',);
+        $this->headers->replace('Content-Disposition', 'attachment; filename="'.$filename.'"');
 
         return $this;
     }
 
     /**
-     * Prepare response for send this current file
+     * Prepare response for send this current file.
      *
      * @param \Swilen\Http\Request $request
      *
@@ -114,10 +103,10 @@ final class BinaryFileResponseFactory implements ResponseFactory
      */
     public function prepare(Request $request)
     {
-        $this->response->headers->set('Content-Type', $this->file->getMimeType() ?: 'application/octet-stream');
+        $this->headers->set('Content-Type', $this->file->getMimeType() ?: 'application/octet-stream');
 
-        if ('HTTP/1.0' !== $request->server->get('SERVER_PROTOCOL')) {
-            $this->response->setProtocolVersion('1.1');
+        if ($request->server->get('SERVER_PROTOCOL') !== 'HTTP/1.0') {
+            $this->setProtocolVersion('1.1');
         }
 
         $this->offset = 0;
@@ -127,10 +116,10 @@ final class BinaryFileResponseFactory implements ResponseFactory
             return $this;
         }
 
-        $this->response->headers->set('Content-Length', $fileSize);
+        $this->headers->set('Content-Length', $fileSize);
 
-        if (!$this->response->headers->has('Accept-Ranges')) {
-            $this->response->headers->set('Accept-Ranges', $request->isMethodSafe() ? 'bytes' : 'none');
+        if (!$this->headers->has('Accept-Ranges')) {
+            $this->headers->set('Accept-Ranges', $request->isMethodSafe() ? 'bytes' : 'none');
         }
 
         if ($request->headers->has('Range') && $request->getMethod() === 'GET') {
@@ -141,9 +130,9 @@ final class BinaryFileResponseFactory implements ResponseFactory
                 if (substr($range, 0, 6) === 'bytes=') {
                     [$start, $end] = explode('-', substr($range, 6), 2) + [0];
 
-                    $end = ('' === $end) ? $fileSize - 1 : (int) $end;
+                    $end = ($end === '') ? $fileSize - 1 : (int) $end;
 
-                    if ('' === $start) {
+                    if ($start === '') {
                         $start = $fileSize - $end;
                         $end = $fileSize - 1;
                     } else {
@@ -153,15 +142,15 @@ final class BinaryFileResponseFactory implements ResponseFactory
                     if ($start <= $end) {
                         $end = min($end, $fileSize - 1);
                         if ($start < 0 || $start > $end) {
-                            $this->response->setStatusCode(416);
-                            $this->response->headers->set('Content-Range', sprintf('bytes */%s', $fileSize));
+                            $this->setStatusCode(416);
+                            $this->headers->set('Content-Range', sprintf('bytes */%s', $fileSize));
                         } elseif ($end - $start < $fileSize - 1) {
                             $this->maxlen = $end < $fileSize ? $end - $start + 1 : -1;
                             $this->offset = $start;
 
-                            $this->response->setStatusCode(206);
-                            $this->response->headers->set('Content-Range', sprintf('bytes %s-%s/%s', $start, $end, $fileSize));
-                            $this->response->headers->set('Content-Length', $end - $start + 1);
+                            $this->setStatusCode(206);
+                            $this->headers->set('Content-Range', sprintf('bytes %s-%s/%s', $start, $end, $fileSize));
+                            $this->headers->set('Content-Length', $end - $start + 1);
                         }
                     }
                 }
@@ -172,24 +161,26 @@ final class BinaryFileResponseFactory implements ResponseFactory
     }
 
     /**
-     * Send data as stream to client
+     * Sends file for the current web response.
      *
      * @return $this
      */
-    public function sendContent()
+    protected function sendResponseContent()
     {
-        if (!$this->response->isSuccessful()) {
-            return $this->response->sendResponseContent();
+        if (!$this->isSuccessful()) {
+            return parent::sendResponseContent();
         }
 
-        if (0 === $this->maxlen) return $this;
+        if ($this->maxlen === 0) {
+            return $this;
+        }
 
-        $InputStream  = fopen($this->file->getPathname(), 'r');
+        $InputStream = fopen($this->file->getPathname(), 'r');
         $OutputStream = fopen('php://output', 'w');
 
         ignore_user_abort(true);
 
-        if (0 !== $this->offset) {
+        if ($this->offset !== 0) {
             fseek($InputStream, $this->offset);
         }
 

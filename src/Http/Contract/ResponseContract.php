@@ -2,60 +2,23 @@
 
 namespace Swilen\Http\Contract;
 
+use Swilen\Http\Request;
+
 interface ResponseContract
 {
     /**
-     * Create new response from values of params args
+     * Prepares the Response before it is sent to the client.
      *
-     * @param resource|string|array|object|null $content
-     * @param int $status
-     * @param array $headers
+     * @param \Swilen\Http\Request $request
      *
-     * @return \Swilen\Http\Response
+     * @return $this
      */
-    public function make($content = '', int $status = 200, array $headers = []);
+    public function prepare(Request $request);
 
     /**
-     * Alias for make function
+     * Terminate response with sends HTTP headers and content.
      *
-     * @param resource|string|array|object|null $content
-     * @param int $status
-     * @param array $headers
-     *
-     * @return \Swilen\Http\Response
+     * @return $this
      */
-    public function send($content = null, int $status = 200, array $headers = []);
-
-    /**
-     * Create response with file and sending to client
-     *
-     * @param \SplFileInfo|string $file
-     * @param array $headers
-     *
-     * @return \Swilen\Http\Response
-     */
-    public function file($file, array $headers = []);
-
-    /**
-     * Create streamed response
-     *
-     * @param \SplFileInfo|resource|string $resource
-     * @param int $status
-     * @param array $headers
-     *
-     * @return \Swilen\Http\Response
-     */
-    public function stream($resource, int $status = 200, array $headers = []);
-
-    /**
-     * Create downloadble file response
-     *
-     * @param \SplFileInfo|resource|string $resource
-     * @param string $name
-     * @param array $headers
-     * @param bool $attachemnt
-     *
-     * @return \Swilen\Http\Response
-     */
-    public function download($file, string $name = null, array $headers = [], bool $attachemnt = true);
+    public function terminate();
 }

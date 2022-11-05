@@ -2,19 +2,17 @@
 
 namespace Swilen\Http\Component;
 
-use Swilen\Shared\Support\Enumerable;
-
-class HeaderHunt implements Enumerable
+class HeaderHunt implements \Countable, \IteratorAggregate
 {
     /**
-     * The headers collection
+     * The headers collection.
      *
      * @var array<string, mixed>
      */
     protected $headers = [];
 
     /**
-     * Create new HeaderHunt collection instance
+     * Create new HeaderHunt collection instance.
      *
      * @param array<string, mixed> $headers
      *
@@ -28,10 +26,10 @@ class HeaderHunt implements Enumerable
     }
 
     /**
-     * Set new header to collection
+     * Set new header to collection.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return void
      */
@@ -41,10 +39,10 @@ class HeaderHunt implements Enumerable
     }
 
     /**
-     * alias for set new header to collection
+     * alias for set new header to collection.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return void
      */
@@ -54,7 +52,7 @@ class HeaderHunt implements Enumerable
     }
 
     /**
-     * Remove a header from collection searched by key
+     * Remove a header from collection searched by key.
      *
      * @param string $key
      *
@@ -66,7 +64,7 @@ class HeaderHunt implements Enumerable
     }
 
     /**
-     * Check if header is exists in collection
+     * Check if header is exists in collection.
      *
      * @param string $key
      *
@@ -78,10 +76,10 @@ class HeaderHunt implements Enumerable
     }
 
     /**
-     * Replace existing header in collection
+     * Replace existing header in collection.
      *
      * @param string $key
-     * @param mixed $replaced
+     * @param mixed  $replaced
      *
      * @return bool
      */
@@ -90,11 +88,11 @@ class HeaderHunt implements Enumerable
         $this->headers[$key] = $replaced;
     }
 
-     /**
-     * Get one header from collection or null if not exists
+    /**
+     * Get one header from collection or null if not exists.
      *
      * @param string $key
-     * @param mixed $default
+     * @param mixed  $default
      *
      * @return mixed
      */
@@ -104,7 +102,7 @@ class HeaderHunt implements Enumerable
     }
 
     /**
-     * {@inheritdoc}
+     * Retrieve all headers collection. Return empty array if is empty headers.
      *
      * @return array
      */
@@ -114,11 +112,33 @@ class HeaderHunt implements Enumerable
     }
 
     /**
-     * Filter value from header
+     * Returns the number of headers.
      *
-     * @param string $key
+     * @return int
+     */
+    #[\ReturnTypeWillChange]
+    public function count()
+    {
+        return \count($this->headers);
+    }
+
+    /**
+     * Returns an iterator for headers.
+     *
+     * @return \ArrayIterator<string, list<string|null>>
+     */
+    #[\ReturnTypeWillChange]
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->headers);
+    }
+
+    /**
+     * Filter value from header.
+     *
+     * @param string             $key
      * @param string|number|null $default
-     * @param int $flags
+     * @param int                $flags
      *
      * @return mixed
      */

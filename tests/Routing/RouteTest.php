@@ -24,7 +24,7 @@ it('Route handler is invalid', function ($action) {
     $route->run();
 })->with([
     'controller' => 'controller@invoke',
-    'controller_arrayed' => array(['controller\\class', 'invoke'])
+    'controller_arrayed' => [['controller\\class', 'invoke']],
 ])->throws(HttpResponseException::class);
 
 it('Run route action is callable or invocable', function ($action) {
@@ -37,7 +37,7 @@ it('Run route action is callable or invocable', function ($action) {
             return 5;
         };
     },
-    'invocable' => InvocableTest::class
+    'invocable' => InvocableTest::class,
 ]);
 
 it('Compile parameters matched', function () {
@@ -96,7 +96,6 @@ it('Resolve multiples parameter names', function () {
 
     expect($route->run())->toBeNull();
 });
-
 
 class InvocableTest
 {

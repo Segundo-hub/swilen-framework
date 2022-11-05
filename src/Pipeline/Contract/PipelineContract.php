@@ -14,7 +14,7 @@ interface PipelineContract
     public function from($target);
 
     /**
-     * Set array of pipes
+     * Set array of pipes.
      *
      * @param array|mixed $pipes
      *
@@ -23,7 +23,7 @@ interface PipelineContract
     public function through($pipes);
 
     /**
-     * Terminate pipeline with destination
+     * Terminate pipeline with destination.
      *
      * @param \Closure $destination
      *
@@ -32,7 +32,7 @@ interface PipelineContract
     public function then(\Closure $destination);
 
     /**
-     * Set method each called pipes
+     * Set method each called pipes.
      *
      * @param string $method The method name
      *

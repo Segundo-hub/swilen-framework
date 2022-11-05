@@ -5,11 +5,11 @@ namespace Swilen\Http\Common;
 final class MimeTypes
 {
     /**
-     * MimeTypes collection
+     * MimeTypes collection.
      *
      * @var array<string, string>
      */
-    protected const COLLECTION = [
+    private const COLLECTION = [
         'txt' => 'text/plain',
         'htm' => 'text/html',
         'html' => 'text/html',
@@ -20,7 +20,7 @@ final class MimeTypes
         'xml' => 'application/xml',
         'swf' => 'application/x-shockwave-flash',
         'flv' => 'video/x-flv',
-        'md'  => 'text/markdown',
+        'md' => 'text/markdown',
 
         // images
         'png' => 'image/png',
@@ -74,11 +74,11 @@ final class MimeTypes
         'sfnt' => 'font/sfnt',
         'ttf' => 'font/ttf',
         'woff' => 'font/woff',
-        'woff2' => 'font/woff2'
+        'woff2' => 'font/woff2',
     ];
 
     /**
-     * Get mimeType based in file extension
+     * Get mimeType based in file extension.
      *
      * @param string $extension
      *

@@ -8,7 +8,7 @@ final class RouteAction
      * Parse the given action into an array.
      *
      * @param string $uri
-     * @param mixed $action
+     * @param mixed  $action
      *
      * @return array
      */
@@ -20,8 +20,8 @@ final class RouteAction
 
         if (static::isCallable($action, true)) {
             $action = !is_array($action) ? ['uses' => $action] : [
-                'uses' => $action[0] . '@' . $action[1],
-                'controller' => $action[0] . '@' . $action[1],
+                'uses' => $action[0].'@'.$action[1],
+                'controller' => $action[0].'@'.$action[1],
             ];
 
             if (is_string($action['uses']) && mb_strpos($action['uses'], '@') !== false) {
@@ -39,12 +39,13 @@ final class RouteAction
     /**
      * Get an action for a route that has no action.
      *
-     * @param  string  $uri
+     * @param string $uri
      *
      * @return array
+     *
      * @throws \LogicException
      */
-    protected static function missingAction($uri)
+    private static function missingAction($uri)
     {
         return ['uses' => function () use ($uri) {
             throw new \LogicException("Missing action for route: [{$uri}].");
@@ -52,10 +53,10 @@ final class RouteAction
     }
 
     /**
-     * Determine action is closure
+     * Determine action is closure.
      *
      * @param mixed $action
-     * @param bool $check
+     * @param bool  $check
      *
      * @return bool
      */
@@ -87,22 +88,23 @@ final class RouteAction
     /**
      * Make an action for an invokable controller.
      *
-     * @param  string $action
+     * @param string $action
      *
      * @return string
+     *
      * @throws \UnexpectedValueException
      */
-    protected static function makeAsInvokable($action)
+    private static function makeAsInvokable($action)
     {
         if (!method_exists($action, '__invoke')) {
             throw new \UnexpectedValueException("Invalid route action: [{$action}].");
         }
 
-        return $action . '@__invoke';
+        return $action.'@__invoke';
     }
 
     /**
-     * Parse controller action to array
+     * Parse controller action to array.
      *
      * @param string|array $action
      *

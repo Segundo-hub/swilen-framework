@@ -21,6 +21,7 @@ class SupportRequest
         $server = static::replaceServerVars($server, $method);
 
         $components = parse_url($uri);
+
         if (isset($components['host'])) {
             $server['SERVER_NAME'] = $components['host'];
             $server['HTTP_HOST'] = $components['host'];

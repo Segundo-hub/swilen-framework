@@ -5,7 +5,7 @@ namespace Swilen\Shared\Support;
 interface Arrayable
 {
     /**
-     * Transform values to array
+     * Transform values to array.
      *
      * @return array
      */

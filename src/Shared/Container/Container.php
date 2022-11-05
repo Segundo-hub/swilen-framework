@@ -7,9 +7,9 @@ interface Container
     /**
      * Finds an entry of the container by its identifier and returns it.
      *
-     * @param string $id Identifier of the entry to look for.
+     * @param string $id identifier of the entry to look for
      *
-     * @return mixed Entry.
+     * @return mixed entry
      */
     public function get(string $id);
 
@@ -17,7 +17,7 @@ interface Container
      * Returns true if the container can return an entry for the given identifier.
      * Returns false otherwise.
      *
-     * @param string $id Identifier of the entry to look for.
+     * @param string $id identifier of the entry to look for
      *
      * @return bool
      */
@@ -27,7 +27,7 @@ interface Container
      * Resolve the given type from the container.
      *
      * @param string|callable $abstract
-     * @param array $parameters
+     * @param array           $parameters
      *
      * @return mixed
      */
@@ -36,16 +36,16 @@ interface Container
     /**
      * Register a binding with the container.
      *
-     * @param string $abstract
+     * @param string               $abstract
      * @param \Closure|string|null $concrete
-     * @param bool $shared
+     * @param bool                 $shared
      *
      * @return void
      */
     public function bind(string $service, $abstract = null, $shared = false): void;
 
     /**
-     * Unbind service from container
+     * Unbind service from container.
      *
      * @param string $service
      *
@@ -56,7 +56,7 @@ interface Container
     /**
      * Register a shared binding in the container.
      *
-     * @param string $abstract
+     * @param string               $abstract
      * @param \Closure|string|null $concrete
      *
      * @return void

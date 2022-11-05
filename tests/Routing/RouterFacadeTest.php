@@ -1,7 +1,7 @@
 <?php
 
 use Swilen\Container\Container;
-use Swilen\Petiole\Facades\Facade;
+use Swilen\Petiole\Facade;
 use Swilen\Petiole\Facades\Route;
 use Swilen\Routing\Route as RoutingRoute;
 use Swilen\Routing\Router;
@@ -9,7 +9,7 @@ use Swilen\Security\Middleware\Authenticate;
 
 uses()->group('Routing');
 
-beforeAll(function() {
+beforeAll(function () {
     $app = Container::getInstance();
 
     $app->singleton('router', function ($app) {
@@ -24,7 +24,6 @@ afterAll(function () {
 });
 
 it('Router Facade registered succesfully', function () {
-
     $route = Route::get('/hola', function () {
         return ['hola' => 'Mundo'];
     })->name('test-hola')->use(Authenticate::class);

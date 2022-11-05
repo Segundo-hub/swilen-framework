@@ -5,7 +5,7 @@ namespace Swilen\Http\Component;
 final class ServerHunt extends ParameterHunt
 {
     /**
-     * Make default header for request
+     * Make default header for request.
      *
      * @return array<string, string>
      */
@@ -14,7 +14,7 @@ final class ServerHunt extends ParameterHunt
         $headers = [];
 
         foreach ($this->params as $key => $value) {
-            if (substr($key, 0, 5) === "HTTP_") {
+            if (substr($key, 0, 5) === 'HTTP_') {
                 $key = $this->toNormalizeHttp($key);
                 $headers[$key] = $value;
             } elseif (\in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'], true)) {
@@ -37,13 +37,13 @@ final class ServerHunt extends ParameterHunt
 
         if (isset($this->params['Authorization'])) {
             $authorization = $this->params['Authorization'];
-        } else if (isset($this->params['HTTP_AUTHORIZATION'])) {
+        } elseif (isset($this->params['HTTP_AUTHORIZATION'])) {
             $authorization = $this->params['HTTP_AUTHORIZATION'];
-        } else if (isset($this->params['REDIRECT_HTTP_AUTHORIZATION'])) {
+        } elseif (isset($this->params['REDIRECT_HTTP_AUTHORIZATION'])) {
             $authorization = $this->params['REDIRECT_HTTP_AUTHORIZATION'];
         }
 
-        if (null !== $authorization) {
+        if ($authorization !== null) {
             $headers['Authorization'] = trim($authorization);
         }
 
@@ -51,11 +51,11 @@ final class ServerHunt extends ParameterHunt
     }
 
     /**
-     * Filter INPUT_SERVER with default value
+     * Filter INPUT_SERVER with default value.
      *
-     * @param string $key
+     * @param string                $key
      * @param string|int|mixed|null $default
-     * @param int $filters
+     * @param int                   $filters
      *
      * @return mixed
      */

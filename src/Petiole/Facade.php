@@ -1,11 +1,11 @@
 <?php
 
-namespace Swilen\Petiole\Facades;
+namespace Swilen\Petiole;
 
 abstract class Facade
 {
     /**
-     * The application instance
+     * The application instance.
      *
      * @var \Swilen\Shared\Arthropod\Application
      */
@@ -19,7 +19,7 @@ abstract class Facade
     protected static $resolvedInstances;
 
     /**
-     * Set Facade application
+     * Set Facade application.
      *
      * @param \Swilen\Shared\Arthropod\Application $app
      *
@@ -31,7 +31,7 @@ abstract class Facade
     }
 
     /**
-     * Get the name registered in the container
+     * Get the name registered in the container.
      *
      * @return string
      */
@@ -41,7 +41,7 @@ abstract class Facade
     }
 
     /**
-     * Resolve facade from the container instance
+     * Resolve facade from the container instance.
      *
      * @param string $name
      *
@@ -59,7 +59,7 @@ abstract class Facade
     }
 
     /**
-     * Clear resolver instance and prepare for other request
+     * Clear resolver instance and prepare for other request.
      *
      * @return void
      */
@@ -69,7 +69,7 @@ abstract class Facade
     }
 
     /**
-     * Clear resolver instance and prepare for other request
+     * Clear resolver instance and prepare for other request.
      *
      * @param string $name
      *
@@ -83,7 +83,7 @@ abstract class Facade
     }
 
     /**
-     * Get object behind the facade
+     * Get object behind the facade.
      *
      * @return mixed
      */
@@ -93,10 +93,10 @@ abstract class Facade
     }
 
     /**
-     * Handle dynamic calls to method inset object
+     * Handle dynamic calls to method inset object.
      *
      * @param string $method
-     * @param array $arguments
+     * @param array  $arguments
      *
      * @return mixed
      */
@@ -106,6 +106,7 @@ abstract class Facade
         if (!$instance) {
             throw new \RuntimeException('Facade root not resolved correctly');
         }
+
         return $instance->{$method}(...$arguments);
     }
 }

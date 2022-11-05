@@ -2,18 +2,18 @@
 
 namespace Swilen\Http\Component\File;
 
-use Swilen\Shared\Support\Arrayable;
 use Swilen\Http\Common\MimeTypes;
 use Swilen\Http\Exception\FileException;
 use Swilen\Http\Exception\FileNotFoundException;
+use Swilen\Shared\Support\Arrayable;
 
 class File extends \SplFileInfo implements Arrayable
 {
     /**
-     * Create new File instance
+     * Create new File instance.
      *
-     * @param string $path
-     * @param bool $check
+     * @param string $path  The file path
+     * @param bool   $check Check file exists
      *
      * @return void
      */
@@ -27,7 +27,7 @@ class File extends \SplFileInfo implements Arrayable
     }
 
     /**
-     * Move file not another directory or rename directory
+     * Move file not another directory or rename directory.
      *
      * @param string $directory
      * @param string $name
@@ -57,7 +57,7 @@ class File extends \SplFileInfo implements Arrayable
     }
 
     /**
-     * Change file permisions
+     * Change file permisions.
      *
      * @param string $target
      */
@@ -67,7 +67,7 @@ class File extends \SplFileInfo implements Arrayable
     }
 
     /**
-     * Get target with directory and filename provided
+     * Get target with directory and filename provided.
      *
      * @param string $directory
      * @param string $name
@@ -77,20 +77,20 @@ class File extends \SplFileInfo implements Arrayable
     public function getTargetFile(string $directory, string $name = null)
     {
         if (!is_dir($directory)) {
-            if (false === @mkdir($directory, 0777, true) && !is_dir($directory)) {
+            if (@mkdir($directory, 0777, true) === false && !is_dir($directory)) {
                 throw new FileException(sprintf('Unable to create the "%s" directory.', $directory));
             }
         } elseif (!is_writable($directory)) {
             throw new FileException(sprintf('Unable to write in the "%s" directory.', $directory));
         }
 
-        $target = rtrim($directory, '/\\') . \DIRECTORY_SEPARATOR . (null === $name ? $this->getBasename() : $this->getName($name));
+        $target = rtrim($directory, '/\\').\DIRECTORY_SEPARATOR.($name === null ? $this->getBasename() : $this->getName($name));
 
         return new self($target, false);
     }
 
     /**
-     * Get content from file provided
+     * Get content from file provided.
      *
      * @return string
      */
@@ -98,7 +98,7 @@ class File extends \SplFileInfo implements Arrayable
     {
         $content = file_get_contents($this->getPathname());
 
-        if (false === $content) {
+        if ($content === false) {
             throw new FileException(sprintf('Could not get the content of the file "%s".', $this->getPathname()));
         }
 
@@ -124,7 +124,7 @@ class File extends \SplFileInfo implements Arrayable
     }
 
     /**
-     * Get mime Type from extension
+     * Get mime Type from extension.
      *
      * @return string
      */
@@ -142,7 +142,7 @@ class File extends \SplFileInfo implements Arrayable
             'path' => $this->getPathname(),
             'name' => $this->getFilename(),
             'ext' => $this->getExtension(),
-            'size' => $this->getSize()
+            'size' => $this->getSize(),
         ];
     }
 }

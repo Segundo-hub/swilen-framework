@@ -9,7 +9,7 @@ final class RouteGroup
      *
      * @param array $new
      * @param array $old
-     * @param bool $prependPrefix
+     * @param bool  $prependPrefix
      *
      * @return array
      */
@@ -17,7 +17,7 @@ final class RouteGroup
     {
         $new = array_merge($new, [
             'prefix' => static::formatPrefix($new, $old, $prependPrefix),
-            'match' => static::formatMatch($new, $old)
+            'match' => static::formatMatch($new, $old),
         ]);
 
         return array_merge_recursive(static::arrayExcept(
@@ -31,31 +31,30 @@ final class RouteGroup
      *
      * @param array $new
      * @param array $old
-     * @param bool $prependPrefix
+     * @param bool  $prependPrefix
      *
      * @return string|null
      */
-    protected static function formatPrefix($new, $old, bool $prependPrefix = true)
+    private static function formatPrefix($new, $old, bool $prependPrefix = true)
     {
         $old = $old['prefix'] ?? '';
 
         if ($prependPrefix) {
-            return isset($new['prefix']) ? trim($old, '/') . '/' . trim($new['prefix'], '/') : $old;
+            return isset($new['prefix']) ? trim($old, '/').'/'.trim($new['prefix'], '/') : $old;
         }
 
-        return isset($new['prefix']) ? trim($new['prefix'], '/') . '/' . trim($old, '/') : $old;
-
+        return isset($new['prefix']) ? trim($new['prefix'], '/').'/'.trim($old, '/') : $old;
     }
 
     /**
      * Format the "wheres" for the new group attributes.
      *
-     * @param  array  $new
-     * @param  array  $old
+     * @param array $new
+     * @param array $old
      *
      * @return array
      */
-    protected static function formatMatch($new, $old)
+    private static function formatMatch($new, $old)
     {
         return array_merge(
             $old['match'] ?? [],
@@ -64,13 +63,13 @@ final class RouteGroup
     }
 
     /**
-     * Delete values ​​based on array keys
+     * Delete values ​​based on array keys.
      *
      * @param array $target
      *
      * @return array
      */
-    protected static function arrayExcept($target, array $keys)
+    private static function arrayExcept($target, array $keys)
     {
         foreach ($keys as $key) {
             unset($target[$key]);

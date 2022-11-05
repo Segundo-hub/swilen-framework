@@ -7,14 +7,14 @@ use Swilen\Http\Component\File\UploadedFile;
 final class FileHunt extends ParameterHunt
 {
     /**
-     * The normalized file information keys
+     * The normalized file information keys.
      *
      * @var string[]
      */
     protected const FILE_KEYS = ['error', 'name', 'size', 'tmp_name', 'type'];
 
     /**
-     * Create new files hunt instance
+     * Create new files hunt instance.
      *
      * @param array|\Swilen\Http\Component\File\UploadedFile[] $files
      *
@@ -28,11 +28,12 @@ final class FileHunt extends ParameterHunt
     }
 
     /**
-     * Add files collection and transform UploadedFile instance
+     * Add files collection and transform UploadedFile instance.
      *
      * @param array $files
      *
      * @return void
+     *
      * @throws \InvalidArgumentException
      */
     public function addFiles(array $files = [])
@@ -85,7 +86,7 @@ final class FileHunt extends ParameterHunt
     }
 
     /**
-     * Normalized php files
+     * Normalized php files.
      *
      * @param array $dataset
      *
@@ -107,11 +108,11 @@ final class FileHunt extends ParameterHunt
 
         foreach ($dataset['name'] as $key => $name) {
             $files[$key] = $this->toNormalizedFiles([
-                'error'  => $dataset['error'][$key],
-                'name'   => $name,
-                'type'   => $dataset['type'][$key],
+                'error' => $dataset['error'][$key],
+                'name' => $name,
+                'type' => $dataset['type'][$key],
                 'tmp_name' => $dataset['tmp_name'][$key],
-                'size'   => $dataset['size'][$key],
+                'size' => $dataset['size'][$key],
             ]);
         }
 
@@ -119,7 +120,7 @@ final class FileHunt extends ParameterHunt
     }
 
     /**
-     * Fix file keys in PHP 8
+     * Fix file keys in PHP 8.
      *
      * @param array &$files
      */
@@ -128,6 +129,7 @@ final class FileHunt extends ParameterHunt
         unset($files['full_path']);
         $keys = array_keys($files);
         sort($keys);
+
         return $keys;
     }
 }

@@ -2,20 +2,9 @@
     "name": "swilen/framework",
     "description": "Fast Routing inspired in Laravel and Expressjs",
     "license": "MIT",
-    "version": "0.2.0",
+    "version": "0.8.0",
     "keywords": ["routing", "framework", "micro-framework", "swilen"],
     "homepage": "https://segundo-hub.github.io/swilen/",
-    "autoload": {
-        "classmap": [
-            "src/"
-        ],
-        "psr-4": {
-            "Swilen\\": "src"
-        },
-        "files": [
-            "src/Arthropod/helpers.php"
-        ]
-    },
     "authors": [
         {
             "name": "Alex Segundo",
@@ -24,15 +13,23 @@
             "role": "Developer"
         }
     ],
+    "autoload": {
+        "psr-4": {
+            "Swilen\\": "src"
+        },
+        "files": [
+            "src/Arthropod/helpers.php"
+        ]
+    },
     "require": {
         "php": ">=7.3",
-        "psr/container": "^2.0"
+        "psr/container": "^2.0",
+        "psr/log": "^1.1",
+        "phpmailer/phpmailer": "^6.6",
+        "ext-mbstring": "*"
     },
     "require-dev": {
         "pestphp/pest": "^1.21"
-    },
-    "scripts": {
-        "test": "./vendor/bin/pest"
     },
     "config": {
         "allow-plugins": {

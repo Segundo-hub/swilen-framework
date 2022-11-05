@@ -7,14 +7,14 @@ use Swilen\Arthropod\Exception\CoreException;
 class HttpException extends CoreException
 {
     /**
-     * Headers collection for http response
+     * Headers collection for http response.
      *
      * @var array<string, string>
      */
     protected $headers = [];
 
     /**
-     * Add http headers to exception
+     * Add http headers to exception.
      *
      * @param array<string, string> $headers
      */
@@ -28,7 +28,7 @@ class HttpException extends CoreException
     }
 
     /**
-     * Get all headers registered
+     * Get all headers registered.
      */
     public function headers()
     {

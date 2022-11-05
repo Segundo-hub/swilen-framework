@@ -16,7 +16,7 @@ final class InputHunt extends ParameterHunt
     ];
 
     /**
-     * Create new InputHunt instance and store $params
+     * Create new InputHunt instance and store $params.
      *
      * @param array $params
      *
@@ -24,16 +24,30 @@ final class InputHunt extends ParameterHunt
      */
     public function __construct(array $params = [])
     {
+        $this->params = [];
+
+        $this->addInputs($params);
+    }
+
+    /**
+     * Add given parameters array to params store.
+     *
+     * @param array $params
+     *
+     * @return void
+     */
+    protected function addInputs(array $params = [])
+    {
         foreach ($params as $key => $value) {
             parent::set($key, $this->cleanValue($key, $value));
         }
     }
 
     /**
-     * Clean the given input values
+     * Clean the given input values.
      *
      * @param string|in $key
-     * @param mixed $value
+     * @param mixed     $value
      *
      * @return mixed
      */
@@ -51,7 +65,7 @@ final class InputHunt extends ParameterHunt
     }
 
     /**
-     * Clean the given input values as array
+     * Clean the given input values as array.
      *
      * @param array $data
      *
@@ -67,7 +81,7 @@ final class InputHunt extends ParameterHunt
     }
 
     /**
-     * Tranform values to primitive
+     * Tranform values to primitive.
      *
      * @param mixed $value
      *

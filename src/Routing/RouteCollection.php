@@ -4,37 +4,36 @@ namespace Swilen\Routing;
 
 use Swilen\Http\Exception\HttpMethodNotAllowedException;
 use Swilen\Http\Exception\HttpNotFoundException;
-
 use Swilen\Http\Request;
 use Swilen\Shared\Support\Arrayable;
 
 class RouteCollection implements Arrayable
 {
     /**
-     * The routes collection
+     * The routes collection.
      *
      * @var array<string, \Swilen\Routing\Route[]>
      */
     protected $routes = [];
 
     /**
-     * The current matched route
+     * The current matched route.
      *
      * @var \Swilen\Routing\Route|null
      */
     protected $current;
 
     /**
-     * Collection of http verbs alloweb
+     * Collection of http verbs alloweb.
      *
      * @var string[]
      */
     protected $allowedHttpVerbs = [
-        'get', 'post', 'options', 'put', 'delete', 'any', 'patch'
+        'get', 'post', 'options', 'put', 'delete', 'any', 'patch',
     ];
 
     /**
-     * The application container instance
+     * The application container instance.
      *
      * @var \Swilen\Container\Container;
      */
@@ -48,7 +47,7 @@ class RouteCollection implements Arrayable
     protected $router;
 
     /**
-     * Add new Route to collection
+     * Add new Route to collection.
      *
      * @param \Swilen\Routing\Route $route
      *
@@ -62,11 +61,12 @@ class RouteCollection implements Arrayable
     }
 
     /**
-     * Find and match route from current method and current request action
+     * Find and match route from current method and current request action.
      *
      * @param \Swilen\Http\Request $request
      *
      * @return \Swilen\Routing\Route
+     *
      * @throws \Swilen\Http\Exception\HttpMethodNotAllowedException
      * @throws \Swilen\Http\Exception\HttpNotFoundException
      */
@@ -85,13 +85,14 @@ class RouteCollection implements Arrayable
             return $this->current;
         }
 
-        throw new HttpNotFoundException;
+        throw new HttpNotFoundException();
     }
 
     /**
      * @param string $method
      *
      * @return \Swilen\Routing\Route[]
+     *
      * @throws \Swilen\Http\Exception\HttpMethodNotAllowedException
      */
     protected function get(string $method)
@@ -104,7 +105,7 @@ class RouteCollection implements Arrayable
     }
 
     /**
-     * Handle exepcion if method not allowed in route collection
+     * Handle exepcion if method not allowed in route collection.
      *
      * @param string $method
      *
@@ -112,11 +113,7 @@ class RouteCollection implements Arrayable
      */
     private function methodNotAllowed(string $method)
     {
-        throw new HttpMethodNotAllowedException(sprintf(
-            '%s Method Not Allowed. %s Methods allowed',
-            strtoupper($method),
-            implode(',', array_keys($this->routes))
-        ));
+        throw new HttpMethodNotAllowedException(sprintf('%s Method Not Allowed. %s Methods allowed', strtoupper($method), implode(',', array_keys($this->routes))));
     }
 
     /**

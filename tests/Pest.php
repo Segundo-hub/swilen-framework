@@ -27,6 +27,8 @@ expect()->extend('toBeOne', function () {
     return $this->toBe(1);
 });
 
+
+
 /*
 |--------------------------------------------------------------------------
 | Functions
@@ -43,6 +45,16 @@ function fetch(string $uri, string $method = 'GET', array $headers = [], array $
     return \Swilen\Http\Request::make($uri, $method, $parameters, $files, $headers);
 }
 
-function command(string $command) {
+function command(string $command)
+{
     $_SERVER['argv'] = explode(' ', $command);;
+}
+
+function print_time($start_time, $print = true)
+{
+    $formatted = number_format((hrtime(true) - $start_time) / 1e+6, 3);
+
+    $print && fwrite(STDERR, print_r('Executed: ' . $formatted . ' miliseconds' . PHP_EOL, true));
+
+    return $formatted;
 }

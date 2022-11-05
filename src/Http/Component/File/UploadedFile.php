@@ -22,12 +22,12 @@ final class UploadedFile extends File
     protected $error;
 
     /**
-     * Create new UploadedFile instance
+     * Create new UploadedFile instance.
      *
-     * @param string $path The full path or tmp_name $FILES property of the file
-     * @param string $name The filename or name $_FILES property of the file
+     * @param string $path     The full path or tmp_name $FILES property of the file
+     * @param string $name     The filename or name $_FILES property of the file
      * @param string $mimeType
-     * @param int $error
+     * @param int    $error
      *
      * @return void
      */
@@ -37,7 +37,7 @@ final class UploadedFile extends File
         $this->mimeType = $mimeType ?: 'application/octet-stream';
         $this->error = $error ?: \UPLOAD_ERR_OK;
 
-        parent::__construct($path, \UPLOAD_ERR_OK === $this->error);
+        parent::__construct($path, $this->error === \UPLOAD_ERR_OK);
     }
 
     /**
@@ -57,19 +57,19 @@ final class UploadedFile extends File
     }
 
     /**
-     * Check if the file is valid and can be downloaded
+     * Check if the file is valid and can be downloaded.
      *
      * @return bool
      */
     public function isValid()
     {
-        $isOk = \UPLOAD_ERR_OK === $this->error;
+        $isOk = $this->error === \UPLOAD_ERR_OK;
 
         return $isOk && is_uploaded_file($this->getPathname());
     }
 
     /**
-     * Move uploaded file to another directory
+     * Move uploaded file to another directory.
      *
      * @param string $directory
      * @param string $name
@@ -105,7 +105,7 @@ final class UploadedFile extends File
     }
 
     /**
-     * Handle file exceptions
+     * Handle file exceptions.
      */
     protected function handleExceptions()
     {
@@ -119,8 +119,7 @@ final class UploadedFile extends File
             \UPLOAD_ERR_EXTENSION => 'File upload was stopped by a PHP extension.',
         ];
 
-        $errorCode = $this->error;
-        $message = $errors[$errorCode] ?? 'The file "%s" was not uploaded due to an unknown error.';
+        $message = $errors[$this->error] ?? 'The file "%s" was not uploaded due to an unknown error.';
 
         throw new FileException(sprintf($message, $this->getClientOriginalName()));
     }

@@ -7,7 +7,7 @@ interface RouterContract
     /**
      * Register a new GET route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -17,7 +17,7 @@ interface RouterContract
     /**
      * Register a new POST route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -27,7 +27,7 @@ interface RouterContract
     /**
      * Register a new PUT route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -37,7 +37,7 @@ interface RouterContract
     /**
      * Register a new DELETE route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -47,7 +47,7 @@ interface RouterContract
     /**
      * Register a new PATCH route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -57,7 +57,7 @@ interface RouterContract
     /**
      * Register a new OPTIONS route with the router.
      *
-     * @param string $uri
+     * @param string                $uri
      * @param array|string|callable $action
      *
      * @return \Swilen\Routing\Route
@@ -67,8 +67,9 @@ interface RouterContract
     /**
      * Create a route group with shared attributes.
      *
-     * @param  array  $attributes
-     * @param  \Closure|string  $routes
+     * @param array           $attributes
+     * @param \Closure|string $routes
+     *
      * @return void
      */
     public function group(array $attributes, $routes);

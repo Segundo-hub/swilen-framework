@@ -2,10 +2,9 @@
 
 namespace Swilen\Routing;
 
+use Swilen\Container\Container;
 use Swilen\Routing\Exception\HttpResponseException;
 use Swilen\Routing\Exception\InvalidRouteHandlerException;
-
-use Swilen\Container\Container;
 use Swilen\Shared\Support\Arrayable;
 use Swilen\Shared\Support\JsonSerializable;
 
@@ -47,7 +46,7 @@ class Route implements Arrayable, JsonSerializable
     protected $wheres = [];
 
     /**
-     * The match regex generated
+     * The match regex generated.
      *
      * @var string
      */
@@ -68,7 +67,7 @@ class Route implements Arrayable, JsonSerializable
     protected $parameterNames;
 
     /**
-     * Middleware collection for the route
+     * Middleware collection for the route.
      *
      * @var mixed[]
      */
@@ -99,19 +98,19 @@ class Route implements Arrayable, JsonSerializable
     public const REG_MATCH_PARAM_NAME = '/\{(.*?)\}/';
 
     /**
-     * Create new Route instance
+     * Create new Route instance.
      *
-     * @param string $method
-     * @param string $pattern
+     * @param string                $method
+     * @param string                $pattern
      * @param string|array|\Closure $action
      *
      * @return void
      */
     public function __construct(string $method, string $pattern, $action)
     {
-        $this->method  = $method;
+        $this->method = $method;
         $this->pattern = $pattern;
-        $this->action  = $this->parseAction($action);
+        $this->action = $this->parseAction($action);
     }
 
     /**
@@ -127,7 +126,7 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Set the container instance
+     * Set the container instance.
      *
      * @param \Swilen\Container\Container $container
      *
@@ -141,7 +140,7 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Set the router instance
+     * Set the router instance.
      *
      * @param \Swilen\Routing\Router $router
      *
@@ -155,19 +154,21 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Run route matched
+     * Run route matched.
      *
      * @return mixed
+     *
      * @throws \Swilen\Routing\Exception\HttpResponseException
      */
     public function run()
     {
-        $this->container = $this->container ?: new Container;
+        $this->container = $this->container ?: new Container();
 
         try {
             if ($this->actionIsController()) {
                 return $this->runRouteActionAsController();
             }
+
             return $this->runRouteActionAsClosure();
         } catch (\Throwable $e) {
             throw new HttpResponseException($e->getMessage(), $e->getCode(), $e->getPrevious());
@@ -175,9 +176,10 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Run route has route action is Controller
+     * Run route has route action is Controller.
      *
      * @return mixed
+     *
      * @throws \Swilen\Routing\Exception\InvalidRouteHandlerException
      */
     private function runRouteActionAsController()
@@ -192,7 +194,7 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Run route has route action is Closure or callable
+     * Run route has route action is Closure or callable.
      *
      * @return mixed
      */
@@ -202,17 +204,17 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Check route action is controller
+     * Check route action is controller.
      *
      * @return bool
      */
     private function actionIsController()
     {
-        return (is_string($this->action['uses'] && !is_callable($this->action['uses'])));
+        return is_string($this->action['uses'] && !is_callable($this->action['uses']));
     }
 
     /**
-     * Create regex from given pattern
+     * Create regex from given pattern.
      *
      * @param string $pattern
      *
@@ -231,9 +233,9 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Compile segmented URL via uri with regex pattern
+     * Compile segmented URL via uri with regex pattern.
      *
-     * @param array $matches
+     * @param array  $matches
      * @param string $uri
      *
      * @return string
@@ -242,10 +244,10 @@ class Route implements Arrayable, JsonSerializable
     {
         foreach ($matches as $key => $segment) {
             $target = $segment;
-            $value  = trim($segment, '{\}');
+            $value = trim($segment, '{\}');
 
             if (strpos($value, ':') !== false && !empty([$type, $valued] = explode(':', $value))) {
-                $target = '{' . $type . ':' . $valued . '}';
+                $target = '{'.$type.':'.$valued.'}';
 
                 if ($type === 'int') {
                     $uri = str_replace($target, sprintf('(?P<%s>[0-9]+)', $valued), $uri);
@@ -267,7 +269,7 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Return named paramater to array
+     * Return named paramater to array.
      *
      * @param string|null $uri
      *
@@ -281,7 +283,7 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Match request path with route match regex
+     * Match request path with route match regex.
      *
      * @param string $path
      *
@@ -302,7 +304,7 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Compile params from regex matches
+     * Compile params from regex matches.
      *
      * @param array<string, mixed> $params
      *
@@ -311,7 +313,9 @@ class Route implements Arrayable, JsonSerializable
     private function matchToKeys(array $params = [])
     {
         foreach ($params as $key => $value) {
-            if (is_int($key) || is_null($value)) continue;
+            if (is_int($key) || is_null($value)) {
+                continue;
+            }
 
             $this->parameters[$key] = $value;
         }
@@ -346,7 +350,7 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Register a middleware for route
+     * Register a middleware for route.
      *
      * @param string|array $middlewares
      *
@@ -370,7 +374,7 @@ class Route implements Arrayable, JsonSerializable
      */
     public function name(string $name)
     {
-        $this->action['as'] = isset($this->action['as']) ? $this->action['as'] . $name : $name;
+        $this->action['as'] = isset($this->action['as']) ? $this->action['as'].$name : $name;
 
         return $this;
     }
@@ -378,7 +382,7 @@ class Route implements Arrayable, JsonSerializable
     /**
      * Get a given parameter from the route.
      *
-     * @param string $name
+     * @param string             $name
      * @param string|object|null $default
      *
      * @return string|object|null
@@ -429,11 +433,11 @@ class Route implements Arrayable, JsonSerializable
     public function toArray()
     {
         return [
-            'pattern'    => $this->getPattern(),
-            'method'     => $this->getMethod(),
-            'action'     => $this->getAction(),
+            'pattern' => $this->getPattern(),
+            'method' => $this->getMethod(),
+            'action' => $this->getAction(),
             'middleware' => $this->getMiddleware(),
-            'matching'   => $this->getMatch(),
+            'matching' => $this->getMatch(),
             'parameters' => $this->getParameters(),
         ];
     }

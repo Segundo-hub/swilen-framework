@@ -16,19 +16,17 @@ beforeEach(function () {
     $this->router = new Router($this->container);
 });
 
-it('Match route current request', function ($dataset) {
-    $this->router->get('/test', function () use ($dataset) {
-        return $dataset;
+it('Match route current request', function () {
+    $this->router->get('/test', function () {
+        return ['slwien' => 'test'];
     });
 
     /** @var Response */
     $response = $this->router->dispatch(fetch('/test'));
 
     expect($response)->toBeInstanceOf(Response::class);
-    expect($response->getContent())->toBeJson()->toBe(json_encode($dataset));
-})->with([
-    'dataset' => 'test'
-]);
+    expect($response->getContent())->toBeJson();
+});
 
 it('Throw not found if route not matches', function () {
     $this->router->get('/test', function () {
@@ -37,7 +35,6 @@ it('Throw not found if route not matches', function () {
 
     $this->router->dispatch(fetch('/testing'));
 })->throws(HttpNotFoundException::class, 'Not Found.');
-
 
 it('Throw if current method not implement in routes collection', function () {
     $this->router->get('/test', function () {
@@ -48,7 +45,6 @@ it('Throw if current method not implement in routes collection', function () {
 })->throws(HttpMethodNotAllowedException::class, 'Method Not Allowed.');
 
 it('Routing register shared middleware and return throw if bearer token not found in header', function () {
-
     $this->router->prefix('users')->use(Authenticate::class)->group(function () {
         $this->router->get('test', function () {
             return 1;
@@ -59,7 +55,6 @@ it('Routing register shared middleware and return throw if bearer token not foun
 })->throws(HttpForbiddenException::class, 'Forbidden');
 
 it('Routing register shared middleware and return throw if bearer token found', function () {
-
     $this->router->prefix('users')->use(Authenticate::class)->group(function () {
         $this->router->get('test', function () {
             return 1;
@@ -67,12 +62,11 @@ it('Routing register shared middleware and return throw if bearer token found', 
     });
 
     $this->router->dispatch(fetch('/users/test', 'GET', [
-        'Authorization' => ''
+        'Authorization' => '',
     ]));
 })->throws(HttpForbiddenException::class, 'Forbidden');
 
 it('Route attributes as registered', function () {
-
     /** @var \Swilen\Routing\Route */
     $route = $this->router->get('/hello/{world}', function () {
         return 5;
@@ -92,7 +86,7 @@ it('Route attributes as registered', function () {
 
     $response = $this->router->dispatch(fetch('/hello/lima'));
 
-    expect($response->getContent())->toBeJson();
+    expect($response->getContent())->toBeNumeric();
     expect($response->headers->get('Fo'))->toBe('bar');
 
     expect($route->parameter('world'))->toBe('lima');
@@ -100,8 +94,7 @@ it('Route attributes as registered', function () {
 });
 
 it('Shared route attributes registered', function () {
-
-    /** @var \Swilen\Routing\Route */
+    /* @var \Swilen\Routing\Route */
 
     $this->router->use(function (Request $request, Closure $next) {
         $response = $next($request);

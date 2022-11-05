@@ -39,6 +39,7 @@ class Pipeline implements PipelineContract
      * Create a new class instance.
      *
      * @param \Swilen\Container\Container|null $container
+     *
      * @return void
      */
     public function __construct(Container $container = null)
@@ -91,9 +92,10 @@ class Pipeline implements PipelineContract
     }
 
     /**
-     * Prepare final destination
+     * Prepare final destination.
      *
-     * @param  \Closure  $destination
+     * @param \Closure $destination
+     *
      * @return \Closure
      */
     protected function prepareFinalDestination(\Closure $destination)
@@ -108,7 +110,7 @@ class Pipeline implements PipelineContract
     }
 
     /**
-     * Carry pipes list
+     * Carry pipes list.
      *
      * @return \Closure
      */
@@ -142,9 +144,10 @@ class Pipeline implements PipelineContract
     }
 
     /**
-     * Parse pipe function or method
+     * Parse pipe function or method.
      *
      * @param string $pipe
+     *
      * @return array
      */
     protected function parsePipeString($pipe)
@@ -187,7 +190,8 @@ class Pipeline implements PipelineContract
     /**
      * Set the container instance.
      *
-     * @param \Swilen\Container\Container  $container
+     * @param \Swilen\Container\Container $container
+     *
      * @return $this
      */
     public function setContainer(Container $container)
@@ -201,6 +205,7 @@ class Pipeline implements PipelineContract
      * Handle the value returned from each pipe before passing it to the next.
      *
      * @param mixed $carry
+     *
      * @return mixed
      */
     protected function handleCarry($carry)
@@ -211,10 +216,11 @@ class Pipeline implements PipelineContract
     /**
      * Handle the given exception.
      *
-     * @param mixed $target
+     * @param mixed      $target
      * @param \Throwable $e
      *
      * @return mixed
+     *
      * @throws \Throwable
      */
     protected function handleException($target, \Throwable $e)

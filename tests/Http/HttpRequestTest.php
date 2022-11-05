@@ -16,7 +16,7 @@ it('Espect \Request instance created succesfully and is instance of \Swilen\Http
 
 it('Make request succesfully', function () {
     $request = Request::make('/other?name=hola', 'GET', [
-        'test' => 'name'
+        'test' => 'name',
     ]);
 
     expect($request->getMethod())->toBe('GET');
@@ -28,7 +28,7 @@ it('Make request succesfully', function () {
 
 it('Make request succesfully as POST', function () {
     $request = Request::make('/other?name=hola', 'POST', [
-        'test' => 'name'
+        'test' => 'name',
     ]);
 
     expect($request->getMethod())->toBe('POST');
@@ -40,7 +40,7 @@ it('Make request succesfully as POST', function () {
 
 it('REQUEST_METHOD override succesfully', function () {
     $request = Request::make('put-request', 'POST', [], [], [
-        'HTTP_X_METHOD_OVERRIDE' => 'PUT'
+        'HTTP_X_METHOD_OVERRIDE' => 'PUT',
     ]);
 
     expect($request->getMethod())->toBe('PUT');
@@ -50,11 +50,11 @@ it('REQUEST_METHOD override succesfully', function () {
 
 it('REQUEST_METHOD override failed', function () {
     $request = Request::make('put-request', 'POST', [], [], [
-        'HTTP_X_METHOD_OVERRIDE' => 'GET'
+        'HTTP_X_METHOD_OVERRIDE' => 'GET',
     ]);
 
-    expect($request->getMethod())->toBe('PUT');
     expect($request->getPathInfo())->toBe('/put-request');
+    expect($request->getMethod())->toBe('PUT');
 })->throws(HttpNotOverridableMethodException::class);
 
 it('Remove slashes support for REQUEST_URI', function () {
@@ -70,7 +70,3 @@ it('Remove slashes support for REQUEST_URI', function () {
 
     expect($request->getPathInfo())->toBe('/hola');
 });
-
-
-
-

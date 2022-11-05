@@ -1,6 +1,6 @@
 # Swilen
 
-`v0.2.0`
+`v0.8.0`
 
 PHP library inspired in laravel and expressjs
 
@@ -33,7 +33,7 @@ $app = new \Swilen\Arthropod\Application(dirname(__DIR__));
 $request = \Swilen\Request::create();
 
 // Handle incoming HTTP request
-$response = $app->dispatch($request);
+$response = $app->handle($request);
 
 // Terminate application
 $response->terminate();

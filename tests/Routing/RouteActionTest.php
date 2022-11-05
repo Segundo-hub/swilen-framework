@@ -7,7 +7,7 @@ uses()->group('Routing', 'RoutingAction');
 it('Resolve uses action is closure', function () {
     $action = RouteAction::parse('/', InvokableTesting::class);
 
-    expect($action['uses'])->toBe(InvokableTesting::class . '@__invoke');
+    expect($action['uses'])->toBe(InvokableTesting::class.'@__invoke');
     expect($action)->not->toHaveKey('controller');
 
     $action = RouteAction::parse('/', function () {
@@ -26,8 +26,8 @@ it('Resolve uses action is controller', function ($actin) {
     expect($action['uses'])->toBe('MethodAllowedController@index');
     expect($action['controller'])->toBe('MethodAllowedController@index');
 })->with([
-    'array'  => array([MethodAllowedController::class, 'index']),
-    'string' => 'MethodAllowedController@index'
+    'array' => [[MethodAllowedController::class, 'index']],
+    'string' => 'MethodAllowedController@index',
 ]);
 
 it('Throw uses action is null', function () {
@@ -42,7 +42,6 @@ it('Throw uses action not contains __invoke method', function () {
     RouteAction::parse('/', MethodAllowedController::class);
 })->throws(UnexpectedValueException::class, 'Invalid route action: [MethodAllowedController]');
 
-
 class InvokableTesting
 {
     public function __invoke()
@@ -50,7 +49,6 @@ class InvokableTesting
         return 5;
     }
 }
-
 
 class MethodAllowedController
 {

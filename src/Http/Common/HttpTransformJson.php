@@ -2,21 +2,24 @@
 
 namespace Swilen\Http\Common;
 
+use Swilen\Shared\Support\Arrayable;
+use Swilen\Shared\Support\Jsonable;
+
 final class HttpTransformJson
 {
     /**
-     * The transform json encoding options
+     * The transform json encoding options.
      *
      * @var int
      */
-    protected $encodingOptions = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
+    private $encodingOptions = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
 
     /**
-     * The content to transform as json
+     * The content to transform as json.
      *
      * @var mixed
      */
-    protected $content;
+    private $content;
 
     /**
      * @param string|array|object $content
@@ -29,7 +32,7 @@ final class HttpTransformJson
     }
 
     /**
-     * Transform given content as json
+     * Transform given content as json.
      *
      * @param int $encodingOptions
      *
@@ -42,17 +45,17 @@ final class HttpTransformJson
         $content = @json_encode($this->content, $encodingOptions ?: $this->encodingOptions);
 
         if (!$this->isValidJsonEncoded(json_last_error())) {
-            throw new \JsonException('Failed encode reponse body: '. json_last_error_msg(), json_last_error());
+            throw new \JsonException('Failed encode reponse body: '.json_last_error_msg(), json_last_error());
         }
 
         return $content;
     }
 
     /**
-     * Transform given content as valid php array or object
+     * Transform given content as valid php array or object.
      *
      * @param bool $assoc
-     * @param int $encodingOptions
+     * @param int  $encodingOptions
      *
      * @return array|object
      */
@@ -63,14 +66,14 @@ final class HttpTransformJson
         $content = @json_decode($this->content, $assoc, 512, $decodingOptions);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \JsonException('Failed decode request body: ' . json_last_error_msg(), json_last_error());
+            throw new \JsonException('Failed decode request body: '.json_last_error_msg(), json_last_error());
         }
 
         return $content;
     }
 
     /**
-     * Determine if json is valid encoded
+     * Determine if json is valid encoded.
      *
      * @param int $error
      *
@@ -100,5 +103,42 @@ final class HttpTransformJson
     public function hasEncodingOption($option)
     {
         return (bool) ($this->encodingOptions & $option);
+    }
+
+    /**
+     * Determine if the given content should be turned into JSON.
+     *
+     * @param mixed $content
+     *
+     * @return bool
+     */
+    public static function shouldBeJson($content)
+    {
+        return $content instanceof Arrayable ||
+               $content instanceof Jsonable ||
+               $content instanceof \ArrayObject ||
+               $content instanceof \JsonSerializable ||
+               $content instanceof \stdClass ||
+               is_array($content);
+    }
+
+    /**
+     * Morph the given content into JSON.
+     *
+     * @param mixed $content
+     *
+     * @return array
+     */
+    public static function morphToJsonable($content)
+    {
+        if ($content instanceof Arrayable) {
+            return $content->toArray();
+        }
+
+        if ($content instanceof \JsonSerializable) {
+            return $content->jsonSerialize();
+        }
+
+        return $content;
     }
 }

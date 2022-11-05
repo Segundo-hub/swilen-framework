@@ -2,132 +2,133 @@
 
 namespace Swilen\Http;
 
-use Swilen\Http\Exception\HttpNotOverridableMethodException;
-
-use Swilen\Http\Component\{FileHunt, HeaderHunt, InputHunt, ServerHunt};
 use Swilen\Http\Common\HttpTransformJson;
 use Swilen\Http\Common\SupportRequest;
+use Swilen\Http\Component\FileHunt;
+use Swilen\Http\Component\HeaderHunt;
+use Swilen\Http\Component\InputHunt;
+use Swilen\Http\Component\ServerHunt;
+use Swilen\Http\Exception\HttpNotOverridableMethodException;
 use Swilen\Validation\Validator;
-use Swilen\Shared\Support\Arrayable;
 
-final class Request extends SupportRequest implements \ArrayAccess, Arrayable
+class Request extends SupportRequest implements \ArrayAccess
 {
     /**
-     * Http request headers collections
+     * Http request headers collections.
      *
      * @var \Swilen\Http\Component\HeaderHunt
      */
     public $headers;
 
     /**
-     * Http server variables collections
+     * Http server variables collections.
      *
      * @var \Swilen\Http\Component\ServerHunt
      */
     public $server;
 
     /**
-     * Http files collections
+     * Http files collections.
      *
      * @var \Swilen\Http\Component\FileHunt
      */
     public $files;
 
     /**
-     * Http params collections via $_POST
+     * Http params collections via $_POST.
      *
      * @var \Swilen\Http\Component\InputHunt
      */
     public $request;
 
     /**
-     * Http params collections via $_GET
+     * Http params collections via $_GET.
      *
      * @var \Swilen\Http\Component\InputHunt
      */
     public $query;
 
     /**
-     * The content of request body decoded as json
+     * The content of request body decoded as json.
      *
      * @var \Swilen\Http\Component\InputHunt
      */
     public $json;
 
     /**
-     * Http request raw body content
+     * Http request raw body content.
      *
-     * @var string|resource|boolean|null
+     * @var string|resource|bool|null
      */
     protected $content;
 
     /**
-     * Http current request method
+     * Http current request method.
      *
      * @var string
      */
     protected $method;
 
     /**
-     * Current http request uri
+     * Current http request uri.
      *
      * @var string
      */
     protected $uri;
 
     /**
-     * Current http request path info
+     * Current http request path info.
      *
      * @var string
      */
     protected $pathInfo;
 
     /**
-     * Http body params accepted for override
+     * Http body params accepted for override.
      *
      * @var string[]
      */
     protected $acceptMethodOverrides = ['DELETE', 'PUT'];
 
     /**
-     * Http current user logged prvided by token
+     * Http current user logged prvided by token.
      *
      * @var mixed
      */
     protected $user;
 
     /**
-     * Create new request instance from incoming request
+     * Create new request instance from incoming request.
      *
-     * @param array $server   The server variables collection
-     * @param array $headers  The request headers collection
-     * @param array $files    The request files collection
-     * @param array $request  The request variables sending from client collection
-     * @param array $query    The request query params or send from client into form
-     * @param string|resource|null $content  The raw body data
+     * @param array                $server  The server variables collection
+     * @param array                $headers The request headers collection
+     * @param array                $files   The request files collection
+     * @param array                $request The request variables sending from client collection
+     * @param array                $query   The request query params or send from client into form
+     * @param string|resource|null $content The raw body data
      *
      * @return void
      */
     public function __construct(array $server = [], array $files = [], array $request = [], array $query = [], $content = null)
     {
-        $this->server  = new ServerHunt($server);
+        $this->server = new ServerHunt($server);
         $this->headers = new HeaderHunt($this->server->headers());
-        $this->files   = new FileHunt($files);
+        $this->files = new FileHunt($files);
         $this->request = new InputHunt($request);
-        $this->query   = new InputHunt($query);
+        $this->query = new InputHunt($query);
 
         $this->content = $content;
     }
 
     /**
-     * Create new request instance from static method
+     * Create new request instance from static method.
      *
-     * @param array $server   The server variables collection
-     * @param array $headers  The request headers collection
-     * @param array $files    The request files collection
-     * @param array $request  The request variables sending from client collection
-     * @param array $query    The request query params or send from client into form
-     * @param string|resource|null $content  The raw body data
+     * @param array                $server  The server variables collection
+     * @param array                $headers The request headers collection
+     * @param array                $files   The request files collection
+     * @param array                $request The request variables sending from client collection
+     * @param array                $query   The request query params or send from client into form
+     * @param string|resource|null $content The raw body data
      *
      * @return \Swilen\Http\Request
      */
@@ -137,7 +138,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Create new request instance from PHP SuperGlobals
+     * Create new request instance from PHP SuperGlobals.
      *
      * @return \Swilen\Http\Request
      */
@@ -149,12 +150,12 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     /**
      * Creates a Request based on a given URI and configuration.
      *
-     * @param string $uri       The URI
-     * @param string $method    The HTTP method
-     * @param array $parameters The query (GET) or request (POST) parameters
-     * @param array $files      The request files ($_FILES)
-     * @param array $server     The server parameters ($_SERVER)
-     * @param string|resource|null $content  The raw body data
+     * @param string               $uri        The URI
+     * @param string               $method     The HTTP method
+     * @param array                $parameters The query (GET) or request (POST) parameters
+     * @param array                $files      The request files ($_FILES)
+     * @param array                $server     The server parameters ($_SERVER)
+     * @param string|resource|null $content    The raw body data
      *
      * @return \Swilen\Http\Request
      */
@@ -166,9 +167,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Set method for request
-     *
-     * @param string $method
+     * Set method for request.
      *
      * @return $this
      */
@@ -181,7 +180,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Get request method
+     * Get request method.
      *
      * @return string
      *
@@ -212,10 +211,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
             return $this->method = $method;
         }
 
-        throw new HttpNotOverridableMethodException(sprintf(
-            '%s non-overwritable method',
-            $method
-        ), 400);
+        throw new HttpNotOverridableMethodException(sprintf('%s non-overwritable method', $method), 400);
     }
 
     /**
@@ -231,7 +227,17 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Return current request path info
+     * Checks if the request method is of specified type.
+     *
+     * @return bool
+     */
+    public function isMethod(string $method)
+    {
+        return $this->getMethod() === strtoupper($method);
+    }
+
+    /**
+     * Return current request path info.
      *
      * @return string
      */
@@ -245,21 +251,21 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Returns REQUEST_URI replaced with app base uri
+     * Returns REQUEST_URI replaced with app base uri.
      *
      * @return string
      */
     private function filteredRequestUri()
     {
         if (isset($_ENV['APP_BASE_URI']) && !empty($base = $_ENV['APP_BASE_URI'])) {
-            return $this->uri = preg_replace('#^' . $base . '#', '', $this->server->get('REQUEST_URI'));
+            return $this->uri = preg_replace('#^'.$base.'#', '', $this->server->get('REQUEST_URI'));
         }
 
         return $this->uri = $this->server->get('REQUEST_URI');
     }
 
     /**
-     * Remove slashes at the beginning and end of the path
+     * Remove slashes at the beginning and end of the path.
      *
      * @param string|null $path
      *
@@ -267,11 +273,11 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
      */
     private function trimed($path)
     {
-        return '/' . trim($path ?: '/', '\/');
+        return '/'.trim($path ?: '/', '\/');
     }
 
     /**
-     * Check if uri contains query string
+     * Check if uri contains query string.
      *
      * @return bool
      */
@@ -281,7 +287,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Determine and decode content type request is json, return request content type is not json
+     * Determine and decode content type request is json, return request content type is not json.
      *
      * @return \Swilen\Http\Component\InputHunt
      */
@@ -297,7 +303,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Transform input source to json valid encode or decode
+     * Transform input source to json valid encode or decode.
      *
      * @return \Swilen\Http\Common\HttpTransformJson
      */
@@ -307,7 +313,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Set user to current request
+     * Set user to current request.
      *
      * @param object|array $user
      *
@@ -321,7 +327,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Get user from request
+     * Get user from request.
      *
      * @return array|object
      */
@@ -331,7 +337,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Get bearer token from authorization header
+     * Get bearer token from authorization header.
      *
      * @return string|null
      */
@@ -345,7 +351,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Get current body content request
+     * Get current body content request.
      *
      * @return resource|string|false|null
      */
@@ -375,9 +381,9 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Determine if request content type is json
+     * Determine if request content type is json.
      *
-     * @return boolean
+     * @return bool
      */
     private function isJsonRequest()
     {
@@ -386,11 +392,12 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
                 return true;
             }
         }
+
         return false;
     }
 
     /**
-     * Get all variables captured and stored
+     * Get all variables captured and stored.
      *
      * @return array
      */
@@ -404,10 +411,10 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Get input value from input source
+     * Get input value from input source.
      *
      * @param string|int $key
-     * @param mixed $default
+     * @param mixed      $default
      *
      * @return mixed
      */
@@ -417,10 +424,10 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Get query value from query collection
+     * Get query value from query collection.
      *
      * @param string|int $key
-     * @param mixed $default
+     * @param mixed      $default
      *
      * @return mixed
      */
@@ -430,7 +437,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Get file(s) from UploadedFiles collection
+     * Get file(s) from UploadedFiles collection.
      *
      * @param string $filename The filename
      *
@@ -442,19 +449,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Get all of the input and files from the request as array
-     *
-     * @return array
-     */
-    public function toArray()
-    {
-        return $this->all();
-    }
-
-    /**
-     * Validate request values with rules
-     *
-     * @param array $rules
+     * Validate request values with rules.
      *
      * @return \Swilen\Validation\Validator
      */
@@ -493,7 +488,7 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
      * Set the value at the given offset.
      *
      * @param string $offset
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return void
      */
@@ -529,10 +524,10 @@ final class Request extends SupportRequest implements \ArrayAccess, Arrayable
     }
 
     /**
-     * Set value to input source
+     * Set value to input source.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return void
      */

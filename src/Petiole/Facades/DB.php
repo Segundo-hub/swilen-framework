@@ -2,21 +2,21 @@
 
 namespace Swilen\Petiole\Facades;
 
+use Swilen\Petiole\Facade;
+
 /**
  * @method static mixed[] select(string $query, array $bindings = [])
- * @method static mixed selectOne(string $query, array $bindings = [])
- * @method static bool insert(string $query, array $bindings = [])
- * @method static int delete(string $query, array $bindings = [])
- * @method static int update(string $query, array $bindings = [])
- * @method static bool statement(string $query, array $bindings = [])
- * @method static void beginTransaction()
- * @method static void commit()
- * @method static void rollBack()
+ * @method static mixed   selectOne(string $query, array $bindings = [])
+ * @method static bool    insert(string $query, array $bindings = [])
+ * @method static int     delete(string $query, array $bindings = [])
+ * @method static int     update(string $query, array $bindings = [])
+ * @method static bool    statement(string $query, array $bindings = [])
+ * @method static void    beginTransaction()
+ * @method static void    commit()
+ * @method static void    rollBack()
  *
- *
- * @see \Swilen\Database\Contracts\DatabaseConnection
+ * @see \Swilen\Database\Contract\DatabaseConnection
  */
-
 class DB extends Facade
 {
     /**

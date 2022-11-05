@@ -2,21 +2,21 @@
 
 namespace Swilen\Http\Component;
 
-use Swilen\Shared\Support\Enumerable;
-
-class ParameterHunt implements \Countable, Enumerable
+class ParameterHunt implements \Countable, \IteratorAggregate
 {
     /**
-     * The params storage
+     * The params storage.
      *
      * @var array<string|int, mixed>
      */
     protected $params = [];
 
     /**
-     * Create new parameterHunt with default params
+     * Create new ParameterHunt instance with default params.
      *
      * @param array $param
+     *
+     * @return void
      */
     public function __construct(array $params = [])
     {
@@ -24,11 +24,11 @@ class ParameterHunt implements \Countable, Enumerable
     }
 
     /**
-     * Replace params with new Set
+     * Replace params with new Set.
      *
      * @param array $replaced
      *
-     * @param void
+     * @return void
      */
     public function replace(array $replaced)
     {
@@ -48,7 +48,7 @@ class ParameterHunt implements \Countable, Enumerable
     /**
      * Returns the parameter keys.
      *
-     * @return int[]|string[] an array of all the keys in input.
+     * @return int[]|string[] an array of all the keys in input
      */
     public function keys()
     {
@@ -58,7 +58,7 @@ class ParameterHunt implements \Countable, Enumerable
     /**
      * Returns the parameter values.
      *
-     * @return int[]|string[] an array of all the values in input.
+     * @return int[]|string[] an array of all the values in input
      */
     public function values()
     {
@@ -66,7 +66,7 @@ class ParameterHunt implements \Countable, Enumerable
     }
 
     /**
-     * Adds params to params set
+     * Adds params to params set.
      *
      * @param array $params
      *
@@ -78,10 +78,10 @@ class ParameterHunt implements \Countable, Enumerable
     }
 
     /**
-     * Get one value or default if not exists
+     * Get one value or default if not exists.
      *
      * @param string $key
-     * @param mixed $default
+     * @param mixed  $default
      *
      * @return mixed
      */
@@ -91,10 +91,10 @@ class ParameterHunt implements \Countable, Enumerable
     }
 
     /**
-     * Insert one value to params set
+     * Insert one value to params set.
      *
      * @param string $key
-     * @param mixed $value
+     * @param mixed  $value
      *
      * @return void
      */
@@ -107,6 +107,7 @@ class ParameterHunt implements \Countable, Enumerable
      * Returns true if the parameter is defined.
      *
      * @param string $key
+     *
      * @return bool
      */
     public function has(string $key)
@@ -123,7 +124,7 @@ class ParameterHunt implements \Countable, Enumerable
     }
 
     /**
-     * Normalize token to Capitalize key when contains http
+     * Normalize token to Capitalize key when contains http.
      *
      * @param string $token
      *
@@ -135,7 +136,7 @@ class ParameterHunt implements \Countable, Enumerable
     }
 
     /**
-     * Normalize token to Capitalize key
+     * Normalize token to Capitalize key.
      *
      * @param string $token
      *
@@ -147,13 +148,24 @@ class ParameterHunt implements \Countable, Enumerable
     }
 
     /**
-     * {@inheritdoc}
+     * Returns the number of input params.
      *
      * @return int
      */
     #[\ReturnTypeWillChange]
     public function count()
     {
-        return count($this->params);
+        return \count($this->params);
+    }
+
+    /**
+     * Returns an iterator for input params.
+     *
+     * @return \ArrayIterator<string, list<string|null>>
+     */
+    #[\ReturnTypeWillChange]
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->params);
     }
 }

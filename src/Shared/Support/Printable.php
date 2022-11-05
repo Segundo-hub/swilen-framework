@@ -5,7 +5,7 @@ namespace Swilen\Shared\Support;
 interface Printable
 {
     /**
-     * Print values
+     * Print values.
      *
      * @return void
      */

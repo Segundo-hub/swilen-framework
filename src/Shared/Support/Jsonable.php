@@ -5,7 +5,7 @@ namespace Swilen\Shared\Support;
 interface Jsonable
 {
     /**
-     * Transform values to json
+     * Transform values to json.
      *
      * @param int $options
      *

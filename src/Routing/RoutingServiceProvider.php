@@ -6,11 +6,13 @@ use Swilen\Http\Contract\ResponseContract;
 use Swilen\Http\Response;
 use Swilen\Petiole\Facades\Route;
 use Swilen\Petiole\ServiceProvider;
+use Swilen\Routing\Contract\ResponseFactory;
+use Swilen\Routing\ResponseFactory as RoutingResponseFactory;
 
 class RoutingServiceProvider extends ServiceProvider
 {
     /**
-     * Register routing base services
+     * Register routing base services.
      *
      * @return void
      */
@@ -22,7 +24,7 @@ class RoutingServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register Router Manager
+     * Register Router Manager.
      *
      * @return void
      */
@@ -34,7 +36,7 @@ class RoutingServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register Response
+     * Register Response.
      *
      * @return void
      */
@@ -46,6 +48,10 @@ class RoutingServiceProvider extends ServiceProvider
 
         $this->app->bind(ResponseContract::class, function () {
             return new Response();
+        });
+
+        $this->app->bind(ResponseFactory::class, function () {
+            return new RoutingResponseFactory();
         });
     }
 
