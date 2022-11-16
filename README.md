@@ -17,6 +17,7 @@ $ composer create-project swilen/swilen swilen
 
 Composer generate current project structure.
 
+```bash
 📦swilen
  ┣ 📂app
  ┃ ┣ 📂Modules
@@ -55,6 +56,7 @@ Composer generate current project structure.
  ┣ 📜composer.json
  ┣ 📜composer.lock
  ┣ 📜[README.me](#swilen-framework)
+```
 
 ### Bootstrapping files
 
@@ -233,6 +235,3 @@ $ php -S localhost:8000 -t public
 -   [Security](#security)
 -   [Validation](#alidation)
 -   [Facades](#facade)
-
-*   Mail :waxing_crescent_moon:
-*   Console :waxing_crescent_moon:
