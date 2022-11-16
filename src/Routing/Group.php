@@ -36,7 +36,7 @@ final class Group
     {
         $old = $old['prefix'] ?? '';
 
-        return isset($new['prefix']) ? trim($new['prefix'], '/').'/'.trim($old, '/') : $old;
+        return isset($new['prefix']) ? trim($old, '/').'/'.trim($new['prefix'], '/') : $old;
     }
 
     /**
