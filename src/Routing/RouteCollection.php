@@ -2,12 +2,14 @@
 
 namespace Swilen\Routing;
 
+use Swilen\Http\Common\Http;
 use Swilen\Http\Exception\HttpMethodNotAllowedException;
 use Swilen\Http\Exception\HttpNotFoundException;
 use Swilen\Http\Request;
+use Swilen\Http\Response;
 use Swilen\Shared\Support\Arrayable;
 
-class RouteCollection implements Arrayable
+class RouteCollection implements Arrayable, \IteratorAggregate, \Countable
 {
     /**
      * The routes collection.
@@ -17,20 +19,18 @@ class RouteCollection implements Arrayable
     protected $routes = [];
 
     /**
-     * The current matched route.
+     * Count all routes.
      *
-     * @var \Swilen\Routing\Route|null
+     * @var int
      */
-    protected $current;
+    protected $count = 0;
 
     /**
-     * Collection of http verbs alloweb.
+     * Methods registered in the collection.
      *
      * @var string[]
      */
-    protected $allowedHttpVerbs = [
-        'get', 'post', 'options', 'put', 'delete', 'any', 'patch',
-    ];
+    protected $methods = [];
 
     /**
      * The application container instance.
@@ -55,9 +55,23 @@ class RouteCollection implements Arrayable
      */
     public function add(Route $route)
     {
-        $this->routes[$route->getMethod()][] = $route;
+        $this->addRouteToCollection($route);
 
         return $route;
+    }
+
+    /**
+     * Add route to collection adn increment count of routes.
+     *
+     * @param \Swilen\Routing\Route $route
+     *
+     * @return void
+     */
+    protected function addRouteToCollection(Route $route)
+    {
+        $this->routes[$route->getMethod()][] = $route;
+
+        ++$this->count;
     }
 
     /**
@@ -74,46 +88,110 @@ class RouteCollection implements Arrayable
     {
         $routes = $this->get($request->getMethod());
 
-        foreach ($routes as $route) {
-            if ($route->matches($request->getPathInfo())) {
-                $this->current = $route;
-                break;
-            }
-        }
+        // We try if we can find a matching route for this current request
+        $route = $this->matchRoutes($routes, $request);
 
-        if ($this->current !== null) {
-            return $this->current;
-        }
-
-        throw new HttpNotFoundException();
+        return $this->handleMatchedRoute($request, $route);
     }
 
     /**
      * @param string $method
      *
      * @return \Swilen\Routing\Route[]
-     *
-     * @throws \Swilen\Http\Exception\HttpMethodNotAllowedException
      */
     protected function get(string $method)
     {
-        if (isset($this->routes[$method])) {
-            return $this->routes[$method];
+        return $this->routes[$method] ?? [];
+    }
+
+    /**
+     * Match route in all routes match by method.
+     *
+     * @param \Swilen\Routing\Route[] $routes
+     * @param \Swilen\Http\Request    $request
+     *
+     * @return \Swilen\Routing\Route|null
+     */
+    protected function matchRoutes(array $routes, Request $request)
+    {
+        foreach ($routes as $route) {
+            if ($route->matches($request->getPathInfo())) {
+                return $route;
+            }
+        }
+    }
+
+    /**
+     * Handle the matched route.
+     *
+     * @param \Swilen\Http\Request       $request
+     * @param \Swilen\Routing\Route|null $route
+     *
+     * @return \Swilen\Routing\Route
+     */
+    protected function handleMatchedRoute(Request $request, $route)
+    {
+        if (!is_null($route)) {
+            return $route;
         }
 
-        return $this->methodNotAllowed($method);
+        if (!empty($methods = $this->findAllowedMethods($request))) {
+            return $this->handleRouteForMethods($request, $methods);
+        }
+
+        throw new HttpNotFoundException();
+    }
+
+    /**
+     * Find allowed methods for this URI by matching against all other HTTP methods as well.
+     *
+     * @param \Swilen\Http\Request $request
+     *
+     * @return string[]
+     */
+    protected function findAllowedMethods(Request $request)
+    {
+        $methods = array_diff(Router::HTTP_METHODS, [$request->getMethod()]);
+
+        return array_filter($methods, function ($method) use ($request) {
+            return !is_null($this->matchRoutes($this->get($method), $request));
+        });
+    }
+
+    /**
+     * Manage request method is another in route collection.
+     *
+     * @param \Swilen\Http\Request $request
+     * @param string[]             $methods
+     *
+     * @return \Swilen\Routing\Route|null
+     *
+     * @throws \Swilen\Http\Exception\HttpMethodNotAllowedException
+     */
+    protected function handleRouteForMethods(Request $request, array $methods = [])
+    {
+        if ($request->getMethod() === Http::METHOD_OPTIONS) {
+            return new Route(Http::METHOD_OPTIONS, $request->getPathInfo(), function () use ($methods) {
+                return new Response('', 200, ['Allow' => implode(', ', $methods)]);
+            });
+        }
+
+        $this->methodNotAllowed($request->getMethod(), $methods);
     }
 
     /**
      * Handle exepcion if method not allowed in route collection.
      *
-     * @param string $method
+     * @param string   $method
+     * @param string[] $methods
      *
      * @throws \Swilen\Http\Exception\HttpMethodNotAllowedException
      */
-    private function methodNotAllowed(string $method)
+    protected function methodNotAllowed(string $method, array $methods = [])
     {
-        throw new HttpMethodNotAllowedException(sprintf('%s Method Not Allowed. %s Methods allowed', strtoupper($method), implode(',', array_keys($this->routes))));
+        $message = sprintf('The %s method is not supported. Must be one of: %s.', $method, $methods = strtoupper(implode(', ', $methods)));
+
+        throw (new HttpMethodNotAllowedException($message))->withHeader('Allow', $methods);
     }
 
     /**
@@ -130,5 +208,27 @@ class RouteCollection implements Arrayable
         }
 
         return $routes;
+    }
+
+    /**
+     * Get count all routes.
+     *
+     * @return int
+     */
+    #[\ReturnTypeWillChange]
+    public function count()
+    {
+        return $this->count;
+    }
+
+    /**
+     * Get iterator for all routes.
+     *
+     * @return \ArrayIterator<string,\Swilen\Routing\Route[]>
+     */
+    #[\ReturnTypeWillChange]
+    public function getIterator()
+    {
+        return new \ArrayIterator($this->routes);
     }
 }

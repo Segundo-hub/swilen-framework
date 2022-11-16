@@ -2,7 +2,6 @@
 
 use Swilen\Arthropod\Env;
 use Swilen\Container\Container;
-use Swilen\Http\Request;
 use Swilen\Routing\Contract\ResponseFactory;
 
 if (!function_exists('app')) {
@@ -12,11 +11,11 @@ if (!function_exists('app')) {
      * @param string|null $abstract
      * @param array       $parameters
      *
-     * @return \Swilen\Shared\Arthropod\Application
+     * @return \Swilen\Shared\Arthropod\Application|\Swilen\Container\Container
      */
     function app($abstract = null, array $parameters = [])
     {
-        if (is_null($abstract)) {
+        if ($abstract === null) {
             return Container::getInstance();
         }
 
@@ -26,11 +25,13 @@ if (!function_exists('app')) {
 
 if (!function_exists('response')) {
     /**
+     * Helper function for manage response factory.
+     *
      * @param mixed $content
      * @param int   $status
      * @param array $headers
      *
-     * @return \Swilen\Http\Response
+     * @return \Swilen\Http\Response|\Swilen\Routing\Contract\ResponseFactory
      */
     function response($content = null, int $status = 200, array $headers = [])
     {
@@ -39,7 +40,7 @@ if (!function_exists('response')) {
          */
         $response = app()->make(ResponseFactory::class);
 
-        if (!is_null($content)) {
+        if ($content !== null) {
             return $response->make($content, $status, $headers);
         }
 
@@ -49,16 +50,20 @@ if (!function_exists('response')) {
 
 if (!function_exists('request')) {
     /**
+     * Retrieve current request instance from container.
+     *
      * @return \Swilen\Http\Request
      */
     function request()
     {
-        return app()->make(Request::class);
+        return app()->make('request');
     }
 }
 
 if (!function_exists('base_path')) {
     /**
+     * Get the application base path.
+     *
      * @param string $path
      *
      * @return string
@@ -71,6 +76,10 @@ if (!function_exists('base_path')) {
 
 if (!function_exists('app_path')) {
     /**
+     * Get the application path.
+     *
+     * @param string $path
+     *
      * @return string
      */
     function app_path($path = '')
@@ -79,34 +88,48 @@ if (!function_exists('app_path')) {
     }
 }
 
-if (!function_exists('app_config')) {
-    /**
-     * @return array|null
-     */
-    function app_config($key = '', $default = null)
-    {
-        $config = (array) app()->make('config');
-
-        if (key_exists($key, $config)) {
-            return $config[$key];
-        }
-
-        return $default;
-    }
-}
-
 if (!function_exists('storage_path')) {
     /**
-     * @return string The storage path
+     * Get application storage path.
+     *
+     * @param string $path
+     *
+     * @return string
      */
     function storage_path($path = '')
     {
-        return app_path('storage').($path ? DIRECTORY_SEPARATOR.$path : '');
+        return app()->storagePath($path);
+    }
+}
+
+if (!function_exists('config')) {
+    /**
+     * Get the specified configuration value.
+     *
+     * @param string $key
+     * @param mixed  $default
+     *
+     * @return mixed|\Swilen\Config\ConfigContract
+     */
+    function config(string $key = null, $default = null)
+    {
+        /**
+         * @var \Swilen\Config\ConfigContract
+         * */
+        $config = app()->make('config');
+
+        if ($key === null) {
+            return $config;
+        }
+
+        return $config->get($key, $default);
     }
 }
 
 if (!function_exists('env')) {
     /**
+     * Retrieve environment varaiable from env file.
+     *
      * @param string|int      $key
      * @param string|int|bool $default
      *

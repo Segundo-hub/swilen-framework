@@ -10,6 +10,7 @@ final class MimeTypes
      * @var array<string, string>
      */
     private const COLLECTION = [
+        // commons
         'txt' => 'text/plain',
         'htm' => 'text/html',
         'html' => 'text/html',

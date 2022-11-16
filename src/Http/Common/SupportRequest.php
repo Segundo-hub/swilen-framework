@@ -7,16 +7,35 @@ class SupportRequest
     /**
      * Creates a Request based on a given URI and configuration.
      *
-     * @param string $uri       The URI
-     * @param string $method    The HTTP method
-     * @param array $parameters The query (GET) or request (POST) parameters
-     * @param array $files      The request files ($_FILES)
-     * @param array $server     The server parameters ($_SERVER)
-     * @param string|resource|null $content  The raw body data
+     * @param string               $uri        The URI
+     * @param string               $method     The HTTP method
+     * @param array                $parameters The query (GET) or request (POST) parameters
+     * @param array                $files      The request files ($_FILES)
+     * @param array                $server     The server parameters ($_SERVER)
+     * @param string|resource|null $content    The raw body data
+     *
+     * @return static
+     */
+    public static function make(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $content = null)
+    {
+        [$server, $files, $request, $query, $content] = self::createServerRequest($uri, $method, $parameters, $files, $server);
+
+        return new static($server, $files, $request, $query, $content);
+    }
+
+    /**
+     * Creates a Request based on a given URI and configuration.
+     *
+     * @param string               $uri        The URI
+     * @param string               $method     The HTTP method
+     * @param array                $parameters The query (GET) or request (POST) parameters
+     * @param array                $files      The request files ($_FILES)
+     * @param array                $server     The server parameters ($_SERVER)
+     * @param string|resource|null $content    The raw body data
      *
      * @return array
      */
-    protected static function makeFetchRequest(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $content = null)
+    protected static function createServerRequest(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $content = null)
     {
         $server = static::replaceServerVars($server, $method);
 
@@ -24,12 +43,12 @@ class SupportRequest
 
         if (isset($components['host'])) {
             $server['SERVER_NAME'] = $components['host'];
-            $server['HTTP_HOST'] = $components['host'];
+            $server['HTTP_HOST']   = $components['host'];
         }
 
         if (isset($components['scheme'])) {
-            if ('https' === $components['scheme']) {
-                $server['HTTPS'] = 'on';
+            if ($components['scheme'] === 'https') {
+                $server['HTTPS']       = 'on';
                 $server['SERVER_PORT'] = 443;
             } else {
                 unset($server['HTTPS']);
@@ -64,11 +83,11 @@ class SupportRequest
                 // no break
             case 'PATCH':
                 $request = $parameters;
-                $query = [];
+                $query   = [];
                 break;
             default:
                 $request = [];
-                $query = $parameters;
+                $query   = $parameters;
                 break;
         }
 
@@ -77,27 +96,27 @@ class SupportRequest
             parse_str(html_entity_decode($components['query']), $qs);
 
             if ($query) {
-                $query = array_replace($qs, $query);
+                $query       = array_replace($qs, $query);
                 $queryString = http_build_query($query, '', '&');
             } else {
-                $query = $qs;
+                $query       = $qs;
                 $queryString = $components['query'];
             }
         } elseif ($query) {
             $queryString = http_build_query($query, '', '&');
         }
 
-        $server['REQUEST_URI'] = $components['path'].('' !== $queryString ? '?'.$queryString : '');
+        $server['REQUEST_URI']  = $components['path'].($queryString !== '' ? '?'.$queryString : '');
         $server['QUERY_STRING'] = $queryString;
 
         return [$server, $files, $request, $query, $content];
     }
 
     /**
-     * Replace $_SERVER variables with given server values
+     * Replace $_SERVER variables with given server values.
      *
      * @param array<string, mixed> $server
-     * @param string $method
+     * @param string               $method
      *
      * @return array<string, mixed>
      */
@@ -118,26 +137,26 @@ class SupportRequest
             'REQUEST_TIME' => time(),
             'REQUEST_TIME_FLOAT' => microtime(true),
             'PATH_INFO' => '',
-            'REQUEST_METHOD' => strtoupper($method)
+            'REQUEST_METHOD' => strtoupper($method),
         ], $server);
     }
 
     /**
-     * Http request mime-types
+     * Http request mime-types.
      *
-     * @var array<string, string>
+     * @var array<string, string[]>
      */
     protected $requestMimeTypes = [
-        'html'   => ['text/html', 'application/xhtml+xml'],
-        'txt'    => ['text/plain'],
-        'js'     => ['application/javascript', 'application/x-javascript', 'text/javascript'],
-        'css'    => ['text/css'],
-        'json'   => ['application/json', 'application/x-json'],
-        'xml'    => ['text/xml', 'application/xml', 'application/x-xml'],
-        'rdf'    => ['application/rdf+xml'],
-        'atom'   => ['application/atom+xml'],
-        'rss'    => ['application/rss+xml'],
-        'form'   => ['application/x-www-form-urlencoded', 'multipart/form-data'],
+        'html' => ['text/html', 'application/xhtml+xml'],
+        'txt' => ['text/plain'],
+        'js' => ['application/javascript', 'application/x-javascript', 'text/javascript'],
+        'css' => ['text/css'],
+        'json' => ['application/json', 'application/x-json'],
+        'xml' => ['text/xml', 'application/xml', 'application/x-xml'],
+        'rdf' => ['application/rdf+xml'],
+        'atom' => ['application/atom+xml'],
+        'rss' => ['application/rss+xml'],
+        'form' => ['application/x-www-form-urlencoded', 'multipart/form-data'],
         'jsonld' => ['application/ld+json'],
     ];
 }

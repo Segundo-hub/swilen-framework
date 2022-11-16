@@ -14,11 +14,15 @@ class StreamedResponse extends Response
     protected $callback;
 
     /**
+     * Indicates if callback is streamed.
+     *
      * @var bool
      */
     protected $streamed;
 
     /**
+     * Indicates headers has been sent.
+     *
      * @var bool
      */
     protected $sent;

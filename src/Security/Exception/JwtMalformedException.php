@@ -2,9 +2,7 @@
 
 namespace Swilen\Security\Exception;
 
-use Swilen\Http\Exception\HttpException;
-
-class JwtMalformedException extends HttpException
+class JwtMalformedException extends JsonWebTokenException
 {
     protected $code = 400;
 

@@ -2,47 +2,43 @@
 
 namespace Swilen\Security\Middleware;
 
-use Closure;
-use Swilen\Security\Token\Jwt;
 use Swilen\Http\Exception\HttpForbiddenException;
 use Swilen\Http\Exception\HttpUnauthorizedException;
 use Swilen\Http\Request;
+use Swilen\Security\Token\Payload;
 
 class Authenticate
 {
     /**
-     * Handle incoming request and proccesing
+     * Handle incoming request for authenticate user.
      *
      * @param \Swilen\Http\Request $request
-     * @param \Closure $next
+     * @param \Closure             $next
      *
      * @return \Closure
      */
-    public function handle(Request $request, Closure $next)
-    {
-        if ($token = $this->isAuthenticated($request)) {
-            return $next($request->withUser($token->data()));
-        }
-
-        throw new HttpUnauthorizedException;
-    }
-
-    private function isAuthenticated(Request $request)
+    public function handle(Request $request, \Closure $next)
     {
         if (!$token = $request->bearerToken()) {
-            throw new HttpForbiddenException;
+            throw new HttpForbiddenException();
         }
 
-        return (new Jwt)->verify($token, $this->secret());
+        if (!$result = $this->isAuthenticated($token)) {
+            throw new HttpUnauthorizedException();
+        }
+
+        return $next($request->withUser($result->data()));
     }
 
     /**
-     * Return secret of token for matching
+     * Verify if user is authenticated.
      *
-     * @return string
+     * @param string $token
+     *
+     * @return \Swilen\Security\Token\Payload
      */
-    protected function secret()
+    protected function isAuthenticated(string $token)
     {
-        return '';
+        return new Payload(['data' => 'name', 'token' => $token]);
     }
 }

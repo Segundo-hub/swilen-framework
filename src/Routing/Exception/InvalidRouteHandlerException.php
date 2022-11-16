@@ -5,6 +5,7 @@ namespace Swilen\Routing\Exception;
 class InvalidRouteHandlerException extends \Exception
 {
     /**
+     * @codeCoverageIgnore
      * Create exception for action is callable.
      *
      * @param string $message

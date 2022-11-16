@@ -3,6 +3,7 @@
 namespace Swilen\Container;
 
 use Psr\Container\ContainerInterface;
+use Swilen\Container\Exception\BindingResolutionException;
 use Swilen\Container\Exception\EntryNotFoundException;
 use Swilen\Shared\Container\Container as ContainerContract;
 
@@ -431,6 +432,38 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     }
 
     /**
+     * Return iterator for given tag.
+     *
+     * @param string $tag
+     *
+     * @return \iterator|\ArrayIterator<object>
+     */
+    public function tagged($tag)
+    {
+        if (!$this->isTag($tag)) {
+            return [];
+        }
+
+        return new IterableGenerator(function () use ($tag) {
+            foreach ($this->tags[$tag] as $abstract) {
+                yield $this->make($abstract);
+            }
+        }, count($this->tags[$tag]));
+    }
+
+    /**
+     * Determine given value is tag.
+     *
+     * @param string $tag
+     *
+     * @return bool
+     */
+    public function isTag($tag)
+    {
+        return isset($this->tags[$tag]);
+    }
+
+    /**
      * Alias a type to a different name.
      *
      * @param string $abstract
@@ -544,20 +577,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     }
 
     /**
-     * Get a closure to resolve the given type from the container.
-     *
-     * @param string $abstract
-     *
-     * @return \Closure
-     */
-    public function factory($abstract)
-    {
-        return function () use ($abstract) {
-            return $this->make($abstract);
-        };
-    }
-
-    /**
      * Resolve the given type from the container.
      *
      * @param string|callable $abstract
@@ -577,12 +596,12 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     {
         try {
             return $this->resolve($id);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             if ($this->has($id) || $e instanceof \RuntimeException) {
                 throw $e;
             }
 
-            throw new \RuntimeException($id, $e->getCode(), $e);
+            throw new EntryNotFoundException($id, is_int($e->getCode()) ? $e->getCode() : 0, $e);
         }
     }
 
@@ -708,6 +727,8 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      * @param \Closure|string $concrete
      *
      * @return mixed
+     *
+     * @throws \Swilen\Container\Exception\BindingResolutionException
      */
     public function build($concrete)
     {
@@ -718,7 +739,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
         try {
             $reflector = new \ReflectionClass($concrete);
         } catch (\ReflectionException $e) {
-            throw new EntryNotFoundException("Target class [$concrete] does not exist.", 0, $e);
+            throw new BindingResolutionException('Target class ['.$concrete.'] does not exist.', 0, $e);
         }
 
         // Verify if this object is not instantiable
@@ -796,8 +817,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     protected function hasParameterOverride($dependency)
     {
         return array_key_exists(
-            $dependency->name,
-            $this->getLastParameterOverride()
+            $dependency->name, $this->getLastParameterOverride()
         );
     }
 
@@ -1030,10 +1050,10 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      */
     public function flush()
     {
-        $this->aliases = [];
-        $this->resolved = [];
-        $this->bindings = [];
-        $this->instances = [];
+        $this->aliases         = [];
+        $this->resolved        = [];
+        $this->bindings        = [];
+        $this->instances       = [];
         $this->abstractAliases = [];
         $this->scopedInstances = [];
     }
@@ -1058,7 +1078,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     public static function getInstance()
     {
         if (is_null(static::$instance)) {
-            static::$instance = new static();
+            return static::$instance = new static();
         }
 
         return static::$instance;
@@ -1117,30 +1137,5 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     public function offsetUnset($key)
     {
         unset($this->bindings[$key], $this->instances[$key], $this->resolved[$key]);
-    }
-
-    /**
-     * Dynamically access container services.
-     *
-     * @param string $key
-     *
-     * @return mixed
-     */
-    public function __get($key)
-    {
-        return $this[$key];
-    }
-
-    /**
-     * Dynamically set container services.
-     *
-     * @param string $key
-     * @param mixed  $value
-     *
-     * @return void
-     */
-    public function __set($key, $value)
-    {
-        $this[$key] = $value;
     }
 }

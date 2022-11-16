@@ -22,6 +22,20 @@ final class HttpTransformJson
     private $content;
 
     /**
+     * Common json serialize Exception messages.
+     *
+     * @var array<int, string>
+     */
+    public static $errorMessages = [
+        JSON_ERROR_NONE => 'No error has occurred',
+        JSON_ERROR_DEPTH => 'The maximum stack depth has been exceeded',
+        JSON_ERROR_STATE_MISMATCH => 'Invalid or malformed JSON',
+        JSON_ERROR_CTRL_CHAR => 'Control character error, possibly incorrectly encoded',
+        JSON_ERROR_SYNTAX => 'Syntax error',
+        JSON_ERROR_UTF8 => 'Malformed UTF-8 characters, possibly incorrectly encoded',
+    ];
+
+    /**
      * @param string|array|object $content
      *
      * @return void
@@ -38,14 +52,14 @@ final class HttpTransformJson
      *
      * @return string
      */
-    public function encode(int $encodingOptions = 0)
+    public function encode(int $encodingOptions = null)
     {
         @json_decode('[]');
 
-        $content = @json_encode($this->content, $encodingOptions ?: $this->encodingOptions);
+        $content = json_encode($this->content, $encodingOptions ?: $this->encodingOptions);
 
-        if (!$this->isValidJsonEncoded(json_last_error())) {
-            throw new \JsonException('Failed encode reponse body: '.json_last_error_msg(), json_last_error());
+        if (!$this->jsonSerializedWithoutErrors($content)) {
+            $this->handleJsonException('Failed encode to json');
         }
 
         return $content;
@@ -63,46 +77,42 @@ final class HttpTransformJson
     {
         @json_decode('[]');
 
-        $content = @json_decode($this->content, $assoc, 512, $decodingOptions);
+        $content = json_decode($this->content, $assoc, 512, $decodingOptions);
 
-        if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \JsonException('Failed decode request body: '.json_last_error_msg(), json_last_error());
+        if (!$this->jsonSerializedWithoutErrors($content)) {
+            $this->handleJsonException('Failed decode from json');
         }
 
         return $content;
     }
 
     /**
-     * Determine if json is valid encoded.
+     * Determine given value is serialized to withouts errors.
      *
-     * @param int $error
+     * @param mixed $content
      *
      * @return bool
      */
-    public function isValidJsonEncoded($error)
+    public function jsonSerializedWithoutErrors($content)
     {
-        if ($error === JSON_ERROR_NONE) {
-            return true;
-        }
-
-        return $this->hasEncodingOption(JSON_PARTIAL_OUTPUT_ON_ERROR) &&
-            in_array($error, [
-                JSON_ERROR_RECURSION,
-                JSON_ERROR_INF_OR_NAN,
-                JSON_ERROR_UNSUPPORTED_TYPE,
-            ]);
+        return ($content !== null || $content !== false) && json_last_error() === JSON_ERROR_NONE;
     }
 
     /**
-     * Determine if a JSON encoding option is set.
+     * Create exception for json failed in serialization.
      *
-     * @param int $option
+     * @param string $info
      *
-     * @return bool
+     * @return void
+     *
+     * @throws \JsonException
      */
-    public function hasEncodingOption($option)
+    private function handleJsonException(string $info)
     {
-        return (bool) ($this->encodingOptions & $option);
+        $code    = json_last_error();
+        $message = static::$errorMessages[$code] ?? json_last_error_msg();
+
+        throw new \JsonException($info.': '.$message, $code);
     }
 
     /**
@@ -123,11 +133,11 @@ final class HttpTransformJson
     }
 
     /**
-     * Morph the given content into JSON.
+     * Morph the given content into Array for after serialization.
      *
      * @param mixed $content
      *
-     * @return array
+     * @return mixed|array
      */
     public static function morphToJsonable($content)
     {

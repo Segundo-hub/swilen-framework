@@ -1,70 +1,133 @@
 <?php
 
+use Swilen\Validation\Exception\RuleNotFoundException;
+use Swilen\Validation\Rule;
 use Swilen\Validation\Validator;
 
 uses()->group('Validation');
 
-/**
- * @property \Swilen\Validation\Validator $validate
- */
-beforeEach(function () {
-    $this->validate = new Validator;
+it('Validator init with __constructor or make method', function () {
+    $validator     = new Validator([]);
+    $makeValidator = Validator::make([]);
+
+    expect($validator)->toBeInstanceOf(Validator::class);
+    expect($makeValidator)->toBeInstanceOf(Validator::class);
 });
 
-it('Validate email', function () {
-    /** @var \Swilen\Validation\Validator */
-    $dataset = $this->validate->from([
-        'email' => 'alexito@gmail.com'
+it('Validator implements Arrayable', function () {
+    $validator = Validator::make([
+        'email' => 'example.com',
+        'name' => '647',
+        'age' => 18,
     ]);
 
-    $final = $dataset->validate([
+    expect($validator->toArray())->toBeArray();
+    expect($validator->toArray())->toHaveKeys(['inputs', 'errors', 'rules']);
+});
+
+it('Validate simple inputs', function () {
+    $validator = Validator::make([
+        'email' => 'example@domain.com',
+        'name' => 'Second',
+        'age' => 18,
+    ]);
+
+    $validator->validate([
         'email' => 'email|required',
+        'name' => 'required|alpha',
+        'age' => 'required|int',
     ]);
 
-    expect($final->isSafe())->toBeTrue();
+    expect($validator->fails())->toBeFalse();
 });
 
-it('Validate email is envalid', function () {
-    $this->validate = $this->validate->from([
-        'email' => 'alexitogmail.com'
+it('Validate simple inputs is same time', function () {
+    $validator = Validator::make([
+        'email' => 'example@domain.com',
+    ],
+        [
+            'email' => 'email|required',
+        ]);
+
+    expect($validator->fails())->toBeFalse();
+});
+
+it('Parse rules from array or string', function () {
+    $validator = Validator::make(['attribute' => 1, 'other' => 'alpha'], [
+        'attribute' => ['int', 'number', Rule::NULLABLE],
+        'other' => 'alpha|nullable',
     ]);
 
-    $final = $this->validate->validate([
+    expect($validator->fails())->toBeFalse();
+});
+
+it('Parse rule arguments', function () {
+    $time = strtotime('2022-02-10');
+
+    $validator = Validator::make(['date' => date('Y-m-d', $time), 'country' => 'Peru'], [
+        'date' => 'date:Y-m-d|required',
+        'country' => 'in:Peru,Colombia,Ecuador|required',
+    ]);
+
+    expect($validator->fails())->toBeFalse();
+});
+
+it('Skip rule if is regex', function () {
+    $validator = Validator::make(['country' => 'Peru'], [
+        'country' => ['regex:/(Peru|Colombia|Bolivia)/', 'required'],
+    ]);
+
+    expect($validator->fails())->toBeFalse();
+});
+
+it('Add message when validate is fails', function () {
+    $validator = Validator::make([
+        'email' => 'example.com',
+        'name' => '647',
+        'age' => 18,
+    ]);
+
+    $validator->validate([
         'email' => 'email|required',
+        'name' => 'required|alpha',
+        'age' => 'required|int',
     ]);
 
-    expect($final->isSafe())->toBeFalse();
+    expect($validator->fails())->toBeTrue();
+    expect($validator->errors()->all())->toHaveCount(2);
+    expect($validator->errors('email'))->toBeArray();
+    expect($validator->errors('age'))->toBeNull();
 });
 
-it('Validate set of values', function () {
-    $validable = $this->validate->from([
-        'no-required' => null,
-        'username' => 'Junior',
-        'age' => 34,
-        'date' => '2022-09-07'
+it('Skip validator if value not exits and rule is not includes REQUIRED', function () {
+    $validator = Validator::make([
+        'name' => '647'
     ]);
 
-    $final = $validable->validate([
-        'username' => 'string|required',
-        'age' => 'number|required',
-        'date' => 'date|required',
+    $validator->validate([
+        'name' => ['number'],
+        'age' => 'int|in:29,18'
     ]);
 
-    expect($final->isSafe())->toBeTrue();
+    expect($validator->errors('age'))->toBeNull();
+    expect($validator->fails())->toBeFalse();
 });
 
-
-
-it('Validate value is number', function () {
-    $this->validate = $this->validate->from([
-        'data' => 300
+it('Acces to inputs has object property', function () {
+    $validator = Validator::make([
+        'email' => 'example.com',
+        'name' => '647',
+        'age' => 18,
     ]);
 
-    $final = $this->validate->validate([
-        'data' => 'number|required',
-    ]);
-
-    expect($final->isSafe())->toBeTrue();
+    expect($validator->email)->toBe('example.com');
+    expect($validator->age)->toBe(18);
 });
 
-// it('Request Succesfully')->get('');
+it('Throw error when rule is not registered', function () {
+    $validator = new Validator([]);
+
+    $validator->validate([
+        'maybe' => 'not-found|int|required',
+    ]);
+})->throws(RuleNotFoundException::class);

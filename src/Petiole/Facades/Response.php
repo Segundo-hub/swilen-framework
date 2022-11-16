@@ -11,10 +11,6 @@ use Swilen\Petiole\Facade;
  * @method static \Swilen\Http\Response\BinaryFileResponse file(\SplFileInfo|string $file = '', array $headers = [])
  * @method static \Swilen\Http\Response\BinaryFileResponse download(\SplFileInfo|string $file = '', string $name = ' , array $headers = [])
  * @method static \Swilen\Http\Response\StreamedResponse   stream(\Closure $callback, int $status = 200, array $headers = [])
- * @method static \Swilen\Http\Response                    withHeaders(array $headers = [])
- * @method static \Swilen\Http\Response                    headers(array $headers = [])
- * @method static \Swilen\Http\Response                    withHeader($key, $value)
- * @method static \Swilen\Http\Response                    header($key, $value)
  *
  * @see \Swilen\Http\Response
  */

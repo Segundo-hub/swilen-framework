@@ -28,6 +28,5 @@ abstract class ServiceProvider
      */
     public function register()
     {
-        //
     }
 }

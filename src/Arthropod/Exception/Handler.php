@@ -38,6 +38,7 @@ class Handler implements ExceptionHandler
      */
     protected $internalSkipReport = [
         \Swilen\Http\Exception\HttpException::class,
+        \Swilen\Routing\Exception\HttpResponseException::class,
     ];
 
     /**
@@ -49,7 +50,9 @@ class Handler implements ExceptionHandler
     {
         $this->app = $app;
 
-        $this->logger = new Logger();
+        $this->logger = new Logger(
+            $app->storagePath('logs'), new \DateTimeZone($app->make('config')->get('app.timezone', 'UTC'))
+        );
     }
 
     /**
@@ -59,11 +62,10 @@ class Handler implements ExceptionHandler
      */
     public function render(\Throwable $exception)
     {
-        return new JsonResponse(
+        return JsonResponse::fromJson(
             $this->transformExceptionToJson($exception),
             $this->determineStatusCode($exception),
-            ['Content-Type' => 'application/json; charset=UTF-8'],
-            true
+            $exception instanceof HttpException ? $exception->headers() : [],
         );
     }
 
@@ -86,7 +88,7 @@ class Handler implements ExceptionHandler
      *
      * @param \Throwable $exception
      *
-     * @return \Swilen\Arthropod\Exception\JsonFormatter
+     * @return string
      */
     public function transformExceptionToJson(\Throwable $exception)
     {
@@ -112,14 +114,16 @@ class Handler implements ExceptionHandler
     /**
      * Determine if exception is skippable.
      *
+     * @param \Throwable $e
+     *
      * @return bool
      */
-    protected function isSkippableReport(\Throwable $exception)
+    protected function isSkippableReport(\Throwable $e)
     {
         $skippables = array_merge($this->skipReport, $this->internalSkipReport);
 
-        return !empty(array_filter($skippables, function ($skip) use ($exception) {
-            return $exception instanceof $skip;
+        return !empty(array_filter($skippables, function ($skip) use ($e) {
+            return $e instanceof $skip;
         }));
     }
 
@@ -130,6 +134,6 @@ class Handler implements ExceptionHandler
      */
     protected function determineDebugMode()
     {
-        return $this->app->isDevelopmentMode() || $this->app->isDebugMode() || filter_var(ini_get('display_errors'), FILTER_VALIDATE_BOOLEAN);
+        return $this->app->isDevelopmentMode() || $this->app->isDebugMode();
     }
 }

@@ -54,9 +54,4 @@ class RoutingServiceProvider extends ServiceProvider
             return new RoutingResponseFactory();
         });
     }
-
-    public function boot()
-    {
-        Route::prefix('api')->group(app_path('app.routes.php'));
-    }
 }

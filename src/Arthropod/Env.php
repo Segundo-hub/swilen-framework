@@ -42,7 +42,7 @@ final class Env
      *
      * @var array
      */
-    private static $envStack = [];
+    private static $stack = [];
 
     /**
      * The env instance as singleton.
@@ -61,7 +61,7 @@ final class Env
      */
     public function __construct(string $path = null, bool $isInmutable = true)
     {
-        $this->path = $path;
+        $this->path        = $path;
         $this->isInmutable = $isInmutable;
     }
 
@@ -79,13 +79,43 @@ final class Env
     }
 
     /**
-     * Return path of env file.
+     * Return full file path of env.
+     *
+     * @return string
+     */
+    public function environmentFilePath()
+    {
+        return $this->path.DIRECTORY_SEPARATOR.$this->filename;
+    }
+
+    /**
+     * Return path of en file.
      *
      * @return string
      */
     public function path()
     {
-        return $this->path.DIRECTORY_SEPARATOR.$this->filename;
+        return $this->path;
+    }
+
+    /**
+     * Return the name of env file.
+     *
+     * @return string
+     */
+    public function filename()
+    {
+        return $this->filename;
+    }
+
+    /**
+     * Check if enviroment is inmutable.
+     *
+     * @return bool
+     */
+    public function isInmutable()
+    {
+        return (bool) $this->isInmutable;
     }
 
     /**
@@ -98,9 +128,11 @@ final class Env
     public function config(array $config)
     {
         $this->filename = $config['file'];
+
         if (isset($config['path'])) {
             $this->path = $config['path'];
         }
+
         if (isset($config['inmutable'])) {
             $this->isInmutable = (bool) $config['inmutable'];
         }
@@ -115,22 +147,22 @@ final class Env
      */
     public function load()
     {
-        if (!is_readable($this->path()) || !is_file($this->path())) {
-            throw new \RuntimeException('Env file is not readable '.$this->path(), 200);
+        if (!is_readable($path = $this->environmentFilePath())) {
+            throw new \RuntimeException('Env file is not readable '.$path);
         }
 
         static::$instance = $this;
 
-        $lines = file($this->path(), FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 
         foreach ($lines as $line) {
             if (strpos(trim($line), '#') === 0) {
                 continue;
             }
 
-            [$key, $value] = explode('=', $line, 2);
+            $varline = explode('=', $line, 2);
 
-            $this->compile($key, $value);
+            $this->compile($varline[0], $varline[1] ?? null);
         }
 
         return $this;
@@ -145,18 +177,18 @@ final class Env
      *
      * @return void
      */
-    private function compile(string $key, $value, bool $replace = false)
+    public function compile(string $key, $value, bool $replace = false)
     {
-        $key = $this->formatKey($key);
+        $key   = $this->formatKey($key);
         $value = $this->formatValue($value);
 
-        static::$envStack[$key] = $value;
+        static::$stack[$key] = $value;
 
-        if (preg_match_all('/\{(.[A-Z\_\-]+?)\}/', $value, $matches)) {
+        if (preg_match_all('/\$?\{[A-Z0-9\_]+\}/', $value, $matches)) {
             foreach ($matches[0] as $match) {
-                $name = $this->formatKey(trim($match, '{\}'));
-                $value = str_replace($match, $this->wrapStack($name), $value);
-                static::$envStack[$key] = $value;
+                $name                = $this->formatKey($match, '${\}');
+                $value               = str_replace($match, $this->wrapStack($name, $match), $value);
+                static::$stack[$key] = $value;
             }
         }
 
@@ -166,13 +198,16 @@ final class Env
     /**
      * Format key and replace special characters.
      *
-     * @param string $key
+     * @param string      $key
+     * @param string|null $replace
      *
      * @return string
      */
-    private function formatKey(string $key)
+    private function formatKey(string $key, string $replace = null)
     {
-        return str_replace('-', '_', strtoupper(trim($key)));
+        $key = $replace ? trim($key, $replace) : trim($key);
+
+        return str_replace('-', '_', strtoupper($key));
     }
 
     /**
@@ -184,8 +219,8 @@ final class Env
      */
     private function formatValue($value)
     {
-        if (is_null($value) || $value === '') {
-            return '';
+        if (is_null($value)) {
+            return null;
         }
 
         if (($startComment = strpos($value, '#')) !== false) {
@@ -210,12 +245,16 @@ final class Env
 
         $primitive = str_replace(['"', '\''], '', $value);
 
+        if (in_array($value, [null, 'null', ''], true) || is_null($primitive)) {
+            return null;
+        }
+
         if (in_array($primitive, ['true', '(true)', 'on', '1'], true)) {
-            return (bool) true;
+            return true;
         }
 
         if (in_array($primitive, ['false', '(false)', 'off', '0'], true)) {
-            return (bool) false;
+            return false;
         }
 
         if (is_numeric($primitive) && !$this->contains($value, ['+', '-', '"', '\''])) {
@@ -230,20 +269,19 @@ final class Env
             return (string) base64_decode(substr($primitive, 7));
         }
 
-        return (string) $primitive;
+        return $primitive;
     }
 
     /**
-     * Find key into env stack and
-     * return empty if value not exists.
+     * Find key into env stack and return empty string if value not exists.
      *
      * @param string|int $key
      *
      * @return string
      */
-    private function wrapStack($key)
+    private function wrapStack($key, $match)
     {
-        return static::$envStack[$key] ?? '';
+        return static::$stack[$key] ?? $match;
     }
 
     /**
@@ -258,9 +296,7 @@ final class Env
     private function write(string $key, $value, bool $replace = false)
     {
         if (!$this->isInmutable() || $replace) {
-            $this->writeMutableOrInmutable($key, $value);
-
-            return;
+            return $this->writeMutableOrInmutable($key, $value);
         }
 
         if (!$this->exists($key)) {
@@ -278,8 +314,8 @@ final class Env
      */
     private function writeMutableOrInmutable(string $key, $value)
     {
-        $_ENV[$key] = $value;
-        $_SERVER[$key] = $value;
+        $_ENV[$key]         = $value;
+        $_SERVER[$key]      = $value;
         static::$envs[$key] = $value;
     }
 
@@ -296,22 +332,12 @@ final class Env
     }
 
     /**
-     * Check if enviroment is inmutable.
-     *
-     * @return bool
-     */
-    private function isInmutable()
-    {
-        return (bool) $this->isInmutable;
-    }
-
-    /**
      * Get value with keyed from stored env variables.
      *
-     * @param string|int           $key
-     * @param string|int|bool|null $default
+     * @param string     $key
+     * @param mixed|null $default
      *
-     * @return string|int|null
+     * @return mixed|null
      */
     public static function get($key, $default = null)
     {
@@ -441,7 +467,7 @@ final class Env
      */
     public static function stack()
     {
-        return static::$envStack;
+        return static::$stack;
     }
 
     /**
@@ -458,7 +484,8 @@ final class Env
             unset($_SERVER[$key]);
         }
 
-        static::$envs = [];
+        static::$envs  = [];
         static::$store = [];
+        static::$stack = [];
     }
 }

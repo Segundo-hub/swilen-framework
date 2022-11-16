@@ -14,15 +14,38 @@ class HttpException extends CoreException
     protected $headers = [];
 
     /**
-     * Add http headers to exception.
+     * Add HTPP headers to Exception.
      *
      * @param array<string, string> $headers
+     * @param bool                  $replaced
+     *
+     * @return $this
      */
-    public function withHeaders(array $headers = [])
+    public function withHeaders(array $headers = [], bool $replaced = false)
     {
         foreach ($headers as $key => $value) {
-            $this->headers[$key] = $value;
+            $this->withHeader($key, $value, $replaced);
         }
+
+        return $this;
+    }
+
+    /**
+     * Add HTTP header to Exception.
+     *
+     * @param string $key
+     * @param mixed  $value
+     * @param bool   $replaced
+     *
+     * @return $this
+     */
+    public function withHeader(string $key, $value, bool $replaced = true)
+    {
+        if (!$replaced && isset($this->headers[$key])) {
+            return $this;
+        }
+
+        $this->headers[$key] = $value;
 
         return $this;
     }

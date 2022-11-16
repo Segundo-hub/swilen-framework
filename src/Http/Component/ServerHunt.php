@@ -2,6 +2,8 @@
 
 namespace Swilen\Http\Component;
 
+use Swilen\Http\Common\Util;
+
 final class ServerHunt extends ParameterHunt
 {
     /**
@@ -11,22 +13,28 @@ final class ServerHunt extends ParameterHunt
      */
     public function headers()
     {
-        $headers = [];
+        $headers    = [];
+        $additional = [
+            'CONTENT_TYPE' => true,
+            'CONTENT_LENGTH' => true,
+            'CONTENT_MD5' => true,
+        ];
 
         foreach ($this->params as $key => $value) {
-            if (substr($key, 0, 5) === 'HTTP_') {
-                $key = $this->toNormalizeHttp($key);
-                $headers[$key] = $value;
-            } elseif (\in_array($key, ['CONTENT_TYPE', 'CONTENT_LENGTH', 'CONTENT_MD5'], true)) {
-                $key = $this->toNormalize($key);
-                $headers[$key] = $value;
+            if (strpos($key, 'HTTP_') === 0) {
+                $headers[Util::toNormalizeHttp($key)] = $value;
+            }
+            // Add additional server headers to headers
+            // CONTENT_* headers are not prefixed with HTTP_.
+            elseif (isset($additional[$key])) {
+                $headers[Util::toNormalize($key)] = $value;
             }
         }
 
         if (function_exists('apache_request_headers')) {
             $apacheRequestHeaders = apache_request_headers();
             foreach ($apacheRequestHeaders as $key => $value) {
-                $key = $this->toNormalize($key);
+                $key = Util::toNormalize($key);
                 if (!isset($headers[$key])) {
                     $headers[$key] = $value;
                 }

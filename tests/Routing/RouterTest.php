@@ -6,6 +6,8 @@ use Swilen\Http\Exception\HttpMethodNotAllowedException;
 use Swilen\Http\Exception\HttpNotFoundException;
 use Swilen\Http\Request;
 use Swilen\Http\Response;
+use Swilen\Routing\Route;
+use Swilen\Routing\RouteCollection;
 use Swilen\Routing\Router;
 use Swilen\Security\Middleware\Authenticate;
 
@@ -13,7 +15,7 @@ uses()->group('Routing');
 
 beforeEach(function () {
     $this->container = new Container();
-    $this->router = new Router($this->container);
+    $this->router    = new Router($this->container);
 });
 
 it('Match route current request', function () {
@@ -37,12 +39,15 @@ it('Throw not found if route not matches', function () {
 })->throws(HttpNotFoundException::class, 'Not Found.');
 
 it('Throw if current method not implement in routes collection', function () {
-    $this->router->get('/test', function () {
+    $this->router->get('/testing', function () {
         return 'Test Expect';
     });
 
-    $this->router->dispatch(fetch('/testing', 'POST'));
-})->throws(HttpMethodNotAllowedException::class, 'Method Not Allowed.');
+    /** @var \Swilen\Http\Response */
+    $response = $this->router->dispatch(fetch('/testing', 'POST'));
+
+    expect($response->headers->all())->toHaveKey('Allow');
+})->throws(HttpMethodNotAllowedException::class, 'The POST method is not supported. Must be one of: GET.');
 
 it('Routing register shared middleware and return throw if bearer token not found in header', function () {
     $this->router->prefix('users')->use(Authenticate::class)->group(function () {
@@ -122,4 +127,31 @@ it('Shared route attributes registered', function () {
     expect($route->getAction('uses'))->toBeCallable();
     expect($route->getAction())->not->toHaveKey('controller');
     expect($route->parameter('match'))->toBe('cuzco');
+});
+
+it('Route created with given http method by router method', function () {
+    $router  = new Router();
+    $handler = function () {
+        return 5;
+    };
+
+    $get = $router->get('/', $handler);
+
+    expect($get)->toBeInstanceOf(Route::class);
+    expect($get->getMethod())->toBe('GET');
+
+    expect($router->post('', $handler)->getMethod())->toBe('POST');
+    expect($router->put('', $handler)->getMethod())->toBe('PUT');
+    expect($router->delete('', $handler)->getMethod())->toBe('DELETE');
+    expect($router->patch('', $handler)->getMethod())->toBe('PATCH');
+    expect($router->options('', $handler)->getMethod())->toBe('OPTIONS');
+});
+
+it('Get all routes as RouteCollection instance from a router', function () {
+    $router  = new Router();
+    $handler = function () {
+        return 5;
+    };
+
+    expect($router->routes())->toBeInstanceOf(RouteCollection::class);
 });

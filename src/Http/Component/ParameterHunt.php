@@ -124,30 +124,6 @@ class ParameterHunt implements \Countable, \IteratorAggregate
     }
 
     /**
-     * Normalize token to Capitalize key when contains http.
-     *
-     * @param string $token
-     *
-     * @return string
-     */
-    protected function toNormalizeHttp($token)
-    {
-        return str_replace(' ', '-', ucwords(str_replace('_', ' ', strtolower(substr($token, 5)))));
-    }
-
-    /**
-     * Normalize token to Capitalize key.
-     *
-     * @param string $token
-     *
-     * @return string
-     */
-    protected function toNormalize($token)
-    {
-        return implode('-', array_map('ucwords', explode('-', str_replace(['-', '_'], '-', strtolower($token)))));
-    }
-
-    /**
      * Returns the number of input params.
      *
      * @return int

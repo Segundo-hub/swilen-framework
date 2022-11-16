@@ -13,7 +13,7 @@ interface ResponseFactory
      *
      * @return \Swilen\Http\Response
      */
-    public function make($content = '', int $status = 200, array $headers = []);
+    public function make($content = null, int $status = 200, array $headers = []);
 
     /**
      * Create response with json content.

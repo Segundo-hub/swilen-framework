@@ -15,20 +15,31 @@ class Logger extends AbstractLogger
     protected $directory;
 
     /**
-     * Log time format.
+     * Logging time format.
      *
      * @var string
      */
     protected $timeFormat = 'Y-m-d H:i:s';
 
     /**
+     * Logging timezone.
+     *
+     * @var \DateTimeZone
+     */
+    protected $timezone = \DateTimeZone::UTC;
+
+    /**
      * Create new Psr logger instance.
+     *
+     * @param string        $directory
+     * @param \DateTimeZone $timezone
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(string $directory, \DateTimeZone $timezone = null)
     {
-        $this->directory = storage_path('logs');
+        $this->directory = $directory;
+        $this->timezone  = $timezone ?: \DateTimeZone::UTC;
     }
 
     /**
@@ -38,48 +49,46 @@ class Logger extends AbstractLogger
     {
         $record = $this->newRecord($level, $message, $context);
 
-        if ($filename = $this->ensureLogFilename()) {
-            \error_log($record, 3, $filename);
-
-            return;
+        if ($path = $this->ensureLogFilePath()) {
+            return \error_log($record, 3, $path);
         }
 
         \error_log($record);
     }
 
     /**
-     * Determine log filename append date.
+     * Determine if the log file path exists and add the date if true.
      *
      * @return string|void
      */
-    protected function ensureLogFilename()
+    protected function ensureLogFilePath()
     {
-        $filename = $this->directory.DIRECTORY_SEPARATOR.('swilen-'.date('Y-m-d').'.log');
+        $path = $this->directory.DIRECTORY_SEPARATOR.('swilen-'.$this->formatTime().'.log');
 
-        if (file_exists($filename) && is_writable($filename)) {
-            return $filename;
+        if (file_exists($path) && is_writable($path)) {
+            return $path;
         }
 
-        if (@touch($filename)) {
-            return $filename;
+        if (@touch($path)) {
+            return $path;
         }
     }
 
     /**
      * Create new log record.
      *
-     * @param string|LogLevel::*|null $level
-     * @param string                  $message
+     * @param string|\Psr\Log\LogLevel::* $level
+     * @param string                      $message
      *
      * @return string
      */
     protected function newRecord($level, $message, array $context)
     {
-        $datetime = (new \DateTime('now'))->format($this->timeFormat);
         $context = isset($context['exception']) ? $this->formatException($context['exception']) : '';
+
         $level = $this->determineContextLogging($level ?? LogLevel::WARNING);
 
-        return sprintf('[%s] %s: %s.  %s'.PHP_EOL, $datetime, $level, (string) $message, $context);
+        return sprintf('[%s] %s: %s.  %s'.PHP_EOL, $this->formatTime(null), $level, (string) $message, $context);
     }
 
     /**
@@ -91,7 +100,7 @@ class Logger extends AbstractLogger
      */
     private function determineContextLogging($level)
     {
-        return 'local.['.strtoupper($level).']';
+        return 'swilen.['.strtoupper($level).']';
     }
 
     /**
@@ -107,5 +116,17 @@ class Logger extends AbstractLogger
             $e->getMessage().' at '.$e->getFile().':'.$e->getLine().')';
 
         return $formatted .= PHP_EOL.'[stacktrace]'.PHP_EOL.$e->getTraceAsString().PHP_EOL;
+    }
+
+    /**
+     * Create date with format and timezone.
+     *
+     * @param string|null $custom Pass custom date format, use default if is null
+     *
+     * @return string
+     */
+    protected function formatTime($custom = 'Y-m-d')
+    {
+        return (new \DateTime('now', $this->timezone))->format($custom ?? $this->timeFormat);
     }
 }

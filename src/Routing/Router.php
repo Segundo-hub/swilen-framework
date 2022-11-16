@@ -28,18 +28,18 @@ class Router implements RouterContract
     protected $routes;
 
     /**
-     * Current Route.
+     * Current Route matched.
      *
-     * @var \Swilen\Routing\Route
+     * @var \Swilen\Routing\Route|null
      */
-    protected $currentRoute;
+    protected $current;
 
     /**
-     * Current http Request.
+     * Http request instance.
      *
      * @var \Swilen\Http\Request
      */
-    protected $currentRequest;
+    protected $request;
 
     /**
      * Route group atributes.
@@ -53,9 +53,16 @@ class Router implements RouterContract
      *
      * @var string[]
      */
-    protected const SERVER_METHODS = [
+    protected const ALL_HTTP_METHODS = [
         'OPTIONS', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'TRACE', 'CONNECT', 'HEAD',
     ];
+
+    /**
+     * The server HTTP methods.
+     *
+     * @var string[]
+     */
+    public const HTTP_METHODS = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'];
 
     /**
      * Create new Router instance.
@@ -67,7 +74,7 @@ class Router implements RouterContract
     public function __construct($container = null)
     {
         $this->container = $container ?: new Container();
-        $this->routes = new RouteCollection();
+        $this->routes    = new RouteCollection();
     }
 
     /**
@@ -207,10 +214,12 @@ class Router implements RouterContract
      * Merge attributes into route.
      *
      * @param \Swilen\Routing\Route $route
+     *
+     * @return void
      */
     protected function mergeSharedRouteAttributes(Route $route)
     {
-        $attributes = end($this->groupStack);
+        $attributes  = end($this->groupStack);
         $middlewares = $attributes['middleware'] ?? $attributes['use'] ?? [];
 
         $route->use($middlewares);
@@ -258,13 +267,12 @@ class Router implements RouterContract
      * Merge the given array with the last group stack.
      *
      * @param array $new
-     * @param bool  $prependExistingPrefix
      *
      * @return array
      */
-    public function mergeWithLastGroup($new, $prependExistingPrefix = true)
+    public function mergeWithLastGroup($new)
     {
-        return RouteGroup::merge($new, end($this->groupStack), $prependExistingPrefix);
+        return Group::merge($new, end($this->groupStack));
     }
 
     /**
@@ -277,9 +285,13 @@ class Router implements RouterContract
     protected function loadRoutes($routes)
     {
         if ($routes instanceof \Closure) {
-            $routes($this);
-        } else {
+            $result = $routes($this);
+        } elseif (is_file($routes)) {
             require $routes;
+        }
+
+        if (is_file($result)) {
+            require $result;
         }
     }
 
@@ -320,7 +332,7 @@ class Router implements RouterContract
      */
     public function dispatch(Request $request)
     {
-        $this->currentRequest = $request;
+        $this->request = $request;
 
         return $this->dispatchToRoute($request);
     }
@@ -334,13 +346,11 @@ class Router implements RouterContract
      */
     protected function dispatchToRoute(Request $request)
     {
-        $this->currentRoute = $route = $this->routes->match($request);
-
-        $middleware = $route->getMiddleware() ?? [];
+        $this->current = $route = $this->routes->match($request);
 
         return (new Pipeline($this->container))
             ->from($request)
-            ->through($middleware)
+            ->through($route->middlewares() ?? [])
             ->then(function ($request) use ($route) {
                 return $this->prepareResponse($request, $route->run());
             });
@@ -368,7 +378,7 @@ class Router implements RouterContract
             $response = new Response($response);
         }
 
-        if ($response->statusCode() === Http::NOT_MODIFIED) {
+        if ($response->getStatusCode() === Http::NOT_MODIFIED) {
             $response->setNotModified();
         }
 
@@ -388,11 +398,21 @@ class Router implements RouterContract
     /**
      * Return current route matched.
      *
-     * @return \Swilen\Routing\Route
+     * @return \Swilen\Routing\Route|null
      */
     public function current()
     {
-        return $this->currentRoute;
+        return $this->current;
+    }
+
+    /**
+     * Return the current request captured by the router.
+     *
+     * @return \Swilen\Http\Request
+     */
+    public function request()
+    {
+        return $this->request;
     }
 
     /**

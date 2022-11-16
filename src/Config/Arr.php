@@ -30,7 +30,7 @@ final class Arr
             return $array->offsetExists($key);
         }
 
-        return array_key_exists($key, $array);
+        return key_exists($key, $array);
     }
 
     /**
@@ -81,23 +81,25 @@ final class Arr
      */
     public static function has($array, $keys)
     {
-        if (!$array || empty((array) $keys)) {
+        $keys = (array) $keys;
+
+        if ((!$array || empty($array)) || $keys === []) {
             return false;
         }
 
-        foreach ((array) $keys as $key) {
-            $subKeyArray = $array;
+        foreach ($keys as $key) {
+            $items = $array;
 
-            if (static::exists($array, $key)) {
+            if (static::exists($items, $key)) {
                 continue;
             }
 
             foreach (explode('.', $key) as $segment) {
-                if (!static::accessible($subKeyArray) && !static::exists($subKeyArray, $segment)) {
+                if (!static::accessible($items) || !static::exists($items, $segment)) {
                     return false;
                 }
 
-                $subKeyArray = $subKeyArray[$segment];
+                $items = $items[$segment];
             }
         }
 

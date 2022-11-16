@@ -22,29 +22,52 @@ final class FileHunt extends ParameterHunt
      */
     public function __construct(array $files = [])
     {
-        $this->params = [];
-
-        $this->addFiles($files);
+        $this->replace($files);
     }
 
     /**
-     * Add files collection and transform UploadedFile instance.
+     * Replace files stored with given files.
      *
-     * @param array $files
+     * @param array|\Swilen\Http\Component\File\UploadedFile[] $files
      *
      * @return void
-     *
-     * @throws \InvalidArgumentException
      */
-    public function addFiles(array $files = [])
+    public function replace(array $files = [])
+    {
+        $this->params = [];
+
+        $this->add($files);
+    }
+
+    /**
+     * Add given files to store.
+     *
+     * @param array|\Swilen\Http\Component\File\UploadedFile[] $files
+     *
+     * @return void
+     */
+    public function add(array $files = [])
     {
         foreach ($files as $key => $file) {
-            if (!is_array($file) && !$file instanceof UploadedFile) {
-                throw new \InvalidArgumentException(sprintf('Need this file "%s" as instance of "%s"', $file, UploadedFile::class));
-            }
-
-            parent::set($key, $this->transformToUploadedFile($file));
+            $this->set($key, $file);
         }
+    }
+
+    /**
+     * Set a file with key name to collection.
+     *
+     * @param string                                   $key
+     * @param \Swilen\Http\Component\File\UploadedFile $file
+     *
+     * @return void
+     */
+    public function set(string $key, $value)
+    {
+        if (!\is_array($value) && !$value instanceof UploadedFile) {
+            throw new \InvalidArgumentException(sprintf('Need this file "%s" as instance of "%s"', $value, UploadedFile::class));
+        }
+
+        parent::set($key, $this->transformToUploadedFile($value));
     }
 
     /**
@@ -131,5 +154,15 @@ final class FileHunt extends ParameterHunt
         sort($keys);
 
         return $keys;
+    }
+
+    /**
+     * Retrieve all files from collection.
+     *
+     * @return array<string, \Swilen\Http\Component\File\UploadedFile>
+     */
+    public function all()
+    {
+        return $this->params;
     }
 }

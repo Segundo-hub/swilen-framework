@@ -2,340 +2,578 @@
 
 namespace Swilen\Database;
 
-use Swilen\Database\Exception\DatabaseConnectionException;
-
-use PDO;
+use Swilen\Database\Concerns\DetectLostConnections;
 use Swilen\Database\Contract\ConnectionContract;
+use Swilen\Database\Exception\LostConnectionException;
+use Swilen\Database\Exception\QueryException;
 
 class Connection implements ConnectionContract
 {
-    /**
-     * PDO collection of initial atributes
-     *
-     * @var array<int, int>
-     */
-    protected $options = [
-        PDO::ATTR_CASE => PDO::CASE_NATURAL,
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_ORACLE_NULLS => PDO::NULL_NATURAL,
-        PDO::ATTR_STRINGIFY_FETCHES => false,
-        PDO::ATTR_EMULATE_PREPARES => false,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_OBJ
-    ];
+    use DetectLostConnections;
 
     /**
-     * Driver of PDO
-     *
-     * @var array
-     */
-    protected $driver;
-
-    /**
-     * The PDO instance
+     * The PDO instance.
      *
      * @var \PDO|null
      */
-    protected $connection;
+    protected $pdo;
 
     /**
-     * The final Data Source Name for database connection
+     * The PDO instance resolver.
      *
-     * @var string
+     * @var \Closure
      */
-    protected $DSN;
+    protected $resolver;
 
     /**
-     * Connection times count
+     * The default fetch mode for PDO.
      *
      * @var int
      */
-    private $connected = 0;
+    protected $fetchMode = \PDO::FETCH_OBJ;
 
     /**
-     * The schema for connected
+     * Indicates if record has been modified.
+     *
+     * @var bool
+     */
+    protected $recordsModified;
+
+    /**
+     * The scheme to which it has been connected.
      *
      * @var string
      */
     protected $schema;
 
     /**
-     * The charset of connection
+     * The database config array.
      *
-     * @var string
+     * @var array
      */
-    protected $charset;
+    protected $config;
 
     /**
-     * The port of connection
+     * Reconnected attempts.
      *
      * @var int
      */
-    protected $port;
+    protected $attempts = 0;
 
     /**
-     * Inject database array config and init database instance
+     * Max attempts for reconection.
      *
-     * @param array $config
+     * @var int
      */
-    public function __construct(array $config)
-    {
-        $this->driver = $config['driver'] ?? 'mysql';
-        $this->createConnection($config);
-    }
+    protected $maxAttempts = 3;
 
     /**
-     * Create database connection
+     * Create a new database connection instance.
      *
-     * @param array $config
-     */
-    final private function createConnection(array $config)
-    {
-        [$username, $password] = [
-            $config['username'] ?? null, $config['password'] ?? null
-        ];
-
-        $this->parseConnectionOptions((object) $config);
-
-        try {
-            if ($this->isMissingConnection()) {
-                $this->connection = $this->createPdoConnection($this->DSN, $username, $password, $this->options);
-                $this->connected++;
-            }
-        } catch (\PDOException $e) {
-            throw new DatabaseConnectionException();
-        }
-    }
-
-    /**
-     * Parse options for connection
-     *
-     * @param object $config The config for database connection
+     * @param \Closure $pdo
+     * @param string   $schema
+     * @param array    $config
      *
      * @return void
      */
-    protected function parseConnectionOptions(object $config)
+    public function __construct(\Closure $pdo, $schema = '', array $config = [])
     {
-        $this->schema = $config->schema ?? $config->database ?? '';
+        $this->resolver = $pdo;
+        $this->schema   = $schema;
+        $this->config   = $config;
+    }
 
-        $this->charset = $config->charset ?? 'UTF-8';
-
-        $this->port = $config->port ?? null;
-
-        $this->DSN = $this->driver . ':host=' . $config->host . ';dbname=' . $this->schema . ';charset=' . $this->charset . ($this->port ? ';port=' . $this->port : '');
-
-        if ($this->driver === 'mysql') {
-            array_push($this->options, [
-                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES ' . $this->charset . ($config->collation ? 'COLLATE ' . $config->collation . ';' : ';')
-            ]);
+    /**
+     * Get the PDO connection instance.
+     *
+     * @return \PDO|null
+     */
+    public function getPdo()
+    {
+        if ($this->pdo === null) {
+            return $this->pdo = call_user_func($this->resolver, $this);
         }
+
+        return $this->pdo;
     }
 
     /**
-     * Check if connection is empty or not defined
-     *
-     * @return bool
-     */
-    public function isMissingConnection()
-    {
-        return empty($this->connection) || is_null($this->connection);
-    }
-
-    /**
-     * Create and return PDO connection
-     *
-     * @param string $DSN
-     * @param string $username
-     * @param string $password
-     * @param array<int, int> $options
-     *
-     * @return \PDO
-     */
-    protected function createPdoConnection($DSN, $username, $password, $options)
-    {
-        return new PDO($DSN, $username, $password, $options);
-    }
-
-    /**
-     * Get database connection
+     * Get database connection.
      *
      * @return \PDO|null
      */
     public function getConnection()
     {
-        return $this->connection;
+        return $this->getPdo();
     }
 
     /**
-     * Prepare queries statements for prevent sql injection
+     * Select all rows with prepare statement.
      *
-     * @param string $stmt
-     * @param array|null $bindings
-     *
-     * @return \PDOStatement|false
-     */
-    public function prepare(string $stmt, array $bindings = [])
-    {
-        $statement = $this->connection->prepare($stmt);
-
-        foreach ($bindings as $key => $value) {
-            $PARAM_TYPE  = is_int($value) ? PDO::PARAM_INT : PDO::PARAM_STR;
-            $PARAM_INDEX = is_int($key) ? $key + 1 : $key;
-            $statement->bindValue($PARAM_INDEX, $value, $PARAM_TYPE);
-        }
-
-        return $statement;
-    }
-
-    /**
-     * Make raw sql queries
-     *
-     * @param string $stmt
-     * @param array|null $bindings
-     *
-     * @return mixed
-     */
-    public function raw(string $stmt, array $bindings = [])
-    {
-        return $this->connection->query($stmt)->fetchAll();
-    }
-
-    /**
-     * Select all rows with prepare statement
-     *
-     * @param string $stmt
-     * @param array|null $bindings
+     * @param string $query
+     * @param array  $bindings
      *
      * @return mixed[]
      */
-    public function select(string $stmt, array $bindings = [])
+    public function select(string $query, array $bindings = [])
     {
-        $statement = $this->prepare($stmt, $bindings);
-
-        $statement->execute();
-
-        return $statement->fetchAll();
+        return $this->partial($query, $bindings)->fetchAll();
     }
 
     /**
-     * Select one row with prepare statement
+     * Select one row with prepare statement.
      *
-     * @param string $stmt
-     * @param array|null $bindings
+     * @param string $query
+     * @param array  $bindings
      *
      * @return mixed
      */
-    public function selectOne(string $stmt, array $bindings = [])
+    public function selectOne(string $query, array $bindings = [])
     {
-        $statement = $this->prepare($stmt, $bindings);
-
-        $statement->execute();
-
-        return $statement->fetch();
+        return $this->partial($query, $bindings)->fetch();
     }
 
     /**
-     * Insert data to row with prepare statement
+     * Insert data to row with prepare statement.
      *
      * @param string $query
-     * @param array|null $bindings
+     * @param array  $bindings
      *
-     * @return string|false
+     * @return int|false
      */
     public function insert(string $query, array $bindings = [])
     {
-        $statement = $this->prepare($query, $bindings);
-        if ($statement->execute()) {
-            return $this->connection->lastInsertId();
-        }
-        return false;
+        $this->statement($query, $bindings);
+
+        return $this->getInsertId();
     }
 
     /**
-     * Update data to row with prepare statement
+     * Update data to row with prepare statement.
      *
      * @param string $query
-     * @param array|null $bindings
+     * @param array  $bindings
      *
-     * @return bool
+     * @return int
      */
     public function update(string $query, array $bindings = [])
     {
-        $statement = $this->prepare($query, $bindings);
-        if ($statement->execute()) {
-            return true;
-        }
-        return false;
+        return $this->affectingStatement($query, $bindings);
     }
 
     /**
-     * Delete data to row with prepare statement
+     * Delete data to row with prepare statement.
      *
      * @param string $query
-     * @param array|null $bindings
+     * @param array  $bindings
      *
-     * @return bool
+     * @return int
      */
     public function delete(string $query, array $bindings = [])
     {
-        $statement = $this->prepare($query, $bindings);
-        if ($statement->execute()) {
-            return true;
-        }
-        return false;
+        return $this->affectingStatement($query, $bindings);
     }
 
     /**
-     * Execute statement and return true is succesfully
+     * Execute statement and return TRUE on success or FALSE on failure.
      *
      * @param string $query
-     * @param array|null $bindings
+     * @param array  $bindings
      *
      * @return bool
      */
     public function statement(string $query, array $bindings = [])
     {
-        $statement = $this->prepare($query, $bindings);
+        return $this->handle($query, $bindings, function ($query, $bindings) {
+            // Prepare SQL statement
+            $statement = $this->getPdo()->prepare($query);
 
-        return $statement->execute();
+            $this->bindValues($statement, $this->prepareBindings($bindings));
+
+            $this->recordsHaveBeenModified();
+
+            return $statement->execute();
+        });
     }
 
     /**
-     * Return the connections made during the process
+     * Run an SQL statement and get the number of rows affected.
+     *
+     * @param string $query
+     * @param array  $bindings
      *
      * @return int
      */
-    public function connectionTimes()
+    public function affectingStatement($query, $bindings = [])
     {
-        return $this->connected;
+        return $this->handle($query, $bindings, function ($query, $bindings) {
+            // Prepare SQL statement
+            $statement = $this->getPdo()->prepare($query);
+
+            $this->bindValues($statement, $this->prepareBindings($bindings));
+
+            $statement->execute();
+
+            $this->recordsHaveBeenModified(
+                ($count = $statement->rowCount()) > 0
+            );
+
+            return $count;
+        });
     }
 
     /**
-     * Begin transaction for reject if error found
+     * Prepare a partial statement from given query.
+     *
+     * @param string $query
+     * @param array  $bindings
+     *
+     * @return \PDOStatement
+     */
+    public function partial(string $query, array $bindings = [])
+    {
+        return $this->handle($query, $bindings, function ($query, $bindings) {
+            // Prepare SQL statement with fetch mode
+            $statement = $this->withFetchMode($this->getPdo()->prepare($query));
+
+            $this->bindValues($statement, $this->prepareBindings($bindings));
+
+            $statement->execute();
+
+            return $statement;
+        });
+    }
+
+    /**
+     * Handle a SQL statement.
+     *
+     * @param string $query
+     * @param array  $bindings
+     *
+     * @return mixed
+     *
+     * @throws \Swilen\Database\Exception\QueryException
+     */
+    protected function handle($query, $bindings, \Closure $callback)
+    {
+        $this->reconnectIfMissingConnection();
+
+        try {
+            $result = $this->runQueryCallback($query, $bindings, $callback);
+        } catch (QueryException $e) {
+            $result = $this->tryAgainIfCausedByLostConnection(
+                $e, $query, $bindings, $callback
+            );
+        }
+
+        return $result;
+    }
+
+    /**
+     * Run a raw, unprepared query against the PDO connection.
+     *
+     * @param string $query
+     *
+     * @return bool
+     */
+    public function unprepared($query)
+    {
+        return $this->handle($query, [], function ($query) {
+            $this->recordsHaveBeenModified(
+                $change = $this->getPdo()->exec($query) !== false
+            );
+
+            return $change;
+        });
+    }
+
+    /**
+     * Set fetch mode PDO statement.
+     *
+     * @param \PDOStatement $statement
+     *
+     * @return \PDOStatement
+     */
+    public function withFetchMode(\PDOStatement $statement)
+    {
+        $statement->setFetchMode($this->fetchMode);
+
+        return $statement;
+    }
+
+    /**
+     * Run a SQL statement from callback.
+     *
+     * @param string   $query
+     * @param array    $bindings
+     * @param \Closure $callback
+     *
+     * @return mixed
+     *
+     * @throws \Swilen\Database\Exception\QueryException
+     */
+    protected function runQueryCallback($query, $bindings, \Closure $callback)
+    {
+        // Try to execute the callback with the prepared SQL query
+        try {
+            return $callback($query, $bindings);
+        }
+
+        // Handle SQL query execution exceptions
+        catch (\Throwable $e) {
+            throw new QueryException($query, $this->prepareBindings($bindings), $e);
+        }
+    }
+
+    /**
+     * Handle a query exception that occurred during query execution.
+     *
+     * @param QueryException $e
+     * @param string         $query
+     * @param array          $bindings
+     * @param \Closure       $callback
+     *
+     * @return mixed
+     *
+     * @throws \Swilen\Database\Exception\QueryException
+     */
+    protected function tryAgainIfCausedByLostConnection(QueryException $e, $query, $bindings, \Closure $callback)
+    {
+        if ($this->causedByLostConnection($e->getPrevious())) {
+            $this->reconnect();
+
+            return $this->runQueryCallback($query, $bindings, $callback);
+        }
+
+        throw $e;
+    }
+
+    /**
+     * Bind values to their parameters in the given statement.
+     *
+     * @param \PDOStatement $statement
+     * @param array         $bindings
+     *
+     * @return void
+     */
+    public function bindValues(\PDOStatement $statement, array $bindings = [])
+    {
+        foreach ($bindings as $key => $value) {
+            $statement->bindValue(
+                is_string($key) ? $key : $key + 1,
+                $value,
+                is_int($value) ? \PDO::PARAM_INT : \PDO::PARAM_STR
+            );
+        }
+    }
+
+    /**
+     * Prepare the query bindings for execution.
+     *
+     * @param array $bindings
+     *
+     * @return array
+     */
+    public function prepareBindings(array $bindings)
+    {
+        foreach ($bindings as $key => $value) {
+            // Transform value time as string
+            // Format if value id datetime
+            if ($value instanceof \DateTimeInterface) {
+                $bindings[$key] = $value->format('Y-m-d H:i:s');
+            }
+
+            // Tranform boolean values to equivant in integer
+            // { True: 1, False: 0 }
+            elseif (is_bool($value)) {
+                $bindings[$key] = (int) $value;
+            }
+        }
+
+        return $bindings;
+    }
+
+    /**
+     * Indicate if any records have been modified.
+     *
+     * @param bool $value
+     *
+     * @return void
+     */
+    public function recordsHaveBeenModified(bool $value = true)
+    {
+        if (!$this->recordsModified) {
+            $this->recordsModified = $value;
+        }
+    }
+
+    /**
+     * Reconnect to the database if a PDO connection is missing.
+     *
+     * @return void
+     */
+    protected function reconnectIfMissingConnection()
+    {
+        if (is_null($this->pdo)) {
+            $this->reconnect();
+        }
+    }
+
+    /**
+     * Attempt to reconnect after failed to connect.
+     *
+     * @return void
+     *
+     * @throws \Throwable
+     */
+    protected function reconnect()
+    {
+        $connected = false;
+        $started   = microtime(true);
+        $exception = null;
+
+        while (!$connected && $this->attempts < $this->maxAttempts) {
+            ++$this->attempts;
+            try {
+                if ($this->tryToReconnect()) {
+                    $connected = true;
+                }
+            } catch (\Throwable $exception) {
+                // Prevent error in reconnect attempts
+            }
+        }
+
+        if ($connected === false) {
+            throw new LostConnectionException($this->attempts, $this->getElapsedTime($started), $exception);
+        }
+    }
+
+    /**
+     * Try to reconnect pdo.
+     *
+     * @return \PDO|null
+     */
+    protected function tryToReconnect()
+    {
+        $this->disconnect();
+
+        return $this->getPdo();
+    }
+
+    /**
+     * Get PDO insertId.
+     *
+     * @return int|false
+     */
+    public function getInsertId()
+    {
+        $id = $this->getPdo()->lastInsertId();
+
+        return is_numeric($id) ? (int) $id : $id;
+    }
+
+    /**
+     * Return the connections made during the process.
+     *
+     * @return int
+     */
+    public function reconnectAttempts()
+    {
+        return $this->attempts;
+    }
+
+    /**
+     * Get the name of the connected database.
+     *
+     * @return string
+     */
+    public function getSchema()
+    {
+        return $this->schema;
+    }
+
+    /**
+     * Start a new database transaction.
      *
      * @return void
      */
     public function beginTransaction()
     {
-        $this->connection->beginTransaction();
+        $this->reconnectIfMissingConnection();
+
+        $this->getPdo()->beginTransaction();
     }
 
     /**
-     * Commit transacction if is safe
+     * Commit the active database transaction.
      *
      * @return void
      */
     public function commit()
     {
-        $this->connection->commit();
+        $this->reconnectIfMissingConnection();
+
+        $this->getPdo()->commit();
     }
 
     /**
-     * Reject transaction if error found
+     * Rollback the active database transaction.
      *
      * @return void
      */
     public function rollBack()
     {
-        $this->connection->rollBack();
+        $this->reconnectIfMissingConnection();
+
+        $this->getPdo()->rollBack();
+    }
+
+    /**
+     * Get the elapsed time since a given starting point.
+     *
+     * @param int $start
+     *
+     * @return float
+     */
+    protected function getElapsedTime(int $start)
+    {
+        return round((microtime(true) - $start) * 1000, 2);
+    }
+
+    /**
+     * Disconnect from the underlying PDO connection.
+     *
+     * @return void
+     */
+    public function disconnect()
+    {
+        $this->pdo = null;
+    }
+
+    /**
+     * Close database connection.
+     *
+     * @return void
+     */
+    public function close()
+    {
+        $this->pdo      = null;
+        $this->resolver = null;
+    }
+
+    /**
+     * Close database connection - PDO.
+     *
+     * Called automatically when there are no further references to object
+     *
+     * @return void
+     */
+    public function __destruct()
+    {
+        try {
+            $this->close();
+        } catch (\Throwable $e) {
+            throw new \PDOException('Failed to close database: '.$e->getMessage(), $e->getCode(), $e->getPrevious());
+        }
     }
 }

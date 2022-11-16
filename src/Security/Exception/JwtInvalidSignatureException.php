@@ -2,9 +2,7 @@
 
 namespace Swilen\Security\Exception;
 
-use Swilen\Http\Exception\HttpException;
-
-class JwtInvalidSignatureException extends HttpException
+class JwtInvalidSignatureException extends JsonWebTokenException
 {
     protected $code = 400;
 

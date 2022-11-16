@@ -4,21 +4,21 @@ namespace Swilen\Arthropod;
 
 use Swilen\Arthropod\Contract\ExceptionHandler;
 use Swilen\Container\Container;
-use Swilen\Database\DatabaseServiceProvider;
 use Swilen\Http\Request;
 use Swilen\Petiole\Facade;
 use Swilen\Pipeline\Pipeline;
 use Swilen\Routing\RoutingServiceProvider;
 use Swilen\Shared\Arthropod\Application as ArthropodApplication;
+use Swilen\Shared\Http\HttpApplication;
 
-class Application extends Container implements ArthropodApplication
+class Application extends Container implements ArthropodApplication, HttpApplication
 {
     /**
      * The Swilen current version.
      *
      * @var string
      */
-    public const VERSION = '0.8.0';
+    public const VERSION = '0.5.0-alpha';
 
     /**
      * Indicates if the application has been bootstrapped before.
@@ -35,16 +35,25 @@ class Application extends Container implements ArthropodApplication
     protected $booted = false;
 
     /**
+     * The application middlewares.
+     *
+     * @var string[]
+     */
+    protected $middleware = [
+        \Swilen\Arthropod\Middleware\CorsMiddleware::class,
+    ];
+
+    /**
      * The bootable services collection.
      *
      * @var \Swilen\Arthropod\Contract\BootableServiceContract[]
      */
     protected $bootstrappers = [
-        \Swilen\Arthropod\Bootable\BootEnvironment::class,
-        \Swilen\Arthropod\Bootable\BootConfiguration::class,
-        \Swilen\Arthropod\Bootable\BootHandleExceptions::class,
-        \Swilen\Arthropod\Bootable\BootFacades::class,
-        \Swilen\Arthropod\Bootable\BootProviders::class,
+        \Swilen\Arthropod\Bootable\EnvironmentVars::class,
+        \Swilen\Arthropod\Bootable\Configuration::class,
+        \Swilen\Arthropod\Bootable\ExceptionsHandler::class,
+        \Swilen\Arthropod\Bootable\Facades::class,
+        \Swilen\Arthropod\Bootable\Providers::class,
     ];
 
     /**
@@ -57,7 +66,7 @@ class Application extends Container implements ArthropodApplication
     /**
      * Collection of service providers as registered.
      *
-     * @var array<string,bool>
+     * @var array<string, bool>
      */
     protected $serviceProvidersRegistered = [];
 
@@ -149,7 +158,6 @@ class Application extends Container implements ArthropodApplication
     private function registerServiceProviders()
     {
         $this->register(new RoutingServiceProvider($this));
-        $this->register(new DatabaseServiceProvider($this));
     }
 
     /**
@@ -177,6 +185,7 @@ class Application extends Container implements ArthropodApplication
     {
         $this->instance('path', $this->basePath());
         $this->instance('path.app', $this->appPath());
+        $this->instance('path.storage', $this->storagePath());
         $this->instance('path.config', $this->configPath());
     }
 
@@ -217,7 +226,7 @@ class Application extends Container implements ArthropodApplication
      */
     public function appPath(string $path = '')
     {
-        return $this->basePath($this->appPath ?: 'app').($path ? DIRECTORY_SEPARATOR.$path : $path);
+        return $this->basePath($this->appPath).($path ? DIRECTORY_SEPARATOR.$path : $path);
     }
 
     /**
@@ -245,7 +254,7 @@ class Application extends Container implements ArthropodApplication
      */
     public function configPath(string $path = '')
     {
-        return $this->validateConfigPath($path);
+        return $this->appPath($path ?: 'app.config.php');
     }
 
     /**
@@ -257,29 +266,11 @@ class Application extends Container implements ArthropodApplication
      */
     public function useConfigPath(string $path = '')
     {
-        $this->configPath = $this->validateConfigPath($path);
+        $this->configPath = $path;
 
-        $this->instance('path.config', $this->configPath);
+        $this->instance('path.config', $path);
 
         return $this;
-    }
-
-    /**
-     * Validate config location path.
-     *
-     * @param string $config
-     *
-     * @return string
-     *
-     * @throws \InvalidArgumentException
-     */
-    private function validateConfigPath(string $config = '')
-    {
-        if (file_exists($this->appPath($config = $config ?: 'app.config.php'))) {
-            return $this->appPath($config);
-        }
-
-        throw new \InvalidArgumentException("{$config} filename not found or not correctly resolve. Please check path ".$this->appPath(), 500);
     }
 
     /**
@@ -306,6 +297,18 @@ class Application extends Container implements ArthropodApplication
         $this->appUri = $path;
 
         return $this;
+    }
+
+    /**
+     * Return application base uri.
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    public function storagePath(string $path = '')
+    {
+        return $this->appPath('storage').($path ? DIRECTORY_SEPARATOR.$path : '');
     }
 
     /**
@@ -359,7 +362,7 @@ class Application extends Container implements ArthropodApplication
     /**
      * Set application environment.
      *
-     * @param string $env The Environment valid `production|development`
+     * @param string $env The Environment valid `production|development|test`
      *
      * @return $this
      */
@@ -369,17 +372,33 @@ class Application extends Container implements ArthropodApplication
     }
 
     /**
+     * Register all of the configured providers.
+     *
+     * @return void
+     */
+    public function registerProviders()
+    {
+        $repository = new ProviderRepository($this);
+
+        $repository->load($this->make('config')->get('providers', []));
+    }
+
+    /**
      * Initial register service providers.
      *
      * @param \Swilen\Petiole\ServiceProvider $provider
      */
     public function register($provider)
     {
-        $provider = $this->nomalizeServiceProvider($provider);
+        if ($this->hasProviderBeenRegistered($provider)) {
+            return;
+        }
+
+        $provider = $this->createServiceProvider($provider);
 
         $provider->register();
 
-        $this->markServiceAsRegistered($provider);
+        $this->markProviderAsRegistered($provider);
 
         return $provider;
     }
@@ -391,7 +410,7 @@ class Application extends Container implements ArthropodApplication
      *
      * @return \Swilen\Petiole\ServiceProvider
      */
-    protected function nomalizeServiceProvider($provider)
+    protected function createServiceProvider($provider)
     {
         return is_string($provider) ? new $provider($this) : $provider;
     }
@@ -403,11 +422,26 @@ class Application extends Container implements ArthropodApplication
      *
      * @return void
      */
-    protected function markServiceAsRegistered($provider)
+    protected function markProviderAsRegistered($provider)
     {
         $this->serviceProviders[] = $provider;
 
         $this->serviceProvidersRegistered[get_class($provider)] = true;
+    }
+
+    /**
+     * Determine if service provider as been registered.
+     *
+     * @param \Swilen\Petiole\ServiceProvider|string $provider
+     *
+     * @return bool
+     */
+    protected function hasProviderBeenRegistered($provider)
+    {
+        $provider = is_object($provider) ? get_class($provider) : $provider;
+
+        return isset($this->serviceProvidersRegistered[$provider])
+            && $this->serviceProvidersRegistered[$provider] === true;
     }
 
     /**
@@ -475,7 +509,7 @@ class Application extends Container implements ArthropodApplication
      */
     public function isDevelopmentMode()
     {
-        return (bool) env('APP_ENV', 'development') === 'development';
+        return (bool) $this->bound('env') && $this->make('env') === 'development';
     }
 
     /**
@@ -485,11 +519,11 @@ class Application extends Container implements ArthropodApplication
      */
     public function isDebugMode()
     {
-        return (bool) env('APP_DEBUG', true);
+        return (bool) $this->make('config')->get('app.debug', true);
     }
 
     /**
-     * Dispatch request and listen http router.
+     * Handle the incoming request and send it to the router.
      *
      * @param \Swilen\Http\Request $request
      *
@@ -525,14 +559,14 @@ class Application extends Container implements ArthropodApplication
 
         return (new Pipeline($this))
             ->from($request)
-            ->through([])
+            ->through($this->middleware)
             ->then(function ($request) {
                 return $this['router']->dispatch($request);
             });
     }
 
     /**
-     * Render exception to response.
+     * Render given Exception to response.
      *
      * @param \Throwable $e
      *
@@ -540,17 +574,19 @@ class Application extends Container implements ArthropodApplication
      */
     protected function renderException(\Throwable $e)
     {
-        return $this[ExceptionHandler::class]->render($e);
+        return $this->make(ExceptionHandler::class)->render($e);
     }
 
     /**
-     * Report exception and write log.
+     * Report given Exception and write log.
      *
      * @param \Throwable $e
+     *
+     * @return void
      */
     protected function reportException(\Throwable $e)
     {
-        $this[ExceptionHandler::class]->report($e);
+        $this->make(ExceptionHandler::class)->report($e);
     }
 
     /**
@@ -567,5 +603,18 @@ class Application extends Container implements ArthropodApplication
         ] as $key => $value) {
             $this->alias($key, $value);
         }
+    }
+
+    /**
+     * Flush the application of all bindings and resolved instances.
+     *
+     * @return void
+     */
+    public function flush()
+    {
+        $this->serviceProviders           = [];
+        $this->serviceProvidersRegistered = [];
+
+        parent::flush();
     }
 }

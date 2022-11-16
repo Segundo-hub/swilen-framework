@@ -1,17 +1,17 @@
 <?php
 
 use Swilen\Http\Common\Http;
-use Swilen\Routing\Exception\HttpResponseException;
+use Swilen\Routing\Exception\InvalidRouteHandlerException;
 use Swilen\Routing\Route;
 
 uses()->group('Routing');
 
 it('Route instanced succesfuly', function () {
-    $route = new Route(Http::GET, '/hola', function () {
+    $route = new Route(Http::METHOD_GET, '/hola', function () {
         return 5;
     });
 
-    expect($route->getMethod())->toBe(Http::GET);
+    expect($route->getMethod())->toBe(Http::METHOD_GET);
     expect($route->getPattern())->toBe('/hola');
     expect($route->getAction('uses'))->toBeCallable();
     expect($route->run())->toBe(5);
@@ -19,16 +19,25 @@ it('Route instanced succesfuly', function () {
 });
 
 it('Route handler is invalid', function ($action) {
-    $route = new Route(Http::GET, 'test', $action);
+    $route = new Route(Http::METHOD_GET, 'test', $action);
 
     $route->run();
 })->with([
-    'controller' => 'controller@invoke',
-    'controller_arrayed' => [['controller\\class', 'invoke']],
-])->throws(HttpResponseException::class);
+    'controller_string' => 'controller@invoke',
+    'controller_array' => [['controller\\class', 'invoke']],
+])->throws(InvalidRouteHandlerException::class);
+
+it('Run route action is controller', function ($action) {
+    $route = new Route(Http::METHOD_GET, 'test', $action);
+
+    expect($route->run())->toBe(5);
+})->with([
+    'controller_string' => ControllerTestStub::class.'@method',
+    'controller_array' => [[ControllerTestStub::class, 'method']],
+]);
 
 it('Run route action is callable or invocable', function ($action) {
-    $route = new Route(Http::GET, 'test', $action);
+    $route = new Route(Http::METHOD_GET, 'test', $action);
 
     expect($route->run())->toBe(5);
 })->with([
@@ -37,7 +46,7 @@ it('Run route action is callable or invocable', function ($action) {
             return 5;
         };
     },
-    'invocable' => InvocableTest::class,
+    'invocable' => InvocableTestStub::class,
 ]);
 
 it('Compile parameters matched', function () {
@@ -45,8 +54,8 @@ it('Compile parameters matched', function () {
         return $home;
     });
 
-    expect($route->matches('test/lima'))->toBeTruthy();
-    expect($route->matches('test/25'))->toBeTruthy();
+    expect($route->matches('test/lima'))->toBeTrue();
+    expect($route->matches('test/25'))->toBeTrue();
 
     $route->matches('test/cuzco');
 
@@ -58,8 +67,8 @@ it('Compile parameters matched with data-type', function () {
         return $home;
     });
 
-    expect($route->matches('test/lima'))->toBeTruthy();
-    expect($route->matches('test/25'))->toBeTruthy();
+    expect($route->matches('test/lima'))->toBeTrue();
+    expect($route->matches('test/25'))->toBeTrue();
 
     $route->matches('test/machu-picchu');
 
@@ -69,8 +78,8 @@ it('Compile parameters matched with data-type', function () {
         return $age;
     });
 
-    expect($route->matches('person/lima'))->toBeFalsy();
-    expect($route->matches('person/25'))->toBeTruthy();
+    expect($route->matches('person/lima'))->toBeFalse();
+    expect($route->matches('person/25'))->toBeTrue();
 
     $route->matches('person/25');
 
@@ -82,7 +91,7 @@ it('Correct resolve url encoded', function () {
         return $url;
     });
 
-    expect($route->matches('test/Cuzco%2C%20Peru'))->toBeTruthy();
+    expect($route->matches('test/Cuzco%2C%20Peru'))->toBeTrue();
 
     expect($route->run())->toBe('Cuzco, Peru');
 });
@@ -92,14 +101,22 @@ it('Resolve multiples parameter names', function () {
         return null;
     });
 
-    expect($route->matches('named/my-uri/blog/google'))->toBeTruthy();
+    expect($route->matches('named/my-uri/blog/google'))->toBeTrue();
 
     expect($route->run())->toBeNull();
 });
 
-class InvocableTest
+class InvocableTestStub
 {
     public function __invoke()
+    {
+        return 5;
+    }
+}
+
+class ControllerTestStub
+{
+    public function method()
     {
         return 5;
     }

@@ -27,7 +27,7 @@ class Route implements Arrayable, JsonSerializable
     /**
      * The route action array.
      *
-     * @var array
+     * @var array<string, \Closure|string>
      */
     protected $action;
 
@@ -88,16 +88,6 @@ class Route implements Arrayable, JsonSerializable
     protected $router;
 
     /**
-     * @var string
-     */
-    public const REG_MATCH_PARAM = '/{[^}]*}/';
-
-    /**
-     * @var string
-     */
-    public const REG_MATCH_PARAM_NAME = '/\{(.*?)\}/';
-
-    /**
      * Create new Route instance.
      *
      * @param string                $method
@@ -108,9 +98,9 @@ class Route implements Arrayable, JsonSerializable
      */
     public function __construct(string $method, string $pattern, $action)
     {
-        $this->method = $method;
+        $this->method  = $method;
         $this->pattern = $pattern;
-        $this->action = $this->parseAction($action);
+        $this->action  = $this->parseAction($action);
     }
 
     /**
@@ -154,7 +144,7 @@ class Route implements Arrayable, JsonSerializable
     }
 
     /**
-     * Run route matched.
+     * Run route matched with the request.
      *
      * @return mixed
      *
@@ -165,13 +155,13 @@ class Route implements Arrayable, JsonSerializable
         $this->container = $this->container ?: new Container();
 
         try {
-            if ($this->actionIsController()) {
-                return $this->runRouteActionAsController();
+            if ($this->routeActionIsController()) {
+                return $this->runActionAsController();
             }
 
-            return $this->runRouteActionAsClosure();
-        } catch (\Throwable $e) {
-            throw new HttpResponseException($e->getMessage(), $e->getCode(), $e->getPrevious());
+            return $this->runActionAsCallable();
+        } catch (HttpResponseException $e) {
+            return $e->getResponse();
         }
     }
 
@@ -182,7 +172,7 @@ class Route implements Arrayable, JsonSerializable
      *
      * @throws \Swilen\Routing\Exception\InvalidRouteHandlerException
      */
-    private function runRouteActionAsController()
+    private function runActionAsController()
     {
         [$class, $method] = RouteAction::parseControllerAction($this->action['uses']);
 
@@ -190,7 +180,7 @@ class Route implements Arrayable, JsonSerializable
             throw InvalidRouteHandlerException::forController($class, $method);
         }
 
-        return $this->container->call([$class, $method], $this->getParameters());
+        return $this->runAction([$this->container->make($class), $method]);
     }
 
     /**
@@ -198,9 +188,9 @@ class Route implements Arrayable, JsonSerializable
      *
      * @return mixed
      */
-    private function runRouteActionAsClosure()
+    private function runActionAsCallable()
     {
-        return $this->container->call($this->action['uses'], $this->getParameters());
+        return $this->runAction($this->action['uses']);
     }
 
     /**
@@ -208,9 +198,21 @@ class Route implements Arrayable, JsonSerializable
      *
      * @return bool
      */
-    private function actionIsController()
+    private function routeActionIsController()
     {
-        return is_string($this->action['uses'] && !is_callable($this->action['uses']));
+        return is_string($this->action['uses']) && !$this->action['uses'] instanceof \Closure;
+    }
+
+    /**
+     * Run action with parameters.
+     *
+     * @param \Closure|array $action
+     *
+     * @return mixed
+     */
+    protected function runAction($action)
+    {
+        return $this->container->call($action, $this->getParameters());
     }
 
     /**
@@ -243,25 +245,22 @@ class Route implements Arrayable, JsonSerializable
     protected function compilePatternMatching(array $matches = [], string $uri)
     {
         foreach ($matches as $key => $segment) {
-            $target = $segment;
-            $value = trim($segment, '{\}');
-
-            if (strpos($value, ':') !== false && !empty([$type, $valued] = explode(':', $value))) {
-                $target = '{'.$type.':'.$valued.'}';
-
+            $value  = trim($segment, '{\}');
+            if (strpos($value, ':') !== false && !empty([$type, $keyed] = explode(':', $value, 2))) {
+                $target = '{'.$type.':'.$keyed.'}';
                 if ($type === 'int') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[0-9]+)', $valued), $uri);
+                    $uri = str_replace($target, sprintf('(?P<%s>[0-9]+)', $keyed), $uri);
                 }
 
                 if ($type === 'alpha') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[a-zA-Z\_\-]+)', $valued), $uri);
+                    $uri = str_replace($target, sprintf('(?P<%s>[a-zA-Z\_\-]+)', $keyed), $uri);
                 }
 
                 if ($type === 'string') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[a-zA-Z0-9\_\-]+)', $valued), $uri);
+                    $uri = str_replace($target, sprintf('(?P<%s>[a-zA-Z0-9\_\-]+)', $keyed), $uri);
                 }
             } else {
-                $uri = str_replace($target, sprintf('(?P<%s>.*)', $value), $uri);
+                $uri = str_replace($segment, sprintf('(?P<%s>.*)', $value), $uri);
             }
         }
 
@@ -277,13 +276,13 @@ class Route implements Arrayable, JsonSerializable
      */
     private function compileParameters($uri)
     {
-        preg_match_all(static::REG_MATCH_PARAM, $uri, $matches);
+        preg_match_all('/{[^}]*}/', $uri, $matches);
 
         return reset($matches) ?? [];
     }
 
     /**
-     * Match request path with route match regex.
+     * Determine if the route matches a given request.
      *
      * @param string $path
      *
@@ -293,18 +292,17 @@ class Route implements Arrayable, JsonSerializable
     {
         $this->compilePattern();
 
-        $matched = false;
-
-        if (preg_match("#^{$this->matching}$#D", rawurldecode($path), $matches)) {
+        if (preg_match('#^'.$this->matching.'$#D', rawurldecode($path), $matches)) {
             $this->matchToKeys(array_slice($matches, 1));
-            $matched = true;
+
+            return true;
         }
 
-        return $matched;
+        return false;
     }
 
     /**
-     * Compile params from regex matches.
+     * Compile parameters from raw regex matches.
      *
      * @param array<string, mixed> $params
      *
@@ -328,7 +326,7 @@ class Route implements Arrayable, JsonSerializable
      */
     protected function compileParametersNames()
     {
-        preg_match_all(static::REG_MATCH_PARAM_NAME, $this->pattern, $matches);
+        preg_match_all('/\{(.*?)\}/', $this->pattern, $matches);
 
         return array_map(function ($m) {
             return trim($m, '?');
@@ -354,7 +352,7 @@ class Route implements Arrayable, JsonSerializable
      *
      * @param string|array $middlewares
      *
-     * @return \Swilen\Routing\Route
+     * @return $this
      */
     public function use($middlewares)
     {
@@ -389,9 +387,14 @@ class Route implements Arrayable, JsonSerializable
      */
     public function parameter($name, $default = null)
     {
-        return key_exists($name, $this->parameters) ? $this->parameters[$name] : $default;
+        return $this->parameters[$name] ?? $default;
     }
 
+    /**
+     * Get the method of route.
+     *
+     * @return string
+     */
     public function getMethod()
     {
         return $this->method;
@@ -417,6 +420,11 @@ class Route implements Arrayable, JsonSerializable
         return $this->middleware;
     }
 
+    public function middlewares()
+    {
+        return $this->middleware;
+    }
+
     public function getName()
     {
         return $this->action['as'] ?? null;
@@ -429,21 +437,29 @@ class Route implements Arrayable, JsonSerializable
 
     /**
      * {@inheritdoc}
+     *
+     * Transform current route to Array
+     *
+     * @return array<string, mixed>
      */
     public function toArray()
     {
         return [
-            'pattern' => $this->getPattern(),
-            'method' => $this->getMethod(),
-            'action' => $this->getAction(),
-            'middleware' => $this->getMiddleware(),
-            'matching' => $this->getMatch(),
-            'parameters' => $this->getParameters(),
+            'pattern' => $this->pattern,
+            'method' => $this->method,
+            'action' => $this->action,
+            'middleware' => $this->middleware,
+            'matching' => $this->matching,
+            'parameters' => $this->parameters,
         ];
     }
 
     /**
      * {@inheritdoc}
+     *
+     * Prepare route for serialization in json
+     *
+     * @return array<string, mixed>
      */
     public function jsonSerialize()
     {

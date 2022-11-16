@@ -2,146 +2,178 @@
 
 use Psr\Container\ContainerInterface;
 use Swilen\Container\Container;
+use Swilen\Container\Exception\BindingResolutionException;
 use Swilen\Container\Exception\EntryNotFoundException;
 use Swilen\Shared\Container\Container as ContainerContract;
 
 uses()->group('Container');
 
 beforeAll(function () {
-    Container::setInstance(new Container());
+    Container::setInstance(null);
 });
 
 beforeEach(function () {
-    $this->app = Container::getInstance();
+    $this->container = Container::getInstance();
 });
 
 afterAll(function () {
     Container::getInstance()->flush();
+    Container::setInstance(null);
 });
 
-it('Waiting for the \Container instance to be generated successfully', function () {
-    expect($this->app)->toBeInstanceOf(Container::class);
-    expect($this->app)->toBeObject();
+it('Wait for the container instance not to be broken', function () {
+    expect($this->container)->toBeObject();
+    expect($this->container)->toBeInstanceOf(Container::class);
+    expect($this->container)->toBeInstanceOf(ContainerInterface::class);
+    expect($this->container)->toBeInstanceOf(ContainerContract::class);
 });
 
-it('Waiting for the \Container is instance of Psr\Container\ContainerInterface', function () {
-    expect($this->app)->toBeInstanceOf(ContainerInterface::class);
-});
+it('Resolve the target class without register into container bindings', function () {
+    $instance = $this->container->make(TestingClassStub::class);
 
-it('Waiting for the \Container is instance of Swilen\Shared\Container\Container', function () {
-    expect($this->app)->toBeInstanceOf(ContainerContract::class);
-});
-
-it('Resolve class correctly', function () {
-    $instance = $this->app->make(TestingClass::class);
-
-    expect($instance)->toBeInstanceOf(TestingClass::class);
+    expect($instance)->toBeInstanceOf(TestingClassStub::class);
     expect($instance)->toBeObject();
+    expect($this->container->getBindings())->toBeEmpty();
 });
 
-it('Resolve class correctly with params', function () {
-    $instance = $this->app->make(TestingClass::class, ['id' => 1]);
+it('Resolve the target class without register into container bindings with parameters', function () {
+    $instance = $this->container->make(TestingClassStub::class, ['id' => 1]);
 
-    expect($instance)->toBeInstanceOf(TestingClass::class);
-    expect($instance->getProperty())->toBeOne();
+    expect($instance)->toBeInstanceOf(TestingClassStub::class);
+    expect($instance->getProperty())->toBeInt();
 });
 
-it('Generate exception if service not found', function () {
-    $this->app->make('Swilen\Container\EntryNotFound');
+it('Generate exception if service with binding resolution', function () {
+    $this->container->make('Swilen\Container\EntryNotFound');
+})->throws(BindingResolutionException::class);
+
+it('Generate exception if service not found in PSR', function () {
+    $this->container->get('Swilen\Container\EntryNotFound');
 })->throws(EntryNotFoundException::class);
 
 it('Register the class as simple binding. Create new instance when done by container', function () {
-    $this->app->bind('bind', function ($app) {
-        return new TestingClass(10);
+    $this->container->bind('bind', function ($app) {
+        return new TestingClassStub(10);
     });
 
-    $this->app->make('bind')->increment();
-    $this->app->make('bind')->increment();
+    $this->container->make('bind')->increment();
+    $this->container->make('bind')->increment();
 
-    expect($this->app->isShared('bind'))->toBeFalse();
-    expect($this->app->make('bind')->getProperty())->toBe(10);
+    expect($this->container->isShared('bind'))->toBeFalse();
+    expect($this->container->make('bind')->getProperty())->toBe(10);
 });
 
 it('Register the class as singleton instance. Return only instance when done by container', function () {
-    $this->app->singleton('singleton', function ($app) {
-        return new TestingClass(18);
+    $this->container->singleton('singleton', function ($app) {
+        return new TestingClassStub(18);
     });
 
-    $this->app->make('singleton')->increment();
-    $this->app->make('singleton')->increment();
+    $this->container->make('singleton')->increment();
+    $this->container->make('singleton')->increment();
 
-    expect($this->app->isShared('singleton'))->toBeTrue();
-    expect($this->app->make('singleton')->getProperty())->toBe(20);
+    expect($this->container->isShared('singleton'))->toBeTrue();
+    expect($this->container->make('singleton')->getProperty())->toBe(20);
 });
 
-it('Register interface for dependency injection', function () {
-    $this->app->bind(MongoRepository::class, function ($app) {
-        return new UserRepository(100);
+it('Register interface with implementation into container', function () {
+    $this->container->bind(MongoRepositoryStub::class, function ($app) {
+        return new UserRepositoryStub(100);
     });
 
-    expect($this->app->isShared(MongoRepository::class))->toBeFalse();
+    expect($this->container->isShared(MongoRepositoryStub::class))->toBeFalse();
 
-    expect($this->app->make(UserService::class)->find())->toBeInt();
+    expect($this->container->make(UserServiceStub::class)->find())->toBeInt();
 });
 
-it('Call function with dependency injection in parameter', function () {
-    $this->app->bind(MongoRepository::class, function ($app) {
-        return new UserRepository(100);
+it('Call Closure with dependency injection in parameter', function () {
+    $this->container->bind(MongoRepositoryStub::class, function ($app) {
+        return new UserRepositoryStub(100);
     });
 
-    $closure = function (MongoRepository $repository) {
+    $closure = function (MongoRepositoryStub $repository) {
         return $repository->find();
     };
 
-    $result = $this->app->call($closure);
-
-    expect($result)->toBeInt();
+    expect($this->container->call($closure))->toBeInt();
 });
 
 it('Call __invoke function was class is used as function', function () {
-    $this->app->bind(MongoRepository::class, function ($app) {
-        return new UserRepository(100);
+    $this->container->bind(MongoRepositoryStub::class, function ($app) {
+        return new UserRepositoryStub(100);
     });
 
     $class = new class() {
-        public function __invoke(MongoRepository $repository)
+        public function __invoke(MongoRepositoryStub $repository)
         {
             return $repository->find();
         }
     };
 
-    $result = $this->app->call($class);
+    $result = $this->container->call($class);
 
     expect($result)->toBeInt();
 });
 
-it('Depency resolve with ArrayAccess', function () {
-    $this->app->bind(MongoRepository::class, function ($app) {
-        return new UserRepository(100);
-    });
+it('Resolve the target when inserted into the container it is treated as an array with \ArrayAcces', function () {
+    $this->container[MongoRepositoryStub::class] = function ($app) {
+        return new UserRepositoryStub(100);
+    };
 
-    $this->app['depend'] = function ($app) {
+    $this->container['depend'] = function ($app) {
         return new class() {
-            public function __invoke(MongoRepository $repository)
+            public function __invoke(MongoRepositoryStub $repository)
             {
                 return $repository->find();
             }
         };
     };
 
-    expect($this->app->call($this->app['depend']))->toBeInt();
+    expect($this->container->call($this->container['depend']))->toBeInt();
+});
 
-    $this->app->flush();
+it('Detect that core methods are called successfully', function () {
+    $container = new Container();
 
-    expect($this->app->getBindings())->toBeEmpty();
+    expect($container->getBindings())->toBeEmpty();
+    expect($container->make(TestingClassStub::class))->toBeObject();
+    expect($container->get(TestingClassStub::class))->toBeObject();
+    expect($container[TestingClassStub::class])->toBeObject();
 
-    expect($this->app['depend'])->toBeNull();
-})->throws(EntryNotFoundException::class);
+    expect($container->bound(TestingClassStub::class))->toBeFalsy();
+    expect($container->has(TestingClassStub::class))->toBeFalsy();
+
+    $container->bind(TestingClassStub::class);
+
+    $container->tag([MemoryReportTaggedStub::class, CpuReportTaggedStub::class], PerformaceReportStub::class);
+
+    /** @var \ArrayIterator<PerformaceReportStub> */
+    $tagged = $container->tagged(PerformaceReportStub::class);
+
+    $results = [];
+    foreach ($tagged as $key => $value) {
+        $results[$key] = $value;
+    }
+
+    expect($tagged->count())->toBe(2);
+    expect($results[0])->toBeInstanceOf(PerformaceReportStub::class);
+    expect($results[0])->toBeInstanceOf(MemoryReportTaggedStub::class);
+    expect($results[1])->toBeInstanceOf(CpuReportTaggedStub::class);
+
+    $reports = [];
+    foreach ($tagged as $key => $value) {
+        $reports[$key] = $value->report();
+    }
+
+    expect($reports)->toBe([20, 60]);
+
+    expect($container->getBindings())->not->toBeEmpty();
+    expect($container->getBindings())->toHaveKey(TestingClassStub::class);
+});
 
 /**
  * Testing clases.
  */
-class TestingClass
+class TestingClassStub
 {
     protected $property;
 
@@ -161,14 +193,14 @@ class TestingClass
     }
 }
 
-interface MongoRepository
+interface MongoRepositoryStub
 {
     public function persist(int $id): void;
 
     public function find(): int;
 }
 
-class UserRepository implements MongoRepository
+class UserRepositoryStub implements MongoRepositoryStub
 {
     protected $id;
 
@@ -188,11 +220,11 @@ class UserRepository implements MongoRepository
     }
 }
 
-final class UserService
+final class UserServiceStub
 {
     private $repository;
 
-    public function __construct(MongoRepository $repository)
+    public function __construct(MongoRepositoryStub $repository)
     {
         $this->repository = $repository;
     }
@@ -200,5 +232,26 @@ final class UserService
     public function find()
     {
         return $this->repository->find();
+    }
+}
+
+interface PerformaceReportStub
+{
+    public function report();
+}
+
+class MemoryReportTaggedStub implements PerformaceReportStub
+{
+    public function report()
+    {
+        return 20;
+    }
+}
+
+class CpuReportTaggedStub implements PerformaceReportStub
+{
+    public function report()
+    {
+        return 60;
     }
 }

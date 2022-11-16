@@ -17,7 +17,7 @@ final class ResponseFactory implements ContractResponseFactory
      *
      * @return \Swilen\Http\Response
      */
-    public function make($content = '', int $status = 200, array $headers = [])
+    public function make($content = null, int $status = 200, array $headers = [])
     {
         return new Response($content, $status, $headers);
     }
@@ -25,7 +25,7 @@ final class ResponseFactory implements ContractResponseFactory
     /**
      * {@inheritdoc}
      *
-     * Create response with json encoded
+     * Create response serialized in json
      *
      * @return \Swilen\Http\Response\JsonResponse
      */
@@ -36,6 +36,8 @@ final class ResponseFactory implements ContractResponseFactory
 
     /**
      * {@inheritdoc}
+     *
+     * Create response serialized in json.
      *
      * @return \Swilen\Http\Response\JsonResponse
      */
@@ -65,17 +67,21 @@ final class ResponseFactory implements ContractResponseFactory
      */
     public function download($file, $name = null, array $headers = [], bool $attachment = true)
     {
-        $fatory = new BinaryFileResponse($file, 200, $headers, $attachment);
+        $factory = new BinaryFileResponse($file, 200, $headers, $attachment);
 
-        if (!$name) {
-            $fatory->updateFilename($name);
+        if ($name !== null) {
+            $factory->updateFilename($name);
         }
 
-        return $this;
+        return $factory;
     }
 
     /**
      * {@inheritdoc}
+     *
+     * Create streamed response
+     *
+     * @return \Swilen\Http\Response\StreamedResponse
      */
     public function stream(\Closure $callback, int $status = 200, array $headers = [])
     {

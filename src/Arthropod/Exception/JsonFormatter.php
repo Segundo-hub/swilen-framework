@@ -8,22 +8,30 @@ use Swilen\Http\Exception\HttpException;
 class JsonFormatter implements ExceptionFormatter
 {
     /**
+     * Default encoding options for serialize this exception in json.
+     *
      * @var int
      */
     protected $encodingOptions = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION
         | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR | JSON_PRETTY_PRINT;
 
     /**
+     * The current exception passed.
+     *
      * @var \Throwable
      */
     protected $exception;
 
     /**
+     * Indicates if application is debug mode.
+     *
      * @var bool
      */
     protected $debugMode = false;
 
     /**
+     * Create new JsonFormatter for exception.
+     *
      * @param \Throwable $exception
      *
      * @return void
@@ -36,6 +44,10 @@ class JsonFormatter implements ExceptionFormatter
 
     /**
      * {@inheritdoc}
+     *
+     * Format and serialize exception to json.
+     *
+     * @return string
      */
     public function format()
     {
@@ -47,7 +59,7 @@ class JsonFormatter implements ExceptionFormatter
      *
      * @return array
      */
-    protected function formatExceptionFragment(\Throwable $exception)
+    public function formatExceptionFragment(\Throwable $exception)
     {
         return $this->debugMode
             ? [
@@ -64,12 +76,18 @@ class JsonFormatter implements ExceptionFormatter
     }
 
     /**
+     * Format trace without args.
+     *
      * @return array
      */
     protected function formatTraceFragment()
     {
         return array_map(function ($trace) {
-            unset($trace['args']);
+            if (isset($trace['file']) && isset($trace['line'])) {
+                $trace['file'] = $trace['file'].':'.$trace['line'];
+            }
+
+            unset($trace['args'], $trace['line']);
 
             return $trace;
         }, $this->exception->getTrace());

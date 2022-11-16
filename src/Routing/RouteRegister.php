@@ -112,6 +112,6 @@ final class RouteRegister
             return $this->attribute($method, key_exists(0, $params) ? $params[0] : true);
         }
 
-        throw new \BadMethodCallException(sprintf('Method %s::%s does not exist.', static::class, $method));
+        throw new \BadMethodCallException(sprintf('Method %s::%s does not exist.', self::class, $method));
     }
 }

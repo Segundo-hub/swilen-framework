@@ -3,10 +3,8 @@
 use Swilen\Arthropod\Application;
 use Swilen\Arthropod\Env;
 use Swilen\Container\Container;
-use Swilen\Shared\Arthropod\Application as ArthropodApplication;
-use Swilen\Http\Common\Http;
-use Swilen\Http\Response;
 use Swilen\Petiole\Facade;
+use Swilen\Shared\Arthropod\Application as ArthropodApplication;
 
 uses()->group('Application');
 
@@ -22,7 +20,12 @@ beforeAll(function () {
 });
 
 beforeEach(function () {
-    $this->app = Application::getInstance();
+    /**
+     * @var \PHPUnit\Framework\TestCase $this
+     */
+    $app = Application::getInstance();
+
+    $this->app = $app;
 });
 
 afterAll(function () {
@@ -32,47 +35,55 @@ afterAll(function () {
 });
 
 it('The application started successfully and your instance is correct', function () {
-    expect($this->app)->toBeInstanceOf(Application::class);
-    expect($this->app)->toBeInstanceOf(ArthropodApplication::class);
-    expect($this->app)->toBeInstanceOf(Container::class);
-    expect($this->app)->toBeObject();
+    /**
+     * @var Swilen\Arthropod\Application
+     */
+    $app = $this->app;
+
+    expect($app)->toBeInstanceOf(Application::class);
+    expect($app)->toBeInstanceOf(ArthropodApplication::class);
+    expect($app)->toBeInstanceOf(Container::class);
+    expect($app)->toBeObject();
+    expect($app->hasBeenBootstrapped())->toBeFalse();
+    expect($app->isBooted())->toBeFalse();
 });
 
-it('The app() helper is instance of Application', function () {
-    expect(app())->toBeInstanceOf(Application::class);
-    expect(app())->toBeInstanceOf(Container::class);
-    expect(app('app'))->toBeInstanceOf(Application::class);
+it('Interact with application paths and files', function () {
+    $directory = dirname(__DIR__);
+
+    $app = new Application($directory);
+
+    expect($app->environmentFile())->toBe('.env');
+
+    $app->useEnvironmentFile('.env.example');
+    expect($app->environmentFile())->toBe('.env.example');
+
+    expect($app->environmentPath())->toBe($directory);
+    $app->useEnvironmentPath('/test');
+    expect($app->environmentPath())->toBe('/test');
 });
 
-it('The app() helper works correctly', function () {
+it('Application is developent mode', function () {
+    $app = new Application(dirname(__DIR__));
 
-    $instance = app()->make(HelperTesting::class);
+    expect($app->isDevelopmentMode())->toBeFalse();
 
-    expect($instance)->toBeInstanceOf(HelperTesting::class);
-    expect($instance)->toBeObject();
-    expect($instance->retrieve())->toBeInt();
+    $app->useEnvironment('development');
 
-    expect(app(HelperTesting::class))->toBeInstanceOf(HelperTesting::class);
+    expect($app->isDevelopmentMode())->toBeTrue();
 });
 
-it('Handle incoming request and return response', function () {
+it('Flush application instance', function () {
+    $app = new Application(dirname(__DIR__));
 
-    $response = $this->app->handle(fetch('api/test'));
+    expect(count($app->getBindings()))->toBeGreaterThanOrEqual(2);
 
-    expect($response)->toBeInstanceOf(Response::class);
-    expect($response->getContent())->toBeJson();
-    expect($response->statusCode())->toBe(Http::OK);
+    $app->flush();
+
+    expect($app->getBindings())->toBeEmpty();
+
+    unset($app);
 });
-
-it('Handle incoming request', function () {
-
-    $response = $this->app->handle(fetch('api/testing/test'));
-
-    expect($response)->toBeInstanceOf(Response::class);
-    expect($response->getContent())->toBeJson();
-    expect($response->statusCode())->toBe(Http::FORBIDDEN);
-});
-
 
 final class HelperTesting
 {

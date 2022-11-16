@@ -9,7 +9,6 @@ use Swilen\Http\Component\HeaderHunt;
 use Swilen\Http\Component\InputHunt;
 use Swilen\Http\Component\ServerHunt;
 use Swilen\Http\Exception\HttpNotOverridableMethodException;
-use Swilen\Validation\Validator;
 
 class Request extends SupportRequest implements \ArrayAccess
 {
@@ -51,14 +50,14 @@ class Request extends SupportRequest implements \ArrayAccess
     /**
      * The content of request body decoded as json.
      *
-     * @var \Swilen\Http\Component\InputHunt
+     * @var \Swilen\Http\Component\InputHunt|null
      */
     public $json;
 
     /**
-     * Http request raw body content.
+     * The binary data from the request.
      *
-     * @var string|resource|bool|null
+     * @var string|resource
      */
     protected $content;
 
@@ -111,67 +110,51 @@ class Request extends SupportRequest implements \ArrayAccess
      */
     public function __construct(array $server = [], array $files = [], array $request = [], array $query = [], $content = null)
     {
-        $this->server = new ServerHunt($server);
+        $this->server  = new ServerHunt($server);
         $this->headers = new HeaderHunt($this->server->headers());
-        $this->files = new FileHunt($files);
+        $this->files   = new FileHunt($files);
         $this->request = new InputHunt($request);
-        $this->query = new InputHunt($query);
+        $this->query   = new InputHunt($query);
 
         $this->content = $content;
     }
 
     /**
-     * Create new request instance from static method.
+     * Creates a new request with values from PHP's super globals.
      *
-     * @param array                $server  The server variables collection
-     * @param array                $headers The request headers collection
-     * @param array                $files   The request files collection
-     * @param array                $request The request variables sending from client collection
-     * @param array                $query   The request query params or send from client into form
-     * @param string|resource|null $content The raw body data
-     *
-     * @return \Swilen\Http\Request
-     */
-    public static function createFrom(array $server = [], array $files = [], array $request = [], array $query = [], $content = null)
-    {
-        return new static($server, $files, $request, $query, $content);
-    }
-
-    /**
-     * Create new request instance from PHP SuperGlobals.
-     *
-     * @return \Swilen\Http\Request
+     * @return static
      */
     public static function create()
     {
-        return new static($_SERVER, $_FILES, $_POST, $_GET);
+        return static::createFromGlobals();
     }
 
     /**
-     * Creates a Request based on a given URI and configuration.
+     * Creates a new request with values from PHP's super globals.
      *
-     * @param string               $uri        The URI
-     * @param string               $method     The HTTP method
-     * @param array                $parameters The query (GET) or request (POST) parameters
-     * @param array                $files      The request files ($_FILES)
-     * @param array                $server     The server parameters ($_SERVER)
-     * @param string|resource|null $content    The raw body data
-     *
-     * @return \Swilen\Http\Request
+     * @return static
      */
-    public static function make(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $content = null)
+    public static function createFromGlobals()
     {
-        [$server, $files, $request, $query, $content] = parent::makeFetchRequest($uri, $method, $parameters, $files, $server);
+        $request = new static($_SERVER, $_FILES, $_POST, $_GET);
 
-        return new static($server, $files, $request, $query, $content);
+        if (
+            mb_strpos($request->headers->get('Content-Type', ''), 'application/x-www-form-urlencoded') === 0 &&
+            in_array($request->getRealMethod(), ['PUT', 'DELETE', 'PATCH'])
+        ) {
+            parse_str($request->getBody(), $data);
+            $request->request = new InputHunt($data);
+        }
+
+        return $request;
     }
 
     /**
-     * Set method for request.
+     * Set method for the request.
      *
      * @return $this
      */
-    public function setMethod(string $method)
+    public function withMethod(string $method)
     {
         $this->method = strtoupper($method);
         $this->server->set('REQUEST_METHOD', $this->method);
@@ -294,22 +277,26 @@ class Request extends SupportRequest implements \ArrayAccess
     public function getInputSource()
     {
         if ($this->isJsonRequest()) {
-            $this->json = new InputHunt($this->transformInputSource()->decode(true));
-
-            return $this->json;
+            return $this->morphInputSource();
         }
 
-        return $this->request;
+        return in_array($this->getRealMethod(), ['GET', 'HEAD']) ? $this->query : $this->request;
     }
 
     /**
-     * Transform input source to json valid encode or decode.
+     * Morph the request body.
      *
-     * @return \Swilen\Http\Common\HttpTransformJson
+     * @return \Swilen\Http\Component\InputHunt
      */
-    public function transformInputSource()
+    public function morphInputSource()
     {
-        return new HttpTransformJson($this->getContent());
+        if ($this->json === null) {
+            $content = (new HttpTransformJson($this->getBody()))->decode(true);
+
+            return $this->json = new InputHunt($content);
+        }
+
+        return $this->json;
     }
 
     /**
@@ -337,7 +324,7 @@ class Request extends SupportRequest implements \ArrayAccess
     }
 
     /**
-     * Get bearer token from authorization header.
+     * Retrieve Bearer Token from 'Authorization' header.
      *
      * @return string|null
      */
@@ -355,7 +342,7 @@ class Request extends SupportRequest implements \ArrayAccess
      *
      * @return resource|string|false|null
      */
-    public function getContent()
+    public function getBody()
     {
         if (\is_resource($this->content)) {
             rewind($this->content);
@@ -363,7 +350,7 @@ class Request extends SupportRequest implements \ArrayAccess
             return stream_get_contents($this->content);
         }
 
-        if (!$this->content) {
+        if ($this->content === null || $this->content === false) {
             $this->content = file_get_contents('php://input');
         }
 
@@ -385,10 +372,32 @@ class Request extends SupportRequest implements \ArrayAccess
      *
      * @return bool
      */
-    private function isJsonRequest()
+    public function isJsonRequest()
     {
-        foreach (['/json', '+json'] as $contentType) {
-            if (mb_strpos($this->headers->get('Content-Type'), $contentType) !== false) {
+        return $this->isContentType(['/json', '+json']);
+    }
+
+    /**
+     * Determine if request content type is form.
+     *
+     * @return bool
+     */
+    public function isFormRequest()
+    {
+        return in_array($this->headers->get('Content-Type'), $this->requestMimeTypes['form']);
+    }
+
+    /**
+     * Determine is given content type or match.
+     *
+     * @param string|string[] $contents
+     *
+     * @return bool
+     */
+    private function isContentType($contents)
+    {
+        foreach ((array) $contents as $content) {
+            if ($content !== '' && mb_strpos($this->headers->get('Content-Type', ''), $content) !== false) {
                 return true;
             }
         }
@@ -397,21 +406,19 @@ class Request extends SupportRequest implements \ArrayAccess
     }
 
     /**
-     * Get all variables captured and stored.
+     * Get all of the input and files for the request.
      *
      * @return array
      */
     public function all()
     {
         return array_replace_recursive(
-            (array) $this->getInputSource()->all(),
-            (array) $this->query->all(),
-            (array) $this->files->all(),
+            $this->getInputSource()->all() + $this->query->all(), $this->files->all(),
         );
     }
 
     /**
-     * Get input value from input source.
+     * Get input value from input ($_POST or php://input) source.
      *
      * @param string|int $key
      * @param mixed      $default
@@ -424,7 +431,7 @@ class Request extends SupportRequest implements \ArrayAccess
     }
 
     /**
-     * Get query value from query collection.
+     * Get query value from query ($_GET) collection.
      *
      * @param string|int $key
      * @param mixed      $default
@@ -437,25 +444,28 @@ class Request extends SupportRequest implements \ArrayAccess
     }
 
     /**
+     * Get server value from server ($_SERVER) collection.
+     *
+     * @param string|int $key
+     * @param mixed      $default
+     *
+     * @return mixed
+     */
+    public function server($key, $default = null)
+    {
+        return $this->server->get($key, $default);
+    }
+
+    /**
      * Get file(s) from UploadedFiles collection.
      *
      * @param string $filename The filename
      *
-     * @return \Swilen\Http\Component\UploadedFile|null
+     * @return \Swilen\Http\Component\File\UploadedFile|null
      */
     public function file(string $filename)
     {
         return $this->files->get($filename);
-    }
-
-    /**
-     * Validate request values with rules.
-     *
-     * @return \Swilen\Validation\Validator
-     */
-    public function validate(array $rules)
-    {
-        return Validator::make($this->all(), $rules);
     }
 
     /**
@@ -481,7 +491,7 @@ class Request extends SupportRequest implements \ArrayAccess
     #[\ReturnTypeWillChange]
     public function offsetGet($offset)
     {
-        return $this->__get($offset);
+        return $this->all()[$offset];
     }
 
     /**
@@ -520,7 +530,19 @@ class Request extends SupportRequest implements \ArrayAccess
      */
     public function __isset($key)
     {
-        return !is_null($this->__get($key));
+        return $this->offsetExists($key);
+    }
+
+    /**
+     * Remove the value at the given offset.
+     *
+     * @param string $key
+     *
+     * @return void
+     */
+    public function __unset($key)
+    {
+        $this->offsetUnset($key);
     }
 
     /**
@@ -533,7 +555,7 @@ class Request extends SupportRequest implements \ArrayAccess
      */
     public function __set($key, $value)
     {
-        $this->getInputSource()->set($key, $value);
+        $this->offsetSet($key, $value);
     }
 
     /**
@@ -545,6 +567,6 @@ class Request extends SupportRequest implements \ArrayAccess
      */
     public function __get($key)
     {
-        return $this->all()[$key];
+        return $this->offsetGet($key);
     }
 }

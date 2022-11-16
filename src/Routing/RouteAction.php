@@ -14,7 +14,9 @@ final class RouteAction
      */
     public static function parse($uri, $action)
     {
-        if (is_null($action)) {
+        // Return missing action when action is null
+        // also missing when it is an empty array
+        if (is_null($action) || empty($action)) {
             return static::missingAction($uri);
         }
 
@@ -24,13 +26,15 @@ final class RouteAction
                 'controller' => $action[0].'@'.$action[1],
             ];
 
-            if (is_string($action['uses']) && mb_strpos($action['uses'], '@') !== false) {
+            if (is_string($action['uses']) && strpos($action['uses'], '@') !== false) {
                 $action['controller'] = $action['uses'];
             }
+        } elseif (!isset($action['uses'])) {
+            $action['uses'] = $action[0];
         }
 
-        if (is_string($action['uses']) && !mb_strpos($action['uses'], '@') !== false) {
-            $action['uses'] = static::makeAsInvokable($action['uses']);
+        if (is_string($action['uses']) && !strpos($action['uses'], '@') !== false) {
+            $action['uses'] = static::makeInvokableController($action['uses']);
         }
 
         return $action;
@@ -60,21 +64,21 @@ final class RouteAction
      *
      * @return bool
      */
-    public static function isCallable($action, bool $check = false)
+    private static function isCallable($action, bool $check = false)
     {
         if (!is_array($action)) {
             return is_callable($action, $check);
         }
 
-        if ((!isset($action[0]) || !isset($action[1])) ||
+        if (
+            (!isset($action[0]) || !isset($action[1])) ||
             !is_string($action[1] ?? null)
         ) {
             return false;
         }
 
         if (
-            $check &&
-            (is_string($action[0]) || is_object($action[0])) &&
+            $check && (is_string($action[0]) || is_object($action[0])) &&
             is_string($action[1])
         ) {
             return true;
@@ -94,7 +98,7 @@ final class RouteAction
      *
      * @throws \UnexpectedValueException
      */
-    private static function makeAsInvokable($action)
+    private static function makeInvokableController($action)
     {
         if (!method_exists($action, '__invoke')) {
             throw new \UnexpectedValueException("Invalid route action: [{$action}].");
@@ -112,6 +116,6 @@ final class RouteAction
      */
     public static function parseControllerAction($action)
     {
-        return mb_strpos($action, '@') !== false ? explode('@', $action, 2) : $action;
+        return strpos($action, '@') !== false ? explode('@', $action, 2) : $action;
     }
 }

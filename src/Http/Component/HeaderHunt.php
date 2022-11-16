@@ -26,6 +26,40 @@ class HeaderHunt implements \Countable, \IteratorAggregate
     }
 
     /**
+     * Return keys of headers as iterator.
+     *
+     * @return \ArrayIterator<int,string>
+     */
+    public function keys()
+    {
+        return new \ArrayIterator(array_keys($this->headers));
+    }
+
+    /**
+     * Return values of headers as iterator.
+     *
+     * @return \ArrayIterator<int,string>
+     */
+    public function values()
+    {
+        return new \ArrayIterator(array_values($this->headers));
+    }
+
+    /**
+     * Each headers with key and value.
+     *
+     * @param \Closure<string, string[]|string> $callback
+     *
+     * @return void
+     */
+    public function each(\Closure $callback)
+    {
+        foreach ($this->headers as $key => $value) {
+            $callback($key, $value, $this);
+        }
+    }
+
+    /**
      * Set new header to collection.
      *
      * @param string $key
@@ -36,19 +70,6 @@ class HeaderHunt implements \Countable, \IteratorAggregate
     public function set($key, $value)
     {
         $this->headers[$key] = $value;
-    }
-
-    /**
-     * alias for set new header to collection.
-     *
-     * @param string $key
-     * @param mixed  $value
-     *
-     * @return void
-     */
-    public function add($key, $value)
-    {
-        $this->set($key, $value);
     }
 
     /**
@@ -64,7 +85,23 @@ class HeaderHunt implements \Countable, \IteratorAggregate
     }
 
     /**
-     * Check if header is exists in collection.
+     * Remove given keys from collection.
+     *
+     * @param string|string[] $keys
+     *
+     * @return void
+     */
+    public function removeAt($keys)
+    {
+        $keys = is_array($keys) ? $keys : func_get_args();
+
+        foreach ($keys as $value) {
+            $this->remove($value);
+        }
+    }
+
+    /**
+     * Indicating whether the collection contains a certain header.
      *
      * @param string $key
      *
@@ -91,14 +128,14 @@ class HeaderHunt implements \Countable, \IteratorAggregate
     /**
      * Get one header from collection or null if not exists.
      *
-     * @param string $key
-     * @param mixed  $default
+     * @param string     $key
+     * @param mixed|null $default
      *
-     * @return mixed
+     * @return string|null
      */
     public function get(string $key, $default = null)
     {
-        return $this->has($key) ? $this->headers[$key] : $default;
+        return $this->headers[$key] ?? $default;
     }
 
     /**
@@ -125,7 +162,7 @@ class HeaderHunt implements \Countable, \IteratorAggregate
     /**
      * Returns an iterator for headers.
      *
-     * @return \ArrayIterator<string, list<string|null>>
+     * @return \ArrayIterator<string,string[]|string>
      */
     #[\ReturnTypeWillChange]
     public function getIterator()

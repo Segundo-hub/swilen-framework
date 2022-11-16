@@ -102,6 +102,7 @@ final class Repository implements \ArrayAccess, ConfigContract
     public function getManyConfig($keys)
     {
         $config = [];
+        $keys   = is_array($keys) ? $keys : func_get_args();
 
         foreach ($keys as $key => $default) {
             if (is_numeric($key)) {

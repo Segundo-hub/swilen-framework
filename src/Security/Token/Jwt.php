@@ -2,214 +2,280 @@
 
 namespace Swilen\Security\Token;
 
+use Swilen\Security\Contract\TokenContract;
+use Swilen\Security\Exception\JwtDomainException;
 use Swilen\Security\Exception\JwtInvalidSignatureException;
 use Swilen\Security\Exception\JwtTokenExpiredException;
 
-final class Jwt
+final class Jwt implements TokenContract
 {
     /**
-     * @var \Swilen\Security\Token\JwtHeader
+     * The token header.
+     *
+     * @var \Swilen\Security\Token\Header
      */
-    protected $headers;
+    private $header;
 
     /**
-     * The shared secret key
+     * The shared secret key.
      *
      * @var string
      */
-    protected $secretKey;
+    private $secretKey;
 
     /**
-     * The shared singed options
+     * The shared singed options.
      *
      * @var array<string,mixed>
      */
-    protected $signOptions = [];
+    private $signOptions = [];
 
     /**
-     * The current algorithm for hashing
+     * The current algorithm for hashing.
      *
      * @var string
      */
-    protected $algorithm = 'HS256';
+    private $algorithm = 'HS256';
 
     /**
-     * Collection of supported algorithms
+     * Collection of supported algorithms.
      *
      * @var array<string,string[]>
      */
-    protected $supportedAlgorithms = [
+    public const SUPPORTED_ALGORITHMS = [
         'HS256' => ['hash_hmac', 'SHA256'],
         'HS384' => ['hash_hmac', 'SHA384'],
         'HS512' => ['hash_hmac', 'SHA512'],
     ];
 
     /**
-     * Indicated if token manager previusly confired with default values
+     * Indicated if token manager previusly confired with default values.
      *
-     * @var boolean
+     * @var bool
      */
-    protected $configured = false;
+    private $configured = false;
 
-    public function register(string $secret, array $signOptions = [])
+    /**
+     * Configure initial values to Jwt Manager.
+     *
+     * @param string $secret     The secret key
+     * @param array  $ignOptions Initial ign options
+     *
+     * ```php
+     * <?php
+     *  $signOptions = ['expires' => '60s', 'algorithm' => 'HS512'];
+     * ````
+     *
+     * @return static
+     */
+    public static function register(string $secret, array $signOptions = [])
+    {
+        return (new static())->useConfig($secret, $signOptions);
+    }
+
+    /**
+     * Configure initial values to Jwt Manager.
+     *
+     * @param string $secret     The secret key
+     * @param array  $ignOptions Initial ign options
+     *
+     * @return $this
+     */
+    private function useConfig(string $secret, array $signOptions)
     {
         $this->secretKey   = $secret;
-        $this->signOptions = $signOptions;
+        $this->signOptions = (new ValidateSignOptions())->validate($signOptions);
         $this->configured  = true;
 
         return $this;
     }
 
     /**
-     * @param string $algo
+     * Sign new token with claims in payload {@inheritdoc}
      *
-     * @return \Swilen\Security\Token\JwtHeader
-     * @throws \InvalidArgumentException
-     */
-    protected function withAlgorithmHeader(string $algo)
-    {
-        if (isset($this->supportedAlgorithms[$algo])) {
-            $this->algorithm = $algo;
-
-            return $this->header = new JwtHeader(['alg' => $algo, 'typ' => 'JWT']);
-        }
-
-        throw new \InvalidArgumentException(sprintf('"%s" this algorithm is not supported', $algo), 500);
-    }
-
-    /**
-     * Sing Json Web Token from client
-     *
-     * @param array<string,string> $payload
-     * @param string|null $secret
-     * @param string $algo
+     * @param key-of<\Swilen\Security\Token\Jwt::SUPPORTED_ALGORITHMS> $algo
      *
      * @return \Swilen\Security\Token\JwtSignedExpression
      */
-    public function sign(array $payload, $secret = null, $algo = 'HS256')
+    public function sign(array $payload, $secret = null, $algo = null)
     {
-        $this->handleSecretIfConfigured($secret);
+        $this->ensureIfPreviouslyConfigured($secret, $algo);
 
-        $jwtPayload = new JwtPayload(array_merge($payload, $this->signOptions));
-        $jwtHeaders = $this->withAlgorithmHeader($algo);
+        $payload = $this->makePayload($payload);
 
-        $headers = $jwtHeaders->serialize();
-        $payload = $jwtPayload->serialize();
+        $headersEncoded = $this->header->encode();
+        $payloadEncoded = $payload->encode();
 
-        $signature = $this->buildSignature($this->join($headers, $payload));
+        $signature = $this->signMessage(Util::dotted($headersEncoded, $payloadEncoded));
 
-        return new JwtSignedExpression($this->join($headers, $payload, $signature), $jwtPayload);
+        return new JwtSignedExpression(Util::dotted(
+            $headersEncoded, $payloadEncoded, $signature,
+        ), $payload);
     }
 
     /**
-     * Verify if token is valid
+     * Manage token verification {@inheritdoc}
      *
-     * @param string $token
-     * @param string|null $secret The secret key
+     * @param key-of<\Swilen\Security\Token\Jwt::SUPPORTED_ALGORITHMS> $algo
      *
-     * @return \Swilen\Security\Token\JwtPayload
+     * @throws \Swilen\Security\Exception\JwtTokenExpiredException
+     * @throws \Swilen\Security\Exception\JwtInvalidSignatureException
      */
-    public function verify(string $token, $secret = null)
+    public function verify(string $token, $secret = null, string $algo = null)
     {
-        $this->handleSecretIfConfigured($secret);
+        $this->ensureIfPreviouslyConfigured($secret, $algo);
 
-        $decoded = new JwtDecoder($token);
-        $headers = JwtUtil::url_encode($decoded->header);
-        $payload = JwtUtil::url_encode($decoded->payload);
+        $decoded = (new Decoder($token))->decode();
 
-        $signature = $this->buildSignature($this->join($headers, $payload));
+        $signature = $this->signMessage(Util::dotted(
+            $decoded->header->encode(), $decoded->payload->encode(),
+        ));
 
-        $payload = (new JwtPayload())->fromJson($decoded->payload);
-
-        return $this->validationGuard($decoded, $payload, $signature);
+        return $this->validateWithErrorHandling($decoded, $signature);
     }
 
     /**
-     * Create new hash_mac signature
+     * Create new hash_mac signature.
      *
      * @param string $message Message for hashing
      * @param string $secret
      *
      * @return string
      */
-    protected function buildSignature(string $message)
+    private function signMessage(string $message)
     {
-        [$function, $algorithm] = $this->supportedAlgorithms[$this->algorithm];
+        [$function, $algorithm] = self::SUPPORTED_ALGORITHMS[$this->algorithm];
 
-        return JwtUtil::url_encode(hash_hmac($algorithm, $message, $this->secretKey, true));
+        return Util::url_encode(hash_hmac($algorithm, $message, $this->secretKey, true));
     }
 
     /**
-     * Validate rules for incoming token
+     * Validate rules for incoming decoded token.
      *
-     * @param \Swilen\Security\Token\JwtDecoder $decoded
-     * @param \Swilen\Security\Token\JwtPayload $payload
-     * @param string $signature
+     * @param \Swilen\Security\Token\Decoder $decoded
+     * @param string                         $signature
      *
-     * @return string
+     * @return \Swilen\Security\Token\Payload
+     *
+     * @throws \Swilen\Security\Exception\JwtTokenExpiredException
+     * @throws \Swilen\Security\Exception\JwtInvalidSignatureException
      */
-    protected function validationGuard(JwtDecoder $decoded, JwtPayload $payload, $signature)
+    private function validateWithErrorHandling(Decoder $decoded, $signature)
     {
-        if (!is_null($payload->expires()) && $payload->expires() < time()) {
+        if (!is_null($decoded->payload->expires()) && $decoded->payload->expires() < time()) {
             throw new JwtTokenExpiredException();
         }
 
-        if (!static::isValidHashSignature($decoded->signature, $signature)) {
+        if (!$this->isValidHashSignature($decoded->signature, $signature)) {
             throw new JwtInvalidSignatureException();
         }
 
-        return $payload;
+        return $decoded->payload;
     }
 
     /**
-     * Verify if hash signature is valid
+     * Verify if hash signature is valid.
      *
      * @param string $left
      * @param string $right
      *
      * @return bool
      */
-    protected static function isValidHashSignature(string $left, string $right)
+    private function isValidHashSignature(string $left, string $right)
     {
-        if (function_exists('hash_equals')) {
-            return hash_equals($left, $right);
-        }
-
-        $len = min(strlen($left), strlen($right));
-
-        $status = 0;
-        for ($i = 0; $i < $len; $i++) {
-            $status |= (ord($left[$i]) ^ ord($right[$i]));
-        }
-
-        $status |= (strlen($left) ^ strlen($right));
-
-        return $status === 0;
+        return Util::hash_equals($left, $right);
     }
 
     /**
-     * Join string with dot delimiter
+     * Create new jwt header with algorithm.
      *
-     * @param string|string[] ...$args
+     * @param string|null $algo
      *
-     * @return string
+     * @return void
+     *
+     * @throws \Swilen\Security\Exception\JwtDomainException
      */
-    protected function join(...$args)
+    private function makeHeaderWithAlgorithm($algo)
     {
-        return implode('.', $args);
+        if (!isset(self::SUPPORTED_ALGORITHMS[$algo])) {
+            throw new JwtDomainException(sprintf('The algorithm "%s" is not supported.', $algo), 500);
+        }
+
+        $this->algorithm = $algo;
+
+        $this->header = new Header(['alg' => $algo, 'typ' => 'JWT']);
     }
 
-    protected function handleSecretIfConfigured($secret)
+    /**
+     * Verify if payload contains valid options and create Payload instance.
+     *
+     * @param array $payload
+     *
+     * @return \Swilen\Security\Token\Payload
+     */
+    private function makePayload(array $payload)
     {
-        if ($this->configured === false) {
-            if (!$secret) {
-                throw new \InvalidArgumentException('Missing secret key', 500);
+        if ($this->hasPreviouslyConfigured()) {
+            if (!isset($payload['data'])) {
+                $payload['data'] = $payload;
             }
+
+            $payload['exp'] = time() + $this->signOptions['expires'];
         }
 
-        if ($this->configured === false && !$secret) {
-        } elseif ($this->configured === false) {
-            $this->secretKey = $secret;
+        if (!isset($payload['iat'])) {
+            $payload['iat'] = time();
         }
+
+        // Add default expiration time (60 seconds) if not passed
+        if (!isset($payload['exp'])) {
+            $payload['exp'] = time() + 60;
+        }
+
+        return new Payload($payload);
+    }
+
+    /**
+     * Handle if token manager previusly configured.
+     *
+     * @param string $secret
+     * @param string $algo
+     *
+     * @return void
+     */
+    private function ensureIfPreviouslyConfigured($secret, $algo)
+    {
+        // Manage if not configured
+        if (!$this->hasPreviouslyConfigured()) {
+            if (!$secret) {
+                throw new JwtDomainException('Missing secret key.');
+            }
+
+            $this->secretKey = $secret;
+
+            if (!$algo) {
+                throw new JwtDomainException('Missing algorithm.');
+            }
+
+            return $this->makeHeaderWithAlgorithm($algo);
+        }
+
+        if ($this->header === null && $this->hasPreviouslyConfigured()) {
+            if (!$algorithm = $this->signOptions['algorithm'] ?? $algo) {
+                throw new JwtDomainException('Missing algorithm.');
+            }
+
+            $this->makeHeaderWithAlgorithm($algorithm);
+        }
+    }
+
+    /**
+     * Veify token manager if previusly configured.
+     *
+     * @return bool
+     */
+    private function hasPreviouslyConfigured()
+    {
+        return $this->configured === true;
     }
 }

@@ -3,13 +3,14 @@
 namespace Swilen\Http\Response;
 
 use Swilen\Http\Component\File\File;
+use Swilen\Http\Exception\FileException;
 use Swilen\Http\Request;
 use Swilen\Http\Response;
 
 class BinaryFileResponse extends Response
 {
     /**
-     * The parsed content as string or reource for put into client.
+     * The file for send to client.
      *
      * @var \Swilen\Http\Component\File\File
      */
@@ -31,7 +32,7 @@ class BinaryFileResponse extends Response
     protected $chunkSize = 8 * 1024;
 
     /**
-     * Create new binary file response factory.
+     * Create new binary file response.
      *
      * @param \SplFileInfo|string $file       The file: filepath or File instance
      * @param bool                $attachment The disposition for send file
@@ -52,17 +53,27 @@ class BinaryFileResponse extends Response
     /**
      * Resolve file instance.
      *
-     * @param \SplFileInfo|resource|string $file
+     * @param \SplFileInfo|string $file
      *
-     * @return bool
+     * @return $this
      */
     protected function setBinaryFile($file)
     {
-        if ($file instanceof File) {
-            $this->file = $file;
-        } else {
-            $this->file = new File($file, true);
+        if (!$file instanceof File) {
+            if ($file instanceof \SplFileInfo) {
+                $file = new File($file->getPathname(), true);
+            } else {
+                $file = new File((string) $file, true);
+            }
         }
+
+        if (!$file->isReadable()) {
+            throw new FileException('File must be readable.');
+        }
+
+        $this->file = $file;
+
+        return $this;
     }
 
     /**
@@ -76,7 +87,6 @@ class BinaryFileResponse extends Response
             'Content-Description' => 'File Transfer',
             'Cache-Control' => 'no-cache, must-revalidate',
             'Content-Disposition' => 'attachment; filename="'.$filename.'"',
-            'Pragma' => 'public',
         ]);
     }
 
@@ -134,7 +144,7 @@ class BinaryFileResponse extends Response
 
                     if ($start === '') {
                         $start = $fileSize - $end;
-                        $end = $fileSize - 1;
+                        $end   = $fileSize - 1;
                     } else {
                         $start = (int) $start;
                     }
@@ -175,7 +185,7 @@ class BinaryFileResponse extends Response
             return $this;
         }
 
-        $InputStream = fopen($this->file->getPathname(), 'r');
+        $InputStream  = fopen($this->file->getPathname(), 'r');
         $OutputStream = fopen('php://output', 'w');
 
         ignore_user_abort(true);
@@ -200,5 +210,15 @@ class BinaryFileResponse extends Response
         fclose($InputStream);
 
         return $this;
+    }
+
+    /**
+     * Return the file for the response.
+     *
+     * @return \Swilen\Http\Component\File\File
+     */
+    public function getFile()
+    {
+        return $this->file;
     }
 }

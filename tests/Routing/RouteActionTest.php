@@ -5,9 +5,9 @@ use Swilen\Routing\RouteAction;
 uses()->group('Routing', 'RoutingAction');
 
 it('Resolve uses action is closure', function () {
-    $action = RouteAction::parse('/', InvokableTesting::class);
+    $action = RouteAction::parse('/', InvokableTestingStub::class);
 
-    expect($action['uses'])->toBe(InvokableTesting::class.'@__invoke');
+    expect($action['uses'])->toBe(InvokableTestingStub::class.'@__invoke');
     expect($action)->not->toHaveKey('controller');
 
     $action = RouteAction::parse('/', function () {
@@ -23,26 +23,30 @@ it('Resolve uses action is controller', function ($actin) {
     $action = RouteAction::parse('/', $actin);
 
     expect($action)->toHaveKeys(['controller', 'uses']);
-    expect($action['uses'])->toBe('MethodAllowedController@index');
-    expect($action['controller'])->toBe('MethodAllowedController@index');
+    expect($action['uses'])->toBe('MethodAllowedControllerStub@index');
+    expect($action['controller'])->toBe('MethodAllowedControllerStub@index');
 })->with([
-    'array' => [[MethodAllowedController::class, 'index']],
-    'string' => 'MethodAllowedController@index',
+    'array' => [[MethodAllowedControllerStub::class, 'index']],
+    'string' => 'MethodAllowedControllerStub@index',
 ]);
 
-it('Throw uses action is null', function () {
-    $action = RouteAction::parse('/', null);
+it('Throw uses action is null or empty', function ($actin) {
+    $action = RouteAction::parse('/', $actin);
 
     expect($action['uses'])->toBeCallable();
     expect($action)->not->toHaveKey('controller');
-    $action['uses']();
-})->throws(LogicException::class);
+    call_user_func($action['uses']);
+})->with([
+    'null' => null,
+    'empty_array' => [[]],
+    'empty' => '',
+])->throws(LogicException::class);
 
 it('Throw uses action not contains __invoke method', function () {
-    RouteAction::parse('/', MethodAllowedController::class);
-})->throws(UnexpectedValueException::class, 'Invalid route action: [MethodAllowedController]');
+    RouteAction::parse('/', MethodAllowedControllerStub::class);
+})->throws(UnexpectedValueException::class, 'Invalid route action: [MethodAllowedControllerStub]');
 
-class InvokableTesting
+class InvokableTestingStub
 {
     public function __invoke()
     {
@@ -50,7 +54,7 @@ class InvokableTesting
     }
 }
 
-class MethodAllowedController
+class MethodAllowedControllerStub
 {
     public function index()
     {

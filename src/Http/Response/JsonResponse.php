@@ -3,7 +3,6 @@
 namespace Swilen\Http\Response;
 
 use Swilen\Http\Common\HttpTransformJson;
-use Swilen\Http\Component\ResponseHeaderHunt;
 use Swilen\Http\Response;
 use Swilen\Shared\Support\Jsonable;
 
@@ -33,8 +32,7 @@ class JsonResponse extends Response
      */
     public function __construct($content = null, int $status = 200, array $headers = [], bool $json = false)
     {
-        $this->prepareJsonResponse($headers);
-        $this->setStatusCode($status);
+        parent::__construct(null, $status, array_merge(['Content-Type' => 'application/json'], $headers));
 
         $this->setContent($content, $json);
     }
@@ -56,7 +54,7 @@ class JsonResponse extends Response
 
         $content = $content ? $content : new \ArrayObject([]);
 
-        if (!$json && !HttpTransformJson::shouldBeJson($content)) {
+        if (!$json && (!HttpTransformJson::shouldBeJson($content))) {
             throw new \TypeError(sprintf('The type "%s" is not JSON serializable', get_debug_type($content)));
         }
 
@@ -79,23 +77,12 @@ class JsonResponse extends Response
         }
 
         if ($content) {
-            return (new HttpTransformJson(HttpTransformJson::morphToJsonable($content)))
-                ->encode($this->encodingOptions);
+            $content = HttpTransformJson::morphToJsonable($content);
+
+            return (new HttpTransformJson($content))->encode($this->encodingOptions);
         }
 
         return $content;
-    }
-
-    /**
-     * Prepares the JsonResponse before it is sent to the client.
-     *
-     * @return void
-     */
-    protected function prepareJsonResponse(array $headers)
-    {
-        $this->headers = new ResponseHeaderHunt($headers);
-
-        $this->headers->set('Content-Type', 'application/json');
     }
 
     /**

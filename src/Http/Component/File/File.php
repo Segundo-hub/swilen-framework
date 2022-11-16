@@ -37,7 +37,7 @@ class File extends \SplFileInfo implements Arrayable
     public function move(string $directory, string $name = null)
     {
         $target = $this->getTargetFile($directory, $name);
-        $error = '';
+        $error  = '';
 
         set_error_handler(function ($type, $msg) use (&$error) {
             $error = $msg;
@@ -51,15 +51,17 @@ class File extends \SplFileInfo implements Arrayable
             throw new FileException(sprintf('Could not move the file "%s" to "%s" (%s).', $this->getPathname(), $target, strip_tags($error)));
         }
 
-        @$this->changePermissions($target);
+        $this->changePermissions($target);
 
         return $target;
     }
 
     /**
-     * Change file permisions.
+     * Change the file permisions.
      *
      * @param string $target
+     *
+     * @return void
      */
     protected function changePermissions($target)
     {
@@ -84,7 +86,7 @@ class File extends \SplFileInfo implements Arrayable
             throw new FileException(sprintf('Unable to write in the "%s" directory.', $directory));
         }
 
-        $target = rtrim($directory, '/\\').\DIRECTORY_SEPARATOR.($name === null ? $this->getBasename() : $this->getName($name));
+        $target = rtrim($directory, '/\\').\DIRECTORY_SEPARATOR.($name === null ? $this->getBasename() : $this->normalizedFilename($name));
 
         return new self($target, false);
     }
@@ -112,19 +114,19 @@ class File extends \SplFileInfo implements Arrayable
      *
      * @return string
      */
-    protected function getName(string $name)
+    protected function normalizedFilename(string $name)
     {
-        $finalName = str_replace('\\', '/', $name);
+        $replaced = str_replace('\\', '/', $name);
 
-        if (($pos = strrpos($finalName, '/')) === false) {
-            return $finalName;
+        if (($pos = strrpos($replaced, '/')) === false) {
+            return $replaced;
         }
 
-        return substr($finalName, $pos + 1);
+        return substr($replaced, $pos + 1);
     }
 
     /**
-     * Get mime Type from extension.
+     * Get the file MimeType from based in extension.
      *
      * @return string
      */
@@ -134,6 +136,8 @@ class File extends \SplFileInfo implements Arrayable
     }
 
     /**
+     * Get the real file attributes.
+     *
      * {@inheritdoc}
      */
     public function toArray()
@@ -142,6 +146,7 @@ class File extends \SplFileInfo implements Arrayable
             'path' => $this->getPathname(),
             'name' => $this->getFilename(),
             'ext' => $this->getExtension(),
+            'type' => $this->getMimeType(),
             'size' => $this->getSize(),
         ];
     }

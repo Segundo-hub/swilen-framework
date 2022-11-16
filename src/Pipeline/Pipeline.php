@@ -38,11 +38,11 @@ class Pipeline implements PipelineContract
     /**
      * Create a new class instance.
      *
-     * @param \Swilen\Container\Container|null $container
+     * @param \Swilen\Container\Container $container
      *
      * @return void
      */
-    public function __construct(Container $container = null)
+    public function __construct(Container $container)
     {
         $this->container = $container;
     }
@@ -124,7 +124,7 @@ class Pipeline implements PipelineContract
                     } elseif (!is_object($pipe)) {
                         [$name, $parameters] = $this->parsePipeString($pipe);
 
-                        $pipe = $this->getContainer()->make($name);
+                        $pipe = $this->container->make($name);
 
                         $parameters = array_merge([$target, $stack], $parameters);
                     } else {
@@ -169,36 +169,6 @@ class Pipeline implements PipelineContract
     protected function pipes()
     {
         return $this->pipes;
-    }
-
-    /**
-     * Get the container instance.
-     *
-     * @return \Swilen\Container\Container
-     *
-     * @throws \RuntimeException
-     */
-    protected function getContainer()
-    {
-        if (!$this->container) {
-            throw new \RuntimeException('A container instance has not been passed to the Pipeline.');
-        }
-
-        return $this->container;
-    }
-
-    /**
-     * Set the container instance.
-     *
-     * @param \Swilen\Container\Container $container
-     *
-     * @return $this
-     */
-    public function setContainer(Container $container)
-    {
-        $this->container = $container;
-
-        return $this;
     }
 
     /**

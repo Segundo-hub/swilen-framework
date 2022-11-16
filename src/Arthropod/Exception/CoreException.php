@@ -2,6 +2,9 @@
 
 namespace Swilen\Arthropod\Exception;
 
+/**
+ * @codeCoverageIgnore
+ */
 abstract class CoreException extends \Exception
 {
     /**

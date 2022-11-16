@@ -2,6 +2,7 @@
 
 namespace Swilen\Http;
 
+use Swilen\Http\Common\Http;
 use Swilen\Http\Common\SupportResponse;
 use Swilen\Http\Component\ResponseHeaderHunt;
 use Swilen\Http\Contract\ResponseContract;
@@ -48,7 +49,7 @@ class Response extends SupportResponse implements ResponseContract
      *
      * @var string
      */
-    protected $charset = 'UTF-8';
+    protected $charset = 'utf-8';
 
     /**
      * Create new response instance.
@@ -77,15 +78,13 @@ class Response extends SupportResponse implements ResponseContract
      */
     public function prepare(Request $request)
     {
-        $charset = $this->charset ?: 'UTF-8';
-
         if ($this->isInformational() || $this->isEmpty()) {
-            $this->setContent(null);
-            $this->headers->remove('Content-Type');
-            $this->headers->remove('Content-Length');
-            // prevent PHP from sending the Content-Type header based on default_mimetype
-            @ini_set('default_mimetype', '');
-        } else {
+            $this->prepareEmptyResponse();
+        }
+        // Add headers when http state allows it.
+        else {
+            // Add the content-type and charset when not provided.
+            $charset = $this->charset ?: 'utf-8';
             if (!$this->headers->has('Content-Type')) {
                 $this->headers->set('Content-Type', 'text/html; charset='.$charset);
             } elseif (stripos($this->headers->get('Content-Type'), 'text/') === 0 && stripos($this->headers->get('Content-Type'), 'charset') === false) {
@@ -98,12 +97,10 @@ class Response extends SupportResponse implements ResponseContract
                 $this->headers->remove('Content-Length');
             }
 
-            if ($request->getMethod() === 'HEAD') {
+            // @see https://www.rfc-editor.org/rfc/rfc7231#section-4.3.2
+            if ($request->getMethod() === Http::METHOD_HEAD) {
                 $this->setContent(null);
-                $length = $this->headers->get('Content-Length');
-                if ($length) {
-                    $this->headers->set('Content-Length', $length);
-                }
+                $this->headers->set('Content-Length', $this->headers->get('Content-Length'));
             }
         }
 
@@ -117,6 +114,20 @@ class Response extends SupportResponse implements ResponseContract
         }
 
         return $this;
+    }
+
+    /**
+     * Prepare headers and content for empty response.
+     *
+     * @return void
+     */
+    protected function prepareEmptyResponse()
+    {
+        $this->setContent(null);
+        $this->headers->remove('Content-Type');
+        $this->headers->remove('Content-Length');
+        // prevent PHP from sending the Content-Type header based on default_mimetype
+        @ini_set('default_mimetype', '');
     }
 
     /**
@@ -147,7 +158,7 @@ class Response extends SupportResponse implements ResponseContract
      */
     protected function sendResponseContent()
     {
-        $this->morphWriteContent($this->content);
+        $this->morphSendContent($this->content);
 
         return $this;
     }
@@ -159,31 +170,37 @@ class Response extends SupportResponse implements ResponseContract
      */
     protected function sendResponseHeaders()
     {
-        if (headers_sent()) {
-            return $this;
+        if (headers_sent() === false) {
+            $this->headers->each(function ($name, $value) {
+                header($name.': '.$value, strcasecmp($name, 'Content-Type') === 0, $this->statusCode);
+            });
+
+            $this->sendStatusLine();
         }
-
-        foreach ($this->headers->all() as $name => $value) {
-            $replace = strcasecmp($name, 'Content-Type') === 0;
-
-            header($name.': '.$value, $replace, $this->statusCode());
-        }
-
-        header(
-            sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText), true, $this->statusCode
-        );
 
         return $this;
     }
 
     /**
-     * Morph write content to client.
+     * Send status line to response. `HTTP/1.1 200 OK`.
+     *
+     * @return void
+     */
+    protected function sendStatusLine()
+    {
+        header(
+            sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText), true, $this->statusCode
+        );
+    }
+
+    /**
+     * Morph send content to client.
      *
      * @param mixed $content
      *
      * @return void
      */
-    private function morphWriteContent($content)
+    private function morphSendContent($content)
     {
         echo (string) $content;
     }
@@ -285,7 +302,7 @@ class Response extends SupportResponse implements ResponseContract
      */
     final public function isEmpty()
     {
-        return in_array($this->statusCode, [204, 304]);
+        return in_array($this->statusCode, [204, 205, 304], true);
     }
 
     /**
@@ -298,10 +315,8 @@ class Response extends SupportResponse implements ResponseContract
         $this->setStatusCode(304);
         $this->setContent(null);
 
-        // remove headers that MUST NOT be included with 304 Not Modified responses
-        foreach (['Allow', 'Content-Encoding', 'Content-Language', 'Content-Length', 'Content-MD5', 'Content-Type', 'Last-Modified'] as $header) {
-            $this->headers->remove($header);
-        }
+        // Remove headers that MUST NOT be included with 304 Not Modified responses
+        $this->headers->removeAt(['Allow', 'Content-Encoding', 'Content-Language', 'Content-Length', 'Content-MD5', 'Content-Type', 'Last-Modified']);
 
         return $this;
     }
@@ -397,6 +412,7 @@ class Response extends SupportResponse implements ResponseContract
     /**
      * Set status code.
      *
+     * @param int    $status
      * @param string $text
      *
      * @return void
@@ -404,7 +420,7 @@ class Response extends SupportResponse implements ResponseContract
     final public function setStatusCode(int $status, string $text = null)
     {
         $this->statusCode = $status;
-        $this->statusText = $text ?? static::STATUS_TEXTS[$this->statusCode()] ?? 'Internal Server Error';
+        $this->statusText = $text ?? static::STATUS_TEXTS[$this->getStatusCode()] ?? 'Internal Server Error';
     }
 
     /**
@@ -424,7 +440,7 @@ class Response extends SupportResponse implements ResponseContract
      *
      * @return int
      */
-    public function statusCode()
+    public function getStatusCode()
     {
         return $this->statusCode;
     }

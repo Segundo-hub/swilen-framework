@@ -11,7 +11,6 @@
 |
 */
 
-
 /*
 |--------------------------------------------------------------------------
 | Expectations
@@ -27,8 +26,6 @@ expect()->extend('toBeOne', function () {
     return $this->toBe(1);
 });
 
-
-
 /*
 |--------------------------------------------------------------------------
 | Functions
@@ -40,21 +37,73 @@ expect()->extend('toBeOne', function () {
 |
 */
 
+/**
+ * Returns a builder object to create mock objects using a fluent interface.
+ *
+ * @param string $classname
+ *
+ * @return \PHPUnit\Framework\MockObject\MockBuilder
+ */
+function getMockBuilder(string $classname)
+{
+    return test()->getMockBuilder($classname);
+}
+
+/**
+ * Simulate navigator fetch.
+ *
+ * @param string $uri
+ * @param string $method
+ * @param array  $jheaders
+ * @param array  $files
+ * @param array  $parameters
+ *
+ * @return \Swilen\Http\Request
+ */
 function fetch(string $uri, string $method = 'GET', array $headers = [], array $files = [], array $parameters = [])
 {
     return \Swilen\Http\Request::make($uri, $method, $parameters, $files, $headers);
 }
 
+/**
+ * Simulate call command.
+ *
+ * @param string $command
+ *
+ * @return string[]
+ */
 function command(string $command)
 {
-    $_SERVER['argv'] = explode(' ', $command);;
+    $_SERVER['argv'] = $command = explode(' ', $command);
+
+    return $command;
 }
 
-function print_time($start_time, $print = true)
+/**
+ * Debug content at json.
+ *
+ * @param mixed $value
+ *
+ * @return void
+ */
+function debug_json($value)
 {
-    $formatted = number_format((hrtime(true) - $start_time) / 1e+6, 3);
+    print_r(PHP_EOL.json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_SLASHES).PHP_EOL);
+}
 
-    $print && fwrite(STDERR, print_r('Executed: ' . $formatted . ' miliseconds' . PHP_EOL, true));
+/*
+|--------------------------------------------------------------------------
+| Common stubs
+|--------------------------------------------------------------------------
+*/
 
-    return $formatted;
+/**
+ * Shared readable file with content 'test'.
+ * Use for objects that require a file.
+ *
+ * @return string
+ */
+function getReadableFileStub()
+{
+    return __DIR__.'/__fixtures__/readablefile.txt';
 }

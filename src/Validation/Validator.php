@@ -2,43 +2,99 @@
 
 namespace Swilen\Validation;
 
-final class Validator
+use Swilen\Shared\Support\Arrayable;
+use Swilen\Validation\Contract\ValidatorContract;
+use Swilen\Validation\Exception\RuleNotFoundException;
+
+class Validator implements ValidatorContract, Arrayable
 {
     /**
-     * @var array<string, string>
+     * The validation errors messages bag.
+     *
+     * @var \Swilen\Validation\MessageBag
      */
-    private $errors = [];
+    protected $messages;
 
     /**
-     * @var array<string, string>
+     * The inputs array for validate.
+     *
+     * @var string[]
      */
-    private $values = [];
+    protected $inputs = [];
 
-    private const RULE_EMAIL = 'email';
-    private const RULE_REQUIRED = 'required';
-    private const RULE_DATE = 'date';
-    private const RULE_NUMERIC = 'number';
-    private const RULE_IN_LIST = 'in';
+    /**
+     * The rules array for validate.
+     *
+     * @var string[]
+     */
+    protected $rules = [];
 
-    private const RULE_ERRORS = [
-        self::RULE_EMAIL => 'Invalid email',
-        self::RULE_DATE  => 'Invalid date',
-        self::RULE_REQUIRED => 'Invalid empty value',
-        self::RULE_IN_LIST => 'Not found in list ',
-        self::RULE_NUMERIC => 'Invalid number value'
+    /**
+     * The hash table for validate rules.
+     *
+     * @var array<string, \Swilen\Validation\Rules\BaseRule>
+     */
+    protected $validators = [
+        Rule::ALPHA => \Swilen\Validation\Rules\Alpha::class,
+        // Rule::BEETWEN => \Swilen\Validation\Rules\Beetwen::class,
+        Rule::BOOLEAN => \Swilen\Validation\Rules\Boolean::class,
+        Rule::DATE => \Swilen\Validation\Rules\Date::class,
+        // Rule::DIFFERENT => \Swilen\Validation\Rules\Different::class,
+        Rule::EMAIL => \Swilen\Validation\Rules\Email::class,
+        // Rule::EXT => \Swilen\Validation\Rules\Ext::class,
+        Rule::IN => \Swilen\Validation\Rules\In::class,
+        Rule::INTEGER => \Swilen\Validation\Rules\Integer::class,
+        Rule::IP => \Swilen\Validation\Rules\Ip::class,
+        Rule::LOWERCASE => \Swilen\Validation\Rules\Lowercase::class,
+        // Rule::MAX => \Swilen\Validation\Rules\Max::class,
+        // Rule::MIN => \Swilen\Validation\Rules\Min::class,
+        Rule::NOT_IN => \Swilen\Validation\Rules\NotIn::class,
+        Rule::NULLABLE => \Swilen\Validation\Rules\Nullable::class,
+        Rule::NUMBER => \Swilen\Validation\Rules\Number::class,
+        Rule::REGEX => \Swilen\Validation\Rules\Regex::class,
+        Rule::REQUIRED => \Swilen\Validation\Rules\Required::class,
+        Rule::ARRAY => \Swilen\Validation\Rules\RuleArray::class,
+        Rule::OBJECT => \Swilen\Validation\Rules\RuleObject::class,
+        // Rule::SAME => \Swilen\Validation\Rules\Same::class,
+        // Rule::SIZE => \Swilen\Validation\Rules\Size::class,
+        Rule::UPPERCASE => \Swilen\Validation\Rules\Uppercase::class,
+        Rule::URL => \Swilen\Validation\Rules\Url::class,
     ];
 
     /**
-     * @param array $values
+     * Create new Validator instance with given inputs.
+     *
+     * @param array $inputs
+     *
+     * @return void
      */
-    public function __construct(array $values = [])
+    public function __construct(array $inputs = [])
     {
-        $this->errors = [];
-        $this->values = $values;
+        $this->messages = new MessageBag([]);
+        $this->inputs   = $inputs;
     }
 
     /**
-     * Main function for validate with validator rules
+     * Set validatable data.
+     *
+     * @param array $inputs
+     * @param array $rules
+     *
+     * @return $this
+     */
+    public static function make(array $inputs, array $rules = [])
+    {
+        $validator = new static($inputs);
+
+        if ($rules !== []) {
+            return $validator->validate($rules);
+        }
+
+        return $validator;
+    }
+
+    /**
+     * Main function for validate with validator rules.
      *
      * @param array $rules
      *
@@ -46,120 +102,192 @@ final class Validator
      */
     public function validate(array $rules)
     {
-        foreach ($rules as $atribute => $_rules) {
+        $this->messages = new MessageBag([]);
+        $this->rules    = $rules;
 
-            $internal_rules = is_array($_rules)
-                ? $_rules
-                : explode('|', $_rules);
-
-            foreach ($internal_rules as $rule) {
-                $value = key_exists($atribute, $this->values) ? $this->values[$atribute] : '';
-
-                if ($rule === static::RULE_REQUIRED && !$value) {
-                    $this->addError($atribute, static::RULE_ERRORS[static::RULE_REQUIRED]);
-                }
-
-                if ($rule === static::RULE_EMAIL && !filter_var($value, FILTER_VALIDATE_EMAIL)) {
-                    $this->addError($atribute, static::RULE_ERRORS[static::RULE_EMAIL]);
-                }
-
-                if ($rule === static::RULE_DATE && !strtotime($value)) {
-                    $this->addError($atribute, static::RULE_ERRORS[static::RULE_DATE]);
-                }
-
-                if ($rule === static::RULE_NUMERIC && !is_numeric($value)) {
-                    $this->addError($atribute, static::RULE_ERRORS[static::RULE_NUMERIC]);
-                }
-
-                if (strpos($rule, ':') !== false) {
-                    [$rule, $expresion] = explode(':', $rule);
-                    if ($rule === static::RULE_IN_LIST && !in_array($value, explode(',', $expresion))) {
-                        $this->addError($atribute, static::RULE_ERRORS[static::RULE_IN_LIST] . $expresion);
-                    }
-                }
-            }
+        foreach ($this->rules as $attribute => $rawRules) {
+            $this->validateAttribute($rawRules, $attribute);
         }
 
         return $this;
     }
 
     /**
-     * Add new error to list
+     * Validate given rule and add error to error bag.
      *
-     * @param mixed $key
-     * @param string $error
+     * @param string[]|string $rule
+     * @param string          $attribute
+     *
+     * @return void
      */
-    private function addError($key, string $error)
+    public function validateAttribute($rules, $attribute)
     {
-        $this->errors[$key] = $error;
-    }
+        $value = $this->getValue($attribute);
+        $rules = $this->normalizeRules($rules);
 
-    public function errors($key = null)
-    {
-        if (is_null($key)) {
-            return $this->errors;
+        if (!in_array(Rule::REQUIRED, $rules) && !$value) {
+            return;
         }
 
-        return isset($this->errors[$key]) ? $this->errors[$key] : null;
+        foreach ($rules as $_rule) {
+            [$rule, $params] = $this->parseStringRule($_rule);
+
+            $this->validateRuleWithAtrributes(
+                $rule, $value, $attribute, $params
+            );
+        }
     }
 
     /**
-     * Return if the validation is safe
+     * Validate given rule and add error to error bag.
      *
-     * @return bool
+     * @param string   $rule
+     * @param mixed    $value
+     * @param string   $attribute
+     * @param string[] $params
+     *
+     * @return void
      */
-    public function isSafe()
+    public function validateRuleWithAtrributes($rule, $value, $attribute, $params)
     {
-        return count($this->errors) === 0;
+        $rule = $this->bindRuleValidator($rule)
+            ->setValue($value)
+            ->setAttribute($attribute)
+            ->setParameters($params);
+
+        if (!$rule->validate()) {
+            $this->messages->add($attribute, $rule->message());
+        }
     }
 
     /**
-     * Return if the validation is failed
+     * Normalize rules passed for validation, if use string with | notation.
+     *
+     * @param array|string $rules
+     *
+     * @return array
+     */
+    protected function normalizeRules($rules)
+    {
+        return is_array($rules) ? $rules : explode('|', $rules);
+    }
+
+    /**
+     * Parse a string based rule.
+     *
+     * @param string $rule
+     *
+     * @return array{0:string,1:array}
+     */
+    protected function parseStringRule(string $rule)
+    {
+        $parameters = [];
+
+        if (strpos($rule, ':') !== false) {
+            [$rule, $parameter] = explode(':', $rule, 2);
+
+            $parameters = $this->parseParameters($rule, $parameter);
+        }
+
+        return [trim($rule), $parameters];
+    }
+
+    /**
+     * Parse a parameter list.
+     *
+     * @param string $rule
+     * @param string $parameter
+     *
+     * @return array
+     */
+    protected function parseParameters($rule, $parameter)
+    {
+        $rule = strtolower($rule);
+
+        if (in_array($rule, ['regex'], true)) {
+            return [$parameter];
+        }
+
+        return str_getcsv($parameter);
+    }
+
+    /**
+     * Get validator for rule or throw error if not exists.
+     *
+     * @param string $rule
+     *
+     * @return \Swilen\Validation\Rules\BaseRule
+     *
+     * @throws \Swilen\Validation\Exception\RuleNotFoundException
+     */
+    protected function bindRuleValidator(string $rule)
+    {
+        if (isset($this->validators[$rule])) {
+            return new $this->validators[$rule]();
+        }
+
+        throw new RuleNotFoundException($rule);
+    }
+
+    /**
+     * Get the value fro given $attribute in $inputs store.
+     *
+     * @param string $attribute
+     *
+     * @return mixed|null
+     */
+    protected function getValue(string $attribute)
+    {
+        return $this->inputs[$attribute] ?? null;
+    }
+
+    /**
+     * Retrieve errors from messages bag instance.
+     *
+     * @param string|null $key
+     *
+     * @return \Swilen\Validation\MessageBag|array|string
+     */
+    public function errors($key = null)
+    {
+        if ($key === null) {
+            return $this->messages;
+        }
+
+        return $this->messages->get($key);
+    }
+
+    /**
+     * Return if the validation is failed.
      *
      * @return bool
      */
     public function fails()
     {
-        return !$this->isSafe();
+        return $this->messages->isNotEmpty();
     }
 
     /**
-     * Set validatable data
-     *
-     * @param object|array $data
-     * @return $this
-     */
-    public function from($data)
-    {
-        $this->errors = [];
-        $this->values = (array) $data;
-
-        return $this;
-    }
-
-    /**
-     * Set validatable data
-     *
-     * @param object|array $data
-     * @return $this
-     */
-    public static function make($data, array $rules = [])
-    {
-        if (!empty($rules)) {
-            return (new static($data))->validate($rules);
-        }
-
-        return new static($data);
-    }
-
-    /**
-     * Get values storaged dynamicaly
+     * Get inputs storaged dynamicaly.
      *
      * @param string|int $key
+     *
      * @return string|null
      */
     public function __get($key)
     {
-        return $this->values[$key];
+        return $this->inputs[$key];
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function toArray()
+    {
+        return [
+            'inputs' => $this->inputs,
+            'errors' => $this->messages->toArray(),
+            'rules' => $this->rules,
+        ];
     }
 }
