@@ -49,7 +49,7 @@ class Router implements RouterContract
     protected $groupStack = [];
 
     /**
-     * The server HTTP methods.
+     * The all server HTTP methods.
      *
      * @var string[]
      */
@@ -220,9 +220,8 @@ class Router implements RouterContract
     protected function mergeSharedRouteAttributes(Route $route)
     {
         $attributes  = end($this->groupStack);
-        $middlewares = $attributes['middleware'] ?? $attributes['use'] ?? [];
 
-        $route->use($middlewares);
+        $route->use($attributes['middleware'] ?? $attributes['use'] ?? []);
     }
 
     /**
@@ -257,7 +256,7 @@ class Router implements RouterContract
     protected function updateGroupStack(array $attributes)
     {
         if ($this->hasGroupStack()) {
-            $attributes = $this->mergeWithLastGroup($attributes);
+            $attributes = $this->mergeGroupAttributes($attributes);
         }
 
         $this->groupStack[] = $attributes;
@@ -270,7 +269,7 @@ class Router implements RouterContract
      *
      * @return array
      */
-    public function mergeWithLastGroup($new)
+    public function mergeGroupAttributes($new)
     {
         return Group::merge($new, end($this->groupStack));
     }
@@ -287,11 +286,11 @@ class Router implements RouterContract
         if ($routes instanceof \Closure) {
             $result = $routes($this);
         } elseif (is_file($routes)) {
-            require $routes;
+            require_once $routes;
         }
 
         if (is_file($result)) {
-            require $result;
+            require_once $result;
         }
     }
 
@@ -315,9 +314,9 @@ class Router implements RouterContract
     public function getLastGroupPrefix()
     {
         if ($this->hasGroupStack()) {
-            $atribute = end($this->groupStack);
+            $prefix = end($this->groupStack);
 
-            return $atribute['prefix'] ?? '';
+            return $prefix['prefix'] ?? '';
         }
 
         return '';

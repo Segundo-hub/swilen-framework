@@ -1,6 +1,8 @@
 <?php
 
 use Swilen\Http\Common\Http;
+use Swilen\Http\Response;
+use Swilen\Routing\Exception\HttpResponseException;
 use Swilen\Routing\Exception\InvalidRouteHandlerException;
 use Swilen\Routing\Route;
 
@@ -18,7 +20,7 @@ it('Route instanced succesfuly', function () {
     expect($route->getParameters())->toBeEmpty();
 });
 
-it('Route handler is invalid', function ($action) {
+it('Throw error when action is invalid: classname not exists', function ($action) {
     $route = new Route(Http::METHOD_GET, 'test', $action);
 
     $route->run();
@@ -104,6 +106,16 @@ it('Resolve multiples parameter names', function () {
     expect($route->matches('named/my-uri/blog/google'))->toBeTrue();
 
     expect($route->run())->toBeNull();
+    expect($route->parameterNames())->toBe(['uri', 'other', 'domain']);
+    expect($route->parameterNames())->toBe(['uri', 'other', 'domain']);
+});
+
+it('Run route catch if error is ResponseException', function () {
+    $route = new Route('GET', '/name', function () {
+        throw new HttpResponseException(new Response('Function called error', 401));
+    });
+
+    expect($route->run())->toBeInstanceOf(Response::class);
 });
 
 class InvocableTestStub

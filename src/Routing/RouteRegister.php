@@ -8,28 +8,28 @@ namespace Swilen\Routing;
  * @method \Swilen\Routing\RouteRegister prefix(string $prefix)
  * @method \Swilen\Routing\RouteRegister where(array $where)
  */
-final class RouteRegister
+class RouteRegister
 {
     /**
      * The router instance for route register.
      *
      * @var \Swilen\Routing\Router
      */
-    private $router;
+    protected $router;
 
     /**
      * The attributes to pass on to the router.
      *
      * @var array<string, mixed>
      */
-    private $attributes = [];
+    protected $attributes = [];
 
     /**
      * The attributes that can be set through this class.
      *
      * @var string[]
      */
-    private $allowedAttributes = [
+    protected $allowedAttributes = [
         'as',
         'middleware',
         'use',

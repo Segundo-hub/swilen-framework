@@ -222,63 +222,13 @@ class Route implements Arrayable, JsonSerializable
      *
      * @return string
      */
-    private function compilePattern()
+    private function compilePatternMatching()
     {
         if ($this->matching !== null) {
             return $this->matching;
         }
 
-        $pattern = rtrim($this->pattern, '/') ?: '/';
-        $matches = $this->compileParameters($pattern);
-
-        return $this->matching = $this->compilePatternMatching($matches, $pattern);
-    }
-
-    /**
-     * Compile segmented URL via uri with regex pattern.
-     *
-     * @param array  $matches
-     * @param string $uri
-     *
-     * @return string
-     */
-    protected function compilePatternMatching(array $matches = [], string $uri)
-    {
-        foreach ($matches as $key => $segment) {
-            $value  = trim($segment, '{\}');
-            if (strpos($value, ':') !== false && !empty([$type, $keyed] = explode(':', $value, 2))) {
-                $target = '{'.$type.':'.$keyed.'}';
-                if ($type === 'int') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[0-9]+)', $keyed), $uri);
-                }
-
-                if ($type === 'alpha') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[a-zA-Z\_\-]+)', $keyed), $uri);
-                }
-
-                if ($type === 'string') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[a-zA-Z0-9\_\-]+)', $keyed), $uri);
-                }
-            } else {
-                $uri = str_replace($segment, sprintf('(?P<%s>.*)', $value), $uri);
-            }
-        }
-
-        return $uri;
-    }
-
-    /**
-     * Return named paramater to array.
-     *
-     * @param string|null $uri
-     *
-     * @return array<int, mixed>
-     */
-    private function compileParameters($uri)
-    {
-        preg_match_all('/{[^}]*}/', $uri, $matches);
-
-        return reset($matches) ?? [];
+        return $this->matching = RouteMatching::compile($this->pattern);
     }
 
     /**
@@ -290,7 +240,7 @@ class Route implements Arrayable, JsonSerializable
      */
     public function matches(string $path)
     {
-        $this->compilePattern();
+        $this->compilePatternMatching();
 
         if (preg_match('#^'.$this->matching.'$#D', rawurldecode($path), $matches)) {
             $this->matchToKeys(array_slice($matches, 1));
@@ -340,7 +290,7 @@ class Route implements Arrayable, JsonSerializable
      */
     public function parameterNames()
     {
-        if (!empty($this->parameterNames)) {
+        if ($this->parameterNames !== null) {
             return $this->parameterNames;
         }
 
@@ -400,36 +350,71 @@ class Route implements Arrayable, JsonSerializable
         return $this->method;
     }
 
+    /**
+     * Get pattern (uri) of the route.
+     *
+     * @return string
+     */
     public function getPattern()
     {
         return $this->pattern;
     }
 
+    /**
+     * Get route match incomplete regex.
+     *
+     * @return string|null
+     */
     public function getMatch()
     {
         return $this->matching;
     }
 
+    /**
+     * Get action of the route based in given key or all.
+     *
+     * @return mixed
+     */
     public function getAction(string $key = null)
     {
         return $key ? $this->action[$key] : $this->action;
     }
 
+    /**
+     * Retrieve middleware from the route.
+     *
+     * @return array
+     */
     public function getMiddleware()
     {
         return $this->middleware;
     }
 
+    /**
+     * Retrieve middleware from the route.
+     *
+     * @return array
+     */
     public function middlewares()
     {
         return $this->middleware;
     }
 
+    /**
+     * Get name of the route.
+     *
+     * @return string|null
+     */
     public function getName()
     {
         return $this->action['as'] ?? null;
     }
 
+    /**
+     * Get parameters of the reoute.
+     *
+     * @return array<string,mixed>
+     */
     public function getParameters()
     {
         return $this->parameters;

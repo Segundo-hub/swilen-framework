@@ -30,6 +30,6 @@ it('Router Facade registered succesfully', function () {
 
     expect($route)->toBeInstanceOf(RoutingRoute::class);
     expect($route->getName())->toBe('test-hola');
-    expect($route->getMiddleware())->toBe([Authenticate::class]);
+    expect($route->middlewares())->toBe([Authenticate::class]);
     expect($route->getMethod())->toBe('GET');
 });
