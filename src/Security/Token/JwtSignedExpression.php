@@ -5,11 +5,11 @@ namespace Swilen\Security\Token;
 class JwtSignedExpression
 {
     /**
-     * The token generated encoded base64.
+     * The plain text token generated encoded in base64.
      *
      * @var string
      */
-    public $token;
+    public $plainTextToken;
 
     /**
      * @var \Swilen\Security\Token\Payload
@@ -24,8 +24,8 @@ class JwtSignedExpression
      */
     public function __construct($token, Payload $payload)
     {
-        $this->token   = $token;
-        $this->payload = $payload;
+        $this->plainTextToken   = $token;
+        $this->payload          = $payload;
     }
 
     /**
@@ -33,6 +33,6 @@ class JwtSignedExpression
      */
     public function __toString()
     {
-        return $this->token;
+        return $this->plainTextToken;
     }
 }

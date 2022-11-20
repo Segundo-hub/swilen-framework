@@ -52,7 +52,7 @@ it('Create token signature from token manager', function () {
     ]);
 
     expect($token)->toBeInstanceOf(JwtSignedExpression::class);
-    expect($token->token)->toBeString();
+    expect($token->plainTextToken)->toBeString();
     expect($token->payload->expires())->toBeNumeric();
 
     $decoded = $manager->verify($token->__toString());
@@ -70,7 +70,7 @@ it('Facade is correct resolved', function () {
     ]);
 
     expect($token)->toBeInstanceOf(JwtSignedExpression::class);
-    expect($token->token)->toBeString();
+    expect($token->plainTextToken)->toBeString();
     expect($token->payload->expires())->toBeNumeric();
 
     $decoded = TokenManager::verify($token->__toString());
