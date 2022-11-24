@@ -43,9 +43,11 @@ it('Load custom environment instance', function () {
     $app->shouldReceive('environmentFile')
         ->times(0)->with()->andReturn('.env');
 
-    EnvironmentVars::use(Env::createFrom(__DIR__.'/../__fixtures__')->config([
-        'file' => '.env.custom',
-    ])->load());
+    EnvironmentVars::use(function () {
+        return Env::createFrom(__DIR__.'/../__fixtures__')->config([
+            'file' => '.env.custom',
+        ])->load();
+    });
 
     (new EnvironmentVars())->puriyboot($app);
 
@@ -59,7 +61,7 @@ it('Load custom environment instance', function () {
 });
 
 it('Load custom environment instance from factory', function () {
-    EnvironmentVars::factory(function () {
+    EnvironmentVars::use(function () {
         return Env::createFrom(__DIR__.'/../__fixtures__')->config([
             'file' => '.env.custom',
         ])->load();
@@ -70,7 +72,7 @@ it('Load custom environment instance from factory', function () {
 
     Env::forget();
 
-    EnvironmentVars::factory(function () {
+    EnvironmentVars::use(function () {
         $hola = '';
     });
 })->throws(TypeError::class, 'The callback expect a env object instance. Use env library, see https://github.com/vlucas/phpdotenv');

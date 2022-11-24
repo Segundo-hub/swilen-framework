@@ -109,4 +109,32 @@ interface Application extends Container
      * @return $this
      */
     public function useEnvironment(string $env);
+
+    /**
+     * Indicates the application is development mode.
+     *
+     * @return bool
+     */
+    public function isDevelopmentMode();
+
+    /**
+     * Indicates the application is debug mode.
+     *
+     * @return bool
+     */
+    public function isDebugMode();
+
+    /**
+     * Register all of the configured providers.
+     *
+     * @return void
+     */
+    public function registerProviders();
+
+    /**
+     * Boot application with boot method into service containers.
+     *
+     * @return void
+     */
+    public function boot();
 }

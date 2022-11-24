@@ -36,7 +36,7 @@ class MySqlConnector
         $connection = $this->createConnection($dsn, $config, $this->parseOptions($config));
 
         if (!empty($schema = $config['schema'])) {
-            $connection->exec("use `{$schema}`;");
+            $connection->exec('use `'.$schema.'`;');
         }
 
         return $connection;
@@ -116,9 +116,11 @@ class MySqlConnector
      */
     protected function formatAndGetDSN(array $config)
     {
-        extract($config, EXTR_SKIP);
+        [$host, $port, $schema] = [
+            $config['host'] ?? '', $config['port'] ?? null, $config['schema'] ?? '',
+        ];
 
-        return isset($port)
+        return $port
             ? 'mysql:host='.$host.';port='.$port.';dbname='.$schema
             : 'mysql:host='.$host.';dbname='.$schema;
     }

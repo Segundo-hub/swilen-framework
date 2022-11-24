@@ -1,8 +1,8 @@
 <?php
 
-namespace Swilen\Config;
+namespace Swilen\Config\Contract;
 
-interface ConfigContract
+interface ConfigRepository
 {
     /**
      * Determine if the given configuration value exists.

@@ -19,7 +19,7 @@ it('Generate error when file not exist', function () {
     unset($deletable);
 })->throws(RuntimeException::class);
 
-it('Generate error when file not exist when use empty constructor', function () {
+it('Generate error when file does not exist and when using an empty constructor', function () {
     $instance = (new Env())->load();
     unset($instance);
 })->throws(RuntimeException::class);
@@ -44,16 +44,6 @@ it('Config env instance', function () {
     expect($instance->isInmutable())->toBeFalse();
 
     unset($instance);
-});
-
-it('Contains helper works', function () {
-    $instance = new ReflectionClass($env = Env::getInstance());
-
-    $method = $instance->getMethod('contains');
-    $method->setAccessible(true);
-
-    expect($method->invokeArgs($env, ['minutes + other -', ['+', '-']]))->toBeTrue();
-    expect($method->invokeArgs($env, ['450--', ['/', '=']]))->toBeFalse();
 });
 
 it('Skip comment per line', function () {

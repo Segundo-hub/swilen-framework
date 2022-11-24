@@ -2,6 +2,8 @@
 
 namespace Swilen\Routing;
 
+use Swilen\Shared\Support\Arr;
+
 final class Group
 {
     /**
@@ -16,11 +18,11 @@ final class Group
     {
         $new = array_merge($new, [
             'prefix' => static::formatPrefix($new, $old),
-            'match' => static::formatMatch($new, $old),
+            'where' => static::formatWhere($new, $old),
         ]);
 
-        return array_merge_recursive(static::except(
-            $old, ['prefix', 'match']
+        return array_merge_recursive(Arr::except(
+            $old, ['prefix', 'where']
         ), $new);
     }
 
@@ -47,27 +49,11 @@ final class Group
      *
      * @return array
      */
-    private static function formatMatch($new, $old)
+    private static function formatWhere($new, $old)
     {
         return array_merge(
-            $old['match'] ?? [],
-            $new['match'] ?? []
+            $old['where'] ?? [],
+            $new['where'] ?? []
         );
-    }
-
-    /**
-     * Delete values ​​based on array keys.
-     *
-     * @param array $target
-     *
-     * @return array
-     */
-    private static function except($target, array $keys)
-    {
-        foreach ($keys as $key) {
-            unset($target[$key]);
-        }
-
-        return $target;
     }
 }

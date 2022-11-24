@@ -2,17 +2,16 @@
 
 namespace Swilen\Arthropod\Bootable;
 
-use Swilen\Arthropod\Application;
-use Swilen\Arthropod\Contract\BootableServiceContract;
-use Swilen\Config\ConfigContract;
+use Swilen\Arthropod\Contract\BootableService;
 use Swilen\Config\Repository;
+use Swilen\Shared\Arthropod\Application;
 
-class Configuration implements BootableServiceContract
+class Configuration implements BootableService
 {
     /**
      * The application instance.
      *
-     * @var \Swilen\Arthropod\Application
+     * @var \Swilen\Shared\Arthropod\Application
      */
     protected $app;
 
@@ -24,9 +23,9 @@ class Configuration implements BootableServiceContract
     protected $modes = ['development', 'production', 'test'];
 
     /**
-     * Create new Load Configuration instance.
+     * Bootstrap application config.
      *
-     * @param \Swilen\Arthropod\Application $app
+     * @param \Swilen\Shared\Arthropod\Application $app
      *
      * @return void
      */
@@ -78,11 +77,11 @@ class Configuration implements BootableServiceContract
     /**
      * Config internal php configuration.
      *
-     * @param \Swilen\Config\ConfigContract $config
+     * @param \Swilen\Config\Repository $config
      *
      * @return void
      */
-    protected function normalizePhpInternalConfig(ConfigContract $config)
+    protected function normalizePhpInternalConfig(Repository $config)
     {
         date_default_timezone_set($config->get('app.timezone', 'UTC'));
         mb_internal_encoding('UTF-8');

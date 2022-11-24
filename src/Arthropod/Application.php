@@ -9,7 +9,7 @@ use Swilen\Petiole\Facade;
 use Swilen\Pipeline\Pipeline;
 use Swilen\Routing\RoutingServiceProvider;
 use Swilen\Shared\Arthropod\Application as ArthropodApplication;
-use Swilen\Shared\Http\HttpApplication;
+use Swilen\Shared\Arthropod\HttpApplication;
 
 class Application extends Container implements ArthropodApplication, HttpApplication
 {
@@ -18,7 +18,7 @@ class Application extends Container implements ArthropodApplication, HttpApplica
      *
      * @var string
      */
-    public const VERSION = '0.6.0-alpha';
+    public const VERSION = '0.6.5-alpha';
 
     /**
      * Indicates if the application has been bootstrapped before.
@@ -46,7 +46,7 @@ class Application extends Container implements ArthropodApplication, HttpApplica
     /**
      * The bootable services collection.
      *
-     * @var \Swilen\Arthropod\Contract\BootableServiceContract[]
+     * @var string[]
      */
     protected $bootstrappers = [
         \Swilen\Arthropod\Bootable\EnvironmentVars::class,
@@ -110,7 +110,7 @@ class Application extends Container implements ArthropodApplication, HttpApplica
      *
      * @var string
      */
-    protected $environmentFile = '.env';
+    protected $environmentFile;
 
     /**
      * Create http aplication instance.
@@ -387,6 +387,8 @@ class Application extends Container implements ArthropodApplication, HttpApplica
      * Initial register service providers.
      *
      * @param \Swilen\Petiole\ServiceProvider $provider
+     *
+     * @return \Swilen\Petiole\ServiceProvider
      */
     public function register($provider)
     {
@@ -503,17 +505,17 @@ class Application extends Container implements ArthropodApplication, HttpApplica
     }
 
     /**
-     * Verify the application is development mode.
+     * Indicates the application is development mode.
      *
      * @return bool
      */
     public function isDevelopmentMode()
     {
-        return (bool) $this->bound('env') && $this->make('env') === 'development';
+        return (bool) $this->has('env') && $this->make('env') === 'development';
     }
 
     /**
-     * Verify the application is debug mode.
+     * Indicates the application is debug mode.
      *
      * @return bool
      */

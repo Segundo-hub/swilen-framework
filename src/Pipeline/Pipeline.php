@@ -73,9 +73,7 @@ class Pipeline implements PipelineContract
     public function then(\Closure $destination)
     {
         $pipeline = array_reduce(
-            array_reverse($this->pipes()),
-            $this->carryPipes(),
-            $this->prepareFinalDestination($destination)
+            array_reverse($this->pipes), $this->carryPipes(), $this->prepareDestination($destination)
         );
 
         return $pipeline($this->target);
@@ -98,7 +96,7 @@ class Pipeline implements PipelineContract
      *
      * @return \Closure
      */
-    protected function prepareFinalDestination(\Closure $destination)
+    protected function prepareDestination(\Closure $destination)
     {
         return function ($target) use ($destination) {
             try {
@@ -122,7 +120,7 @@ class Pipeline implements PipelineContract
                     if (is_callable($pipe)) {
                         return $pipe($target, $stack);
                     } elseif (!is_object($pipe)) {
-                        [$name, $parameters] = $this->parsePipeString($pipe);
+                        list($name, $parameters) = $this->parsePipeString($pipe);
 
                         $pipe = $this->container->make($name);
 
@@ -152,7 +150,7 @@ class Pipeline implements PipelineContract
      */
     protected function parsePipeString($pipe)
     {
-        [$name, $parameters] = array_pad(explode(':', $pipe, 2), 2, []);
+        list($name, $parameters) = array_pad(explode(':', $pipe, 2), 2, []);
 
         if (is_string($parameters)) {
             $parameters = explode(',', $parameters);

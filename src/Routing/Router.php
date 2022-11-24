@@ -10,6 +10,8 @@ use Swilen\Http\Response;
 use Swilen\Http\Response\JsonResponse;
 use Swilen\Pipeline\Pipeline;
 use Swilen\Routing\Contract\RouterContract;
+use Swilen\Shared\Support\Arr;
+use Swilen\Shared\Support\Stringable;
 
 class Router implements RouterContract
 {
@@ -201,7 +203,7 @@ class Router implements RouterContract
      */
     public function group(array $atributes, $routes)
     {
-        foreach ($this->wrapGroupRoutes($routes) as $routeGroup) {
+        foreach (Arr::wrap($routes) as $routeGroup) {
             $this->updateGroupStack($atributes);
 
             $this->loadRoutes($routeGroup);
@@ -219,21 +221,9 @@ class Router implements RouterContract
      */
     protected function mergeSharedRouteAttributes(Route $route)
     {
-        $attributes  = end($this->groupStack);
+        $attributes = end($this->groupStack);
 
         $route->use($attributes['middleware'] ?? $attributes['use'] ?? []);
-    }
-
-    /**
-     * Wrap group routes as array.
-     *
-     * @param mixed $routes
-     *
-     * @return array
-     */
-    private function wrapGroupRoutes($routes)
-    {
-        return is_null($routes) ? [] : (is_array($routes) ? $routes : [$routes]);
     }
 
     /**
@@ -295,7 +285,7 @@ class Router implements RouterContract
     }
 
     /**
-     * Prefix group of routes.
+     * Prefix uri group of routes.
      *
      * @param string $uri
      *
@@ -369,8 +359,8 @@ class Router implements RouterContract
             return $response->prepare($request);
         }
 
-        if ($response instanceof \Stringable) {
-            $response = new Response($response->__toString(), 200, ['Content-Type' => 'text/html']);
+        if ($response instanceof Stringable || is_string($response)) {
+            $response = new Response((string) $response, 200, ['Content-Type' => 'text/html']);
         } elseif (HttpTransformJson::shouldBeJson($response)) {
             $response = new JsonResponse($response);
         } else {
@@ -428,6 +418,6 @@ class Router implements RouterContract
             return (new RouteRegister($this))->attribute($method, is_array($arguments[0]) ? $arguments[0] : $arguments);
         }
 
-        return (new RouteRegister($this))->attribute($method, array_key_exists(0, $arguments) ? $arguments[0] : true);
+        return (new RouteRegister($this))->attribute($method, key_exists(0, $arguments) ? $arguments[0] : true);
     }
 }

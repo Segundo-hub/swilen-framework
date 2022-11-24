@@ -44,7 +44,7 @@ class RouteMatching
     protected static function compilePatternMatching(array $matches = [], string $uri)
     {
         foreach ($matches as $key => $segment) {
-            $value  = trim($segment, '{\}');
+            $value = trim($segment, '{\}');
             if (strpos($value, ':') !== false && !empty([$type, $keyed] = explode(':', $value, 2))) {
                 $target = '{'.$type.':'.$keyed.'}';
                 if ($type === 'int') {

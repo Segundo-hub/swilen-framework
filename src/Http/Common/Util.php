@@ -3,7 +3,8 @@
 namespace Swilen\Http\Common;
 
 /**
- * @internal The packages is internal, provide helpers functions
+ * @internal
+ * The packages is internal, provide helpers functions
  */
 class Util
 {

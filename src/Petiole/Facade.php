@@ -103,6 +103,7 @@ abstract class Facade
     public static function __callStatic($method, $arguments)
     {
         $instance = static::getFacadeInstance();
+
         if (!$instance) {
             throw new \RuntimeException('Facade root not resolved correctly');
         }

@@ -150,9 +150,7 @@ class Validator implements ValidatorContract, Arrayable
      */
     public function validateRuleWithAtrributes($rule, $value, $attribute, $params)
     {
-        $rule = $this->bindRuleValidator($rule)
-            ->setValue($value)
-            ->setAttribute($attribute)
+        $rule = $this->bindRuleValidator($rule, $value, $attribute)
             ->setParameters($params);
 
         if (!$rule->validate()) {
@@ -215,15 +213,17 @@ class Validator implements ValidatorContract, Arrayable
      * Get validator for rule or throw error if not exists.
      *
      * @param string $rule
+     * @param mixed  $value
+     * @param string $attribute
      *
      * @return \Swilen\Validation\Rules\BaseRule
      *
      * @throws \Swilen\Validation\Exception\RuleNotFoundException
      */
-    protected function bindRuleValidator(string $rule)
+    protected function bindRuleValidator(string $rule, $value, string $attribute)
     {
         if (isset($this->validators[$rule])) {
-            return new $this->validators[$rule]();
+            return new $this->validators[$rule]($value, $attribute);
         }
 
         throw new RuleNotFoundException($rule);

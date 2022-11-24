@@ -2,6 +2,8 @@
 
 namespace Swilen\Http\Common;
 
+use Swilen\Shared\Support\Arr;
+
 final class MimeTypes
 {
     /**
@@ -30,7 +32,8 @@ final class MimeTypes
         'jpg' => 'image/jpeg',
         'gif' => 'image/gif',
         'bmp' => 'image/bmp',
-        'ico' => 'image/vnd.microsoft.icon',
+        'ico' => 'image/x-icon',
+        'heic' => 'image/heic',
         'tiff' => 'image/tiff',
         'tif' => 'image/tiff',
         'svg' => 'image/svg+xml',
@@ -87,6 +90,6 @@ final class MimeTypes
      */
     public static function get(string $extension)
     {
-        return static::COLLECTION[$extension] ?? 'application/octet-stream';
+        return Arr::get(static::COLLECTION, $extension, 'application/octet-stream');
     }
 }

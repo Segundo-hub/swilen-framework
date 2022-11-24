@@ -1,8 +1,8 @@
 <?php
 
-namespace Swilen\Config;
+namespace Swilen\Shared\Support;
 
-final class Arr
+class Arr
 {
     /**
      * Determine whether the given value is array accessible.
@@ -19,8 +19,8 @@ final class Arr
     /**
      * Determine if the given key exists in the provided array.
      *
-     * @param \ArrayAccess|array $array
-     * @param string|int         $key
+     * @param array<mixed>|\ArrayAccess $array
+     * @param string|int                $key
      *
      * @return bool
      */
@@ -36,9 +36,9 @@ final class Arr
     /**
      * Get an item from an array using "dot" notation.
      *
-     * @param \ArrayAccess|array $array
-     * @param string|int|null    $key
-     * @param mixed              $default
+     * @param array<mixed>|\ArrayAccess $array
+     * @param string|int|null           $key
+     * @param mixed                     $default
      *
      * @return mixed
      */
@@ -74,8 +74,8 @@ final class Arr
     /**
      * Check if an item or items exist in an array using "dot" notation.
      *
-     * @param \ArrayAccess|array $array
-     * @param string|array       $keys
+     * @param array<mixed>|\ArrayAccess $array
+     * @param string|array              $keys
      *
      * @return bool
      */
@@ -109,9 +109,9 @@ final class Arr
     /**
      * Set an array item to a given value using "dot" notation.
      *
-     * @param array       $array
-     * @param string|null $key
-     * @param mixed       $value
+     * @param array<mixed>|\ArrayAccess $array
+     * @param string|null               $key
+     * @param mixed                     $value
      *
      * @return array
      */
@@ -140,5 +140,33 @@ final class Arr
         $array[array_shift($keys)] = $value;
 
         return $array;
+    }
+
+    /**
+     * If the given value is not an array and not null, wrap it in one.
+     *
+     * @param mixed $value
+     *
+     * @return array
+     */
+    public static function wrap($value)
+    {
+        return is_null($value) ? [] : (is_array($value) ? $value : [$value]);
+    }
+
+    /**
+     * Delete values ​​based on array keys.
+     *
+     * @param array<mixed>|\ArrayAccess $target
+     *
+     * @return array
+     */
+    public static function except($target, array $keys)
+    {
+        foreach ($keys as $key) {
+            unset($target[$key]);
+        }
+
+        return $target;
     }
 }

@@ -2,14 +2,16 @@
 
 namespace Swilen\Arthropod\Bootable;
 
-use Swilen\Arthropod\Application;
-use Swilen\Arthropod\Contract\BootableServiceContract;
+use Swilen\Arthropod\Contract\BootableService;
 use Swilen\Petiole\Facade;
+use Swilen\Shared\Arthropod\Application;
 
-class Facades implements BootableServiceContract
+class Facades implements BootableService
 {
     /**
-     * @param \Swilen\Arthropod\Application $app
+     * Boostrap facade application with instances.
+     *
+     * @param \Swilen\Shared\Arthropod\Application $app
      *
      * @return void
      */

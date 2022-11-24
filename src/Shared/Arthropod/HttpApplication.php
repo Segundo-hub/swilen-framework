@@ -1,6 +1,6 @@
 <?php
 
-namespace Swilen\Shared\Http;
+namespace Swilen\Shared\Arthropod;
 
 use Swilen\Http\Request;
 

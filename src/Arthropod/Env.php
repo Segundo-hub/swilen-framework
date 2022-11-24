@@ -2,6 +2,8 @@
 
 namespace Swilen\Arthropod;
 
+use Swilen\Shared\Support\Str;
+
 final class Env
 {
     /**
@@ -182,13 +184,13 @@ final class Env
         $key   = $this->formatKey($key);
         $value = $this->formatValue($value);
 
-        static::$stack[$key] = $value;
+        self::$stack[$key] = $value;
 
         if (preg_match_all('/\$?\{[A-Z0-9\_]+\}/', $value, $matches)) {
             foreach ($matches[0] as $match) {
-                $name                = $this->formatKey($match, '${\}');
-                $value               = str_replace($match, $this->wrapStack($name, $match), $value);
-                static::$stack[$key] = $value;
+                $name              = $this->formatKey($match, '${\}');
+                $value             = str_replace($match, $this->wrapStack($name, $match), $value);
+                self::$stack[$key] = $value;
             }
         }
 
@@ -257,15 +259,15 @@ final class Env
             return false;
         }
 
-        if (is_numeric($primitive) && !$this->contains($value, ['+', '-', '"', '\''])) {
+        if (is_numeric($primitive) && !Str::contains($value, ['+', '-', '"', '\''])) {
             return (int) $primitive;
         }
 
-        if ($this->startWith($primitive, 'swilen:')) {
+        if (Str::startsWith($primitive, 'swilen:')) {
             return (string) base64_decode(substr($primitive, 7).'=');
         }
 
-        if ($this->startWith($primitive, 'base64:')) {
+        if (Str::startsWith($primitive, 'base64:')) {
             return (string) base64_decode(substr($primitive, 7));
         }
 
@@ -314,9 +316,9 @@ final class Env
      */
     private function writeMutableOrInmutable(string $key, $value)
     {
+        static::$envs[$key] = $value;
         $_ENV[$key]         = $value;
         $_SERVER[$key]      = $value;
-        static::$envs[$key] = $value;
     }
 
     /**
@@ -373,40 +375,6 @@ final class Env
     }
 
     /**
-     * @internal
-     * Check string exists into string
-     *
-     * @param string       $haystack
-     * @param array|string $needle
-     *
-     * @return bool
-     */
-    private function contains(string $haystack, $needle)
-    {
-        foreach ((array) $needle as $what) {
-            if (mb_strpos($haystack, $what) !== false) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * @internal
-     * Check string starts with
-     *
-     * @param string       $haystack
-     * @param array|string $needle
-     *
-     * @return bool
-     */
-    private function startWith(string $haystack, $needle)
-    {
-        return mb_strpos($haystack, $needle) === 0;
-    }
-
-    /**
      * Return instance for manipule content has singleton.
      *
      * @return static|null
@@ -451,7 +419,7 @@ final class Env
     }
 
     /**
-     * return array of variables values registered.
+     * Return array of variables values registered.
      *
      * @return array<string, mixed>
      */

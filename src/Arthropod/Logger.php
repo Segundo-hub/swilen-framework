@@ -24,7 +24,7 @@ class Logger extends AbstractLogger
     /**
      * Logging timezone.
      *
-     * @var \DateTimeZone
+     * @var \DateTimeZone|int
      */
     protected $timezone = \DateTimeZone::UTC;
 
@@ -39,7 +39,7 @@ class Logger extends AbstractLogger
     public function __construct(string $directory, \DateTimeZone $timezone = null)
     {
         $this->directory = $directory;
-        $this->timezone  = $timezone ?: \DateTimeZone::UTC;
+        $this->timezone  = $timezone ?: new \DateTimeZone('UTC');
     }
 
     /**
@@ -121,12 +121,12 @@ class Logger extends AbstractLogger
     /**
      * Create date with format and timezone.
      *
-     * @param string|null $custom Pass custom date format, use default if is null
+     * @param string|null $format Pass custom date format, use default if is null
      *
      * @return string
      */
-    protected function formatTime($custom = 'Y-m-d')
+    protected function formatTime($format = 'Y-m-d')
     {
-        return (new \DateTime('now', $this->timezone))->format($custom ?? $this->timeFormat);
+        return (new \DateTime('now', $this->timezone))->format($format ?? $this->timeFormat);
     }
 }

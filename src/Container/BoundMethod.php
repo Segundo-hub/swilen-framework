@@ -2,6 +2,8 @@
 
 namespace Swilen\Container;
 
+use Swilen\Shared\Support\Func;
+
 /**
  * @internal Package
  */
@@ -77,7 +79,7 @@ final class BoundMethod
     private static function callBoundMethod($container, $callback, $default)
     {
         if (!is_array($callback)) {
-            return Helper::unwrapIfClosure($default);
+            return Func::unwrap($default);
         }
 
         $method = static::normalizeMethod($callback);
@@ -86,7 +88,7 @@ final class BoundMethod
             return $container->callMethodBinding($method, $callback[0]);
         }
 
-        return Helper::unwrapIfClosure($default);
+        return Func::unwrap($default);
     }
 
     /**
@@ -100,7 +102,7 @@ final class BoundMethod
     {
         $class = is_string($callback[0]) ? $callback[0] : get_class($callback[0]);
 
-        return "{$class}@{$callback[1]}";
+        return $class.'@'.$callback[1];
     }
 
     /**

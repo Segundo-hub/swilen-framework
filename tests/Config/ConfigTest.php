@@ -1,6 +1,6 @@
 <?php
 
-use Swilen\Config\ConfigContract;
+use Swilen\Config\Contract\ConfigRepository;
 use Swilen\Config\Repository;
 
 uses()->group('Config');
@@ -12,7 +12,7 @@ it('Configuration repository', function () {
         ],
     ]);
 
-    expect($config)->toBeInstanceOf(ConfigContract::class);
+    expect($config)->toBeInstanceOf(ConfigRepository::class);
 
     expect($config->get('nested.key'))->toBe(20);
     expect($config->get('config.not', '__default'))->toBe('__default');
@@ -47,19 +47,19 @@ it('Config get many values from a key', function () {
         ],
     ]);
 
-    expect($config->getManyConfig(['nested']))->toBe([
+    expect($config->getMany(['nested']))->toBe([
         'nested' => [
             'key' => 20,
         ],
     ]);
 
-    expect($config->getManyConfig('nested'))->toBe([
+    expect($config->getMany('nested'))->toBe([
         'nested' => [
             'key' => 20,
         ],
     ]);
 
-    expect($config->getManyConfig('empty'))->toBe(['empty' => null]);
+    expect($config->getMany('empty'))->toBe(['empty' => null]);
 });
 
 it('Interact with config instance as array', function () {

@@ -2,14 +2,14 @@
 
 namespace Swilen\Arthropod\Contract;
 
-use Swilen\Arthropod\Application;
+use Swilen\Shared\Arthropod\Application;
 
-interface BootableServiceContract
+interface BootableService
 {
     /**
      * Bootstrap this service.
      *
-     * @param \Swilen\Arthropod\Application $app
+     * @param \Swilen\Shared\Arthropod\Application $app
      *
      * @return void
      */

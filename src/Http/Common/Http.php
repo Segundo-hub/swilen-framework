@@ -74,11 +74,9 @@ interface Http
     public const NETWORK_AUTHENTICATION_REQUIRED      = 511;
 
     /**
-     * The http server methods.
+     * The all HTTP server methods.
      *
-     * `'OPTIONS', 'GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'TRACE', 'CONNECT', 'HEAD'`
-     *
-     * @var int
+     * @var string
      */
     public const METHOD_OPTIONS = 'OPTIONS';
     public const METHOD_GET     = 'GET';

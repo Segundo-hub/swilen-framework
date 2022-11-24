@@ -236,11 +236,25 @@ class Finder
         closedir($resource);
     }
 
+    /**
+     * Determine if dot file is skippable.
+     *
+     * @param string $file
+     *
+     * @return bool
+     */
     protected function isDotFileSkippable(string $file)
     {
         return $this->dot === false && $file['0'] === '.';
     }
 
+    /**
+     * Determine if extension is valid for find.
+     *
+     * @param string $file
+     *
+     * @return bool
+     */
     protected function isInvalidExtension(string $file)
     {
         if ($this->ext === null || $this->ext === []) {

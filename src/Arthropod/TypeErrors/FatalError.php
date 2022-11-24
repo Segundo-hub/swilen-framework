@@ -2,7 +2,7 @@
 
 namespace Swilen\Arthropod\TypeErrors;
 
-class FatalError extends \Error
+class FatalError extends \ErrorException
 {
     //
 }

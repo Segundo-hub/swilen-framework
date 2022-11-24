@@ -2,28 +2,30 @@
 
 namespace Swilen\Arthropod\Bootable;
 
-use Swilen\Arthropod\Application;
-use Swilen\Arthropod\Contract\BootableServiceContract;
+use Swilen\Arthropod\Contract\BootableService;
 use Swilen\Arthropod\Env;
+use Swilen\Shared\Arthropod\Application;
 
-class EnvironmentVars implements BootableServiceContract
+class EnvironmentVars implements BootableService
 {
     /**
      * The application instance.
      *
-     * @var \Swilen\Arthropod\Application
+     * @var \Swilen\Shared\Arthropod\Application
      */
     protected $app;
 
     /**
      * Env instance if defined or null by default.
      *
-     * @var \Swilen\Arthropod\Env|null
+     * @var \Swilen\Arthropod\Env|object|null
      */
     protected static $instance;
 
     /**
-     * @param \Swilen\Arthropod\Application $app
+     * Bootstrap application environments variables.
+     *
+     * @param \Swilen\Shared\Arthropod\Application $app
      *
      * @return void
      */
@@ -41,11 +43,11 @@ class EnvironmentVars implements BootableServiceContract
      */
     protected function loadEnvironment()
     {
-        is_object(static::$instance)
-            ? static::$instance
-            : Env::createFrom($this->app->environmentPath())->config([
+        if (!is_object(static::$instance)) {
+            Env::createFrom($this->app->environmentPath())->config([
                 'file' => $this->app->environmentFile(),
             ])->load();
+        }
     }
 
     /**
@@ -55,24 +57,12 @@ class EnvironmentVars implements BootableServiceContract
      *
      * @return void
      */
-    public static function factory(\Closure $callback)
+    public static function use(\Closure $callback)
     {
         if (!$instance = $callback()) {
             throw new \TypeError('The callback expect a env object instance. Use env library, see https://github.com/vlucas/phpdotenv');
         }
 
-        static::$instance = $instance;
-    }
-
-    /**
-     * Use custom enviromment instance.
-     *
-     * @param \Swilen\Arthropod\Env $instance
-     *
-     * @return void
-     */
-    public static function use(Env $instance)
-    {
         static::$instance = $instance;
     }
 }

@@ -109,12 +109,12 @@ if (!function_exists('config')) {
      * @param string $key
      * @param mixed  $default
      *
-     * @return mixed|\Swilen\Config\ConfigContract
+     * @return mixed|\Swilen\Config\Contract\ConfigRepository
      */
     function config(string $key = null, $default = null)
     {
         /**
-         * @var \Swilen\Config\ConfigContract
+         * @var \Swilen\Config\Contract\ConfigRepository
          * */
         $config = app()->make('config');
 

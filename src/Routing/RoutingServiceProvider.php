@@ -4,7 +4,6 @@ namespace Swilen\Routing;
 
 use Swilen\Http\Contract\ResponseContract;
 use Swilen\Http\Response;
-use Swilen\Petiole\Facades\Route;
 use Swilen\Petiole\ServiceProvider;
 use Swilen\Routing\Contract\ResponseFactory;
 use Swilen\Routing\ResponseFactory as RoutingResponseFactory;

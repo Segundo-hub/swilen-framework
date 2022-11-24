@@ -62,4 +62,14 @@ interface Container
      * @return void
      */
     public function singleton(string $service, $abstract = null): void;
+
+    /**
+     * Register an existing instance as shared in the container.
+     *
+     * @param string $abstract
+     * @param mixed  $instance
+     *
+     * @return mixed
+     */
+    public function instance(string $abstract, $instance);
 }

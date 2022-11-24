@@ -9,6 +9,7 @@ use Swilen\Http\Component\HeaderHunt;
 use Swilen\Http\Component\InputHunt;
 use Swilen\Http\Component\ServerHunt;
 use Swilen\Http\Exception\HttpNotOverridableMethodException;
+use Swilen\Shared\Support\Str;
 
 class Request extends SupportRequest implements \ArrayAccess
 {
@@ -330,7 +331,7 @@ class Request extends SupportRequest implements \ArrayAccess
      */
     public function bearerToken()
     {
-        if (preg_match('/Bearer\s(\S+)/', $this->headers->get('Authorization'), $matches)) {
+        if (preg_match('/Bearer\s(\S+)/', $this->headers->get('Authorization', ''), $matches)) {
             return $matches[1];
         }
 
@@ -374,7 +375,7 @@ class Request extends SupportRequest implements \ArrayAccess
      */
     public function isJsonRequest()
     {
-        return $this->isContentType(['/json', '+json']);
+        return Str::contains($this->headers->get('Content-Type', ''), ['/json', '+json']);
     }
 
     /**
@@ -385,24 +386,6 @@ class Request extends SupportRequest implements \ArrayAccess
     public function isFormRequest()
     {
         return in_array($this->headers->get('Content-Type'), $this->requestMimeTypes['form']);
-    }
-
-    /**
-     * Determine is given content type or match.
-     *
-     * @param string|string[] $contents
-     *
-     * @return bool
-     */
-    private function isContentType($contents)
-    {
-        foreach ((array) $contents as $content) {
-            if ($content !== '' && mb_strpos($this->headers->get('Content-Type', ''), $content) !== false) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

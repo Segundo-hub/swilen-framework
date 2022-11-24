@@ -215,7 +215,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      */
     public function unbind(string $abstract): void
     {
-        unset($this->bindings[$abstract], $this->instances[$abstract], $this->aliases[$abstract]);
+        unset($this->bindings[$abstract], $this->instances[$abstract], $this->resolved[$abstract]);
     }
 
     /**
@@ -371,7 +371,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      *
      * @return mixed
      */
-    public function instance($abstract, $instance)
+    public function instance(string $abstract, $instance)
     {
         $this->removeAbstractAlias($abstract);
 
@@ -1050,12 +1050,12 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      */
     public function flush()
     {
+        $this->abstractAliases = [];
+        $this->scopedInstances = [];
         $this->aliases         = [];
         $this->resolved        = [];
         $this->bindings        = [];
         $this->instances       = [];
-        $this->abstractAliases = [];
-        $this->scopedInstances = [];
     }
 
     /**
@@ -1136,6 +1136,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     #[\ReturnTypeWillChange]
     public function offsetUnset($key)
     {
-        unset($this->bindings[$key], $this->instances[$key], $this->resolved[$key]);
+        $this->unbind($key);
     }
 }

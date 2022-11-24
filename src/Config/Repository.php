@@ -2,7 +2,10 @@
 
 namespace Swilen\Config;
 
-final class Repository implements \ArrayAccess, ConfigContract
+use Swilen\Config\Contract\ConfigRepository;
+use Swilen\Shared\Support\Arr;
+
+class Repository implements \ArrayAccess, ConfigRepository
 {
     /**
      * All of the configuration items.
@@ -51,18 +54,14 @@ final class Repository implements \ArrayAccess, ConfigContract
     /**
      * Set a given configuration value.
      *
-     * @param array|string $key
-     * @param mixed        $value
+     * @param string $key
+     * @param mixed  $value
      *
      * @return void
      */
     public function set($key, $value = null)
     {
-        $keys = is_array($key) ? $key : [$key => $value];
-
-        foreach ($keys as $key => $value) {
-            Arr::set($this->items, $key, $value);
-        }
+        Arr::set($this->items, $key, $value);
     }
 
     /**
@@ -99,7 +98,7 @@ final class Repository implements \ArrayAccess, ConfigContract
      *
      * @return array
      */
-    public function getManyConfig($keys)
+    public function getMany($keys)
     {
         $config = [];
         $keys   = is_array($keys) ? $keys : func_get_args();

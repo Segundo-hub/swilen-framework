@@ -2,13 +2,15 @@
 
 namespace Swilen\Arthropod\Bootable;
 
-use Swilen\Arthropod\Application;
-use Swilen\Arthropod\Contract\BootableServiceContract;
+use Swilen\Arthropod\Contract\BootableService;
+use Swilen\Shared\Arthropod\Application;
 
-class Providers implements BootableServiceContract
+class Providers implements BootableService
 {
     /**
-     * @param \Swilen\Arthropod\Application $app
+     * Register and boostrap application service providers.
+     *
+     * @param \Swilen\Shared\Arthropod\Application $app
      *
      * @return void
      */

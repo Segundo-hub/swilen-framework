@@ -2,24 +2,24 @@
 
 namespace Swilen\Arthropod\Bootable;
 
-use Swilen\Arthropod\Application;
-use Swilen\Arthropod\Contract\BootableServiceContract;
+use Swilen\Arthropod\Contract\BootableService;
 use Swilen\Arthropod\Contract\ExceptionHandler;
 use Swilen\Arthropod\TypeErrors\FatalError;
+use Swilen\Shared\Arthropod\Application;
 
-class ExceptionsHandler implements BootableServiceContract
+class ExceptionsHandler implements BootableService
 {
     /**
      * The application instance.
      *
-     * @var \Swilen\Arthropod\Application
+     * @var \Swilen\Shared\Arthropod\Application
      */
     protected $app;
 
     /**
-     * Enable exception handler and log manager.
+     * Bootstrap exception handler and log manager.
      *
-     * @param \Swilen\Arthropod\Application $app
+     * @param \Swilen\Shared\Arthropod\Application $app
      *
      * @return void
      */

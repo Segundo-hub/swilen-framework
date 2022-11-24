@@ -434,7 +434,7 @@ class Route implements Arrayable, JsonSerializable
             'method' => $this->method,
             'action' => $this->action,
             'middleware' => $this->middleware,
-            'matching' => $this->matching,
+            'matching' => $this->compilePatternMatching(),
             'parameters' => $this->parameters,
         ];
     }

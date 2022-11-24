@@ -3,34 +3,12 @@
 namespace Swilen\Container;
 
 /**
- * @internal Package
+ * @internal
+ *
+ * Internal package for container
  */
 final class Helper
 {
-    /**
-     * If the given value is not an array and not null, wrap it in one.
-     *
-     * @param mixed $value
-     *
-     * @return array
-     */
-    public static function arrayWrap($value)
-    {
-        return is_null($value) ? [] : (is_array($value) ? $value : [$value]);
-    }
-
-    /**
-     * Return the default value of the given value.
-     *
-     * @param mixed $value
-     *
-     * @return mixed
-     */
-    public static function unwrapIfClosure($value)
-    {
-        return $value instanceof \Closure ? $value() : $value;
-    }
-
     /**
      * Get the class name of the given parameter's type, if possible.
      *

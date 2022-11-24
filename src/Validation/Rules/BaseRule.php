@@ -2,6 +2,7 @@
 
 namespace Swilen\Validation\Rules;
 
+use Swilen\Shared\Support\Arr;
 use Swilen\Validation\Exception\MissingRequiredParameterException;
 
 abstract class BaseRule
@@ -133,11 +134,21 @@ abstract class BaseRule
         return $message;
     }
 
+    /**
+     * Get key of the rule.
+     *
+     * @return string
+     */
     public function getKey()
     {
         return get_class($this);
     }
 
+    /**
+     * Get all params of the rule.
+     *
+     * @return array
+     */
     public function parameters()
     {
         return $this->params;
@@ -148,11 +159,11 @@ abstract class BaseRule
      *
      * @param string $key
      *
-     * @return mixed
+     * @return mixed|null
      */
     public function parameter(string $key)
     {
-        return isset($this->params[$key]) ? $this->params[$key] : null;
+        return Arr::get($this->params, $key);
     }
 
     /**
@@ -171,17 +182,6 @@ abstract class BaseRule
                 throw new MissingRequiredParameterException($param, $this->getKey());
             }
         }
-    }
-
-    public function contains($haystack)
-    {
-        foreach (is_array($haystack) ? $haystack : func_get_args() as $value) {
-            if (mb_strpos($this->value, $value)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

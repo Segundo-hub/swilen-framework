@@ -1,8 +1,8 @@
 <?php
 
-use Swilen\Config\Arr;
+use Swilen\Shared\Support\Arr;
 
-uses()->group('Config', 'Arr');
+uses()->group('Support', 'Arr');
 
 it('Detect is accesible when is array or implement \ArrayAccess', function () {
     $arrayAccess = makeArrayAccess([]);
