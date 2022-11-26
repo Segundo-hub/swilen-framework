@@ -2,27 +2,10 @@
 
 namespace Swilen\Shared\Container;
 
-interface Container
+use Psr\Container\ContainerInterface;
+
+interface Container extends ContainerInterface
 {
-    /**
-     * Finds an entry of the container by its identifier and returns it.
-     *
-     * @param string $id identifier of the entry to look for
-     *
-     * @return mixed entry
-     */
-    public function get(string $id);
-
-    /**
-     * Returns true if the container can return an entry for the given identifier.
-     * Returns false otherwise.
-     *
-     * @param string $id identifier of the entry to look for
-     *
-     * @return bool
-     */
-    public function has(string $id): bool;
-
     /**
      * Resolve the given type from the container.
      *

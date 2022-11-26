@@ -76,11 +76,11 @@ it('Application is developent mode', function () {
 it('Flush application instance', function () {
     $app = new Application(dirname(__DIR__));
 
-    expect(count($app->getBindings()))->toBeGreaterThanOrEqual(2);
+    expect(count($app->bindings()))->toBeGreaterThanOrEqual(2);
 
     $app->flush();
 
-    expect($app->getBindings())->toBeEmpty();
+    expect($app->bindings())->toBeEmpty();
 
     unset($app);
 });

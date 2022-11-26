@@ -2,12 +2,11 @@
 
 namespace Swilen\Container;
 
-use Psr\Container\ContainerInterface;
 use Swilen\Container\Exception\BindingResolutionException;
 use Swilen\Container\Exception\EntryNotFoundException;
 use Swilen\Shared\Container\Container as ContainerContract;
 
-class Container implements \ArrayAccess, ContainerContract, ContainerInterface
+class Container implements \ArrayAccess, ContainerContract
 {
     /**
      * The current globally available container (if any).
@@ -43,13 +42,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      * @var object[]
      */
     protected $instances = [];
-
-    /**
-     * The container's scoped instances.
-     *
-     * @var array
-     */
-    protected $scopedInstances = [];
 
     /**
      * The registered type aliases.
@@ -101,11 +93,12 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     public $contextual = [];
 
     /**
-     * All of the registered rebound callbacks.
-     *
-     * @var array[]
+     * {@inheritdoc}
      */
-    protected $reboundCallbacks = [];
+    public function has(string $id): bool
+    {
+        return $this->bound($id);
+    }
 
     /**
      * Determine if the given abstract type has been bound. alias for `$this->has(string $id)`.
@@ -119,14 +112,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
         return isset($this->bindings[$abstract]) ||
             isset($this->instances[$abstract]) ||
             $this->isAlias($abstract);
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function has(string $id): bool
-    {
-        return $this->bound($id);
     }
 
     /**
@@ -161,18 +146,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     }
 
     /**
-     * Determine if a given string is an alias.
-     *
-     * @param string $name
-     *
-     * @return bool
-     */
-    public function isAlias($name)
-    {
-        return isset($this->aliases[$name]);
-    }
-
-    /**
      * Register a binding with the container.
      *
      * @param string               $abstract
@@ -200,10 +173,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
         }
 
         $this->bindings[$abstract] = compact('concrete', 'shared');
-
-        if ($this->resolved($abstract)) {
-            $this->rebound($abstract);
-        }
     }
 
     /**
@@ -322,21 +291,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     }
 
     /**
-     * Register a scoped binding in the container.
-     *
-     * @param string               $abstract
-     * @param \Closure|string|null $concrete
-     *
-     * @return void
-     */
-    public function scoped($abstract, $concrete = null)
-    {
-        $this->scopedInstances[] = $abstract;
-
-        $this->singleton($abstract, $concrete);
-    }
-
-    /**
      * "Extend" an abstract type in the container.
      *
      * @param string   $abstract
@@ -352,14 +306,8 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
 
         if (isset($this->instances[$abstract])) {
             $this->instances[$abstract] = $closure($this->instances[$abstract], $this);
-
-            $this->rebound($abstract);
         } else {
             $this->extenders[$abstract][] = $closure;
-
-            if ($this->resolved($abstract)) {
-                $this->rebound($abstract);
-            }
         }
     }
 
@@ -378,10 +326,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
         unset($this->aliases[$abstract]);
 
         $this->instances[$abstract] = $instance;
-
-        if ($this->bound($abstract)) {
-            $this->rebound($abstract);
-        }
 
         return $instance;
     }
@@ -476,7 +420,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     public function alias($abstract, $alias)
     {
         if ($alias === $abstract) {
-            throw new \LogicException("[{$abstract}] is aliased to itself.");
+            throw new \LogicException('['.$abstract.'] is aliased to itself.');
         }
 
         $this->aliases[$alias] = $abstract;
@@ -485,79 +429,29 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     }
 
     /**
-     * Bind a new callback to an abstract's rebind event.
+     * Determine if a given string is an alias.
      *
-     * @param string   $abstract
-     * @param \Closure $callback
+     * @param string $name
      *
-     * @return mixed
+     * @return bool
      */
-    public function rebinding($abstract, \Closure $callback)
+    public function isAlias($name)
     {
-        $this->reboundCallbacks[$abstract = $this->getAlias($abstract)][] = $callback;
-
-        if ($this->bound($abstract)) {
-            return $this->make($abstract);
-        }
+        return isset($this->aliases[$name]);
     }
 
     /**
-     * Refresh an instance on the given target and method.
-     *
-     * @param string $abstract
-     * @param mixed  $target
-     * @param string $method
-     *
-     * @return mixed
-     */
-    public function refresh($abstract, $target, $method)
-    {
-        return $this->rebinding($abstract, function ($app, $instance) use ($target, $method) {
-            $target->{$method}($instance);
-        });
-    }
-
-    /**
-     * Fire the "rebound" callbacks for the given abstract type.
+     * Get the alias for an abstract if available.
      *
      * @param string $abstract
      *
-     * @return void
+     * @return string
      */
-    protected function rebound($abstract)
+    public function getAlias($abstract)
     {
-        $instance = $this->make($abstract);
-
-        foreach ($this->getReboundCallbacks($abstract) as $callback) {
-            call_user_func($callback, $this, $instance);
-        }
-    }
-
-    /**
-     * Get the rebound callbacks for a given type.
-     *
-     * @param string $abstract
-     *
-     * @return array
-     */
-    protected function getReboundCallbacks($abstract)
-    {
-        return $this->reboundCallbacks[$abstract] ?? [];
-    }
-
-    /**
-     * Wrap the given closure such that its dependencies will be injected when executed.
-     *
-     * @param \Closure $callback
-     * @param array    $parameters
-     *
-     * @return \Closure
-     */
-    public function wrap(\Closure $callback, array $parameters = [])
-    {
-        return function () use ($callback, $parameters) {
-            return $this->call($callback, $parameters);
-        };
+        return isset($this->aliases[$abstract])
+            ? $this->getAlias($this->aliases[$abstract])
+            : $abstract;
     }
 
     /**
@@ -573,7 +467,23 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      */
     public function call($callback, array $parameters = [], $defaultMethod = null)
     {
-        return BoundMethod::call($this, $callback, $parameters, $defaultMethod);
+        return Method::call($this, $callback, $parameters, $defaultMethod);
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function get(string $id)
+    {
+        try {
+            return $this->resolve($id);
+        } catch (\Throwable $e) {
+            if ($this->has($id) || $e instanceof \RuntimeException) {
+                throw $e;
+            }
+
+            throw new EntryNotFoundException($id, is_numeric($e->getCode()) ? (int) $e->getCode() : 0, $e);
+        }
     }
 
     /**
@@ -590,22 +500,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function get(string $id)
-    {
-        try {
-            return $this->resolve($id);
-        } catch (\Throwable $e) {
-            if ($this->has($id) || $e instanceof \RuntimeException) {
-                throw $e;
-            }
-
-            throw new EntryNotFoundException($id, is_int($e->getCode()) ? $e->getCode() : 0, $e);
-        }
-    }
-
-    /**
      * Resolve the given type from the container.
      *
      * @param string|callable $abstract
@@ -615,9 +509,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      */
     protected function resolve($abstract, $parameters = [])
     {
-        $abstract = $this->getAlias($abstract);
-
-        $concrete = $this->getContextualConcrete($abstract);
+        $concrete = $this->getContextualConcrete($abstract = $this->getAlias($abstract));
 
         $needsContextualBuild = !empty($parameters) || !is_null($concrete);
 
@@ -631,14 +523,11 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
             $concrete = $this->getConcrete($abstract);
         }
 
-        // Check if is buildable
-        if ($this->isBuildable($concrete, $abstract)) {
-            $object = $this->build($concrete);
-        } else {
-            $object = $this->make($concrete);
-        }
+        $object = $this->isBuildable($concrete, $abstract)
+            ? $this->build($concrete)
+            : $this->make($concrete);
 
-        // Make with extenders
+        // Extend current object to given extenders
         foreach ($this->getExtenders($abstract) as $extender) {
             $object = $extender($object, $this);
         }
@@ -648,7 +537,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
             $this->instances[$abstract] = $object;
         }
 
-        // Make resolved as true
+        // Mark current abstract object as resolved.
         $this->resolved[$abstract] = true;
 
         array_pop($this->with);
@@ -742,19 +631,19 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
             throw new BindingResolutionException('Target class ['.$concrete.'] does not exist.', 0, $e);
         }
 
-        // Verify if this object is not instantiable
+        // Verify if current abstract object is not instantiable.
+        // Throw error if abstract is not instantiable.
         if (!$reflector->isInstantiable()) {
-            return $this->notInstantiable($concrete);
+            return $this->rejectIfNotInstantiable($concrete);
         }
 
         $this->buildStack[] = $concrete;
 
-        $constructor = $reflector->getConstructor();
-
-        if (is_null($constructor)) {
+        // Create new instance when constructor not contains dependencies.
+        if (is_null($constructor = $reflector->getConstructor())) {
             array_pop($this->buildStack);
 
-            return new $concrete();
+            return $reflector->newInstance();
         }
 
         $dependencies = $constructor->getParameters();
@@ -784,12 +673,8 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
         $results = [];
 
         foreach ($dependencies as $dependency) {
-            // If the dependency has an override for this particular build we will use
-            // that instead as the value. Otherwise, we will continue with this run
-            // of resolutions and let reflection attempt to determine the result.
             if ($this->hasParameterOverride($dependency)) {
                 $results[] = $this->getParameterOverride($dependency);
-
                 continue;
             }
 
@@ -876,7 +761,12 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
             return $parameter->isVariadic()
                 ? $this->resolveVariadicClass($parameter)
                 : $this->make(Helper::getParameterClassName($parameter));
-        } catch (\RuntimeException $e) {
+        }
+
+        // If we can not resolve the class instance, we will check to see if the value
+        // is optional, and if it is we will return the optional parameter value as
+        // the value of the dependency.
+        catch (BindingResolutionException $e) {
             if ($parameter->isDefaultValueAvailable()) {
                 array_pop($this->with);
 
@@ -902,9 +792,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      */
     protected function resolveVariadicClass(\ReflectionParameter $parameter)
     {
-        $className = Helper::getParameterClassName($parameter);
-
-        $abstract = $this->getAlias($className);
+        $abstract = $this->getAlias($className = Helper::getParameterClassName($parameter));
 
         if (!is_array($concrete = $this->getContextualConcrete($abstract))) {
             return $this->make($className);
@@ -922,17 +810,13 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      *
      * @return void
      */
-    protected function notInstantiable($concrete)
+    protected function rejectIfNotInstantiable($concrete)
     {
-        if (!empty($this->buildStack)) {
-            $previous = implode(', ', $this->buildStack);
+        $message = !empty($this->buildStack)
+            ? 'Target ['.$concrete.'] is not instantiable while building ['.implode(', ', $this->buildStack).'].'
+            : 'Target ['.$concrete.'] is not instantiable.';
 
-            $message = "Target [$concrete] is not instantiable while building [$previous].";
-        } else {
-            $message = "Target [$concrete] is not instantiable.";
-        }
-
-        throw new \RuntimeException($message);
+        throw new \RuntimeException($message, 100);
     }
 
     /**
@@ -944,7 +828,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      */
     protected function unresolvablePrimitive(\ReflectionParameter $parameter)
     {
-        $message = "Unresolvable dependency resolving [$parameter] in class {$parameter->getDeclaringClass()->getName()}";
+        $message = 'Unresolvable dependency resolving ['.$parameter.'] in class '.$parameter->getDeclaringClass()->getName();
 
         throw new \RuntimeException($message);
     }
@@ -954,23 +838,9 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
      *
      * @return array
      */
-    public function getBindings()
+    public function bindings()
     {
-        return array_merge($this->bindings, $this->instances);
-    }
-
-    /**
-     * Get the alias for an abstract if available.
-     *
-     * @param string $abstract
-     *
-     * @return string
-     */
-    public function getAlias($abstract)
-    {
-        return isset($this->aliases[$abstract])
-            ? $this->getAlias($this->aliases[$abstract])
-            : $abstract;
+        return $this->bindings;
     }
 
     /**
@@ -1032,18 +902,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     }
 
     /**
-     * Clear all of the scoped instances from the container.
-     *
-     * @return void
-     */
-    public function forgetScopedInstances()
-    {
-        foreach ($this->scopedInstances as $scoped) {
-            unset($this->instances[$scoped]);
-        }
-    }
-
-    /**
      * Flush the container of all bindings and resolved instances.
      *
      * @return void
@@ -1051,7 +909,6 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     public function flush()
     {
         $this->abstractAliases = [];
-        $this->scopedInstances = [];
         $this->aliases         = [];
         $this->resolved        = [];
         $this->bindings        = [];
@@ -1061,13 +918,13 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     /**
      * Add instance to container singleton.
      *
-     * @param \Swilen\Shared\Container\Container $container
+     * @param \Swilen\Shared\Container\Container $instance
      *
-     * @return void
+     * @return \Swilen\Shared\Container\Container
      */
-    public static function setInstance($container)
+    public static function setInstance(ContainerContract $instance = null)
     {
-        static::$instance = $container;
+        return static::$instance = $instance;
     }
 
     /**
@@ -1094,7 +951,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     #[\ReturnTypeWillChange]
     public function offsetExists($key)
     {
-        return $this->bound($key);
+        return $this->has($key);
     }
 
     /**
@@ -1107,7 +964,7 @@ class Container implements \ArrayAccess, ContainerContract, ContainerInterface
     #[\ReturnTypeWillChange]
     public function offsetGet($key)
     {
-        return $this->make($key);
+        return $this->get($key);
     }
 
     /**

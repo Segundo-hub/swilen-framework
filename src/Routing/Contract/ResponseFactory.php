@@ -7,13 +7,13 @@ interface ResponseFactory
     /**
      * Create new response from values of params args.
      *
-     * @param mixed $content
-     * @param int   $status
-     * @param array $headers
+     * @param string|null $content
+     * @param int         $status
+     * @param array       $headers
      *
      * @return \Swilen\Http\Response
      */
-    public function make($content = null, int $status = 200, array $headers = []);
+    public function make(?string $content = null, int $status = 200, array $headers = []);
 
     /**
      * Create response with json content.
@@ -61,12 +61,11 @@ interface ResponseFactory
     /**
      * Create downloadble file response.
      *
-     * @param \SplFileInfo|resource|string $file
-     * @param string|null                  $name
-     * @param array                        $headers
-     * @param bool                         $attachemnt
+     * @param \SplFileInfo|string $file
+     * @param string|null         $name
+     * @param array               $headers
      *
      * @return \Swilen\Http\Response\BinaryFileResponse
      */
-    public function download($file, string $name = null, array $headers = [], bool $attachemnt = true);
+    public function download($file, string $name = null, array $headers = [], string $disposition = 'attachment');
 }

@@ -5,7 +5,7 @@ namespace Swilen\Petiole\Facades;
 use Swilen\Petiole\Facade;
 
 /**
- * @method static \Swilen\Http\Response                    make(mixed $content = '', int $status = 200, array $headers = [])
+ * @method static \Swilen\Http\Response                    make(?string $content = null, int $status = 200, array $headers = [])
  * @method static \Swilen\Http\Response\JsonResponse       send(mixed $content = null, int $status = 200, array $headers = [])
  * @method static \Swilen\Http\Response\JsonResponse       json(mixed $content = null, int $status = 200, array $headers = [])
  * @method static \Swilen\Http\Response\BinaryFileResponse file(\SplFileInfo|string $file = '', array $headers = [])

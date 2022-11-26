@@ -261,7 +261,7 @@ class Route implements Arrayable, JsonSerializable
     private function matchToKeys(array $params = [])
     {
         foreach ($params as $key => $value) {
-            if (is_int($key) || is_null($value)) {
+            if (is_numeric($key) || is_null($value)) {
                 continue;
             }
 

@@ -5,6 +5,13 @@ namespace Swilen\Routing;
 class RouteMatching
 {
     /**
+     * Regex for match parameters in strings.
+     *
+     * @var string
+     */
+    public const MATCH_PARAMETER = '/{[^}]*}/';
+
+    /**
      * Create regex from given pattern.
      *
      * @param string $pattern
@@ -13,22 +20,25 @@ class RouteMatching
      */
     public static function compile(string $pattern)
     {
-        $pattern = rtrim($pattern, '/') ?: '/';
-        $matches = static::compileParameters($pattern);
+        if (($pattern = rtrim($pattern, '\/')) === '') {
+            return '/';
+        }
 
-        return static::compilePatternMatching($matches, $pattern);
+        return static::compilePatternMatching(
+            static::compileParameters($pattern), $pattern
+        );
     }
 
    /**
     * Return named paramater to array.
     *
-    * @param string|null $uri
+    * @param string $uri
     *
     * @return array<int, mixed>
     */
-   private static function compileParameters($uri)
+   private static function compileParameters(string $pattern)
    {
-       preg_match_all('/{[^}]*}/', $uri, $matches);
+       preg_match_all(static::MATCH_PARAMETER, $pattern, $matches);
 
        return reset($matches) ?? [];
    }
@@ -41,25 +51,28 @@ class RouteMatching
      *
      * @return string
      */
-    protected static function compilePatternMatching(array $matches = [], string $uri)
+    protected static function compilePatternMatching(array $matches, string $uri)
     {
-        foreach ($matches as $key => $segment) {
+        foreach ($matches as $segment) {
             $value = trim($segment, '{\}');
-            if (strpos($value, ':') !== false && !empty([$type, $keyed] = explode(':', $value, 2))) {
-                $target = '{'.$type.':'.$keyed.'}';
+
+            if (strpos($value, ':') !== false && strlen($value) > 1) {
+                [$type, $key] = explode(':', $value, 2);
+                $target       = '{'.$type.':'.$key.'}';
+
                 if ($type === 'int') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[0-9]+)', $keyed), $uri);
+                    $uri = str_replace($target, '(?<'.$key.'>\d+)', $uri);
                 }
 
                 if ($type === 'alpha') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[a-zA-Z\_\-]+)', $keyed), $uri);
+                    $uri = str_replace($target, '(?<'.$key.'>[a-zA-Z\_\-]+)', $uri);
                 }
 
                 if ($type === 'string') {
-                    $uri = str_replace($target, sprintf('(?P<%s>[a-zA-Z0-9\_\-]+)', $keyed), $uri);
+                    $uri = str_replace($target, '(?<'.$key.'>[a-zA-Z0-9\_\-]+)', $uri);
                 }
             } else {
-                $uri = str_replace($segment, sprintf('(?P<%s>.*)', $value), $uri);
+                $uri = str_replace($segment, '(?<'.$value.'>.*)', $uri);
             }
         }
 

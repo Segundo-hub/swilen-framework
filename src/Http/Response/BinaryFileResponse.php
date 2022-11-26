@@ -2,7 +2,9 @@
 
 namespace Swilen\Http\Response;
 
+use Swilen\Http\Common\Http;
 use Swilen\Http\Component\File\File;
+use Swilen\Http\Component\ResponseHeaderHunt;
 use Swilen\Http\Exception\FileException;
 use Swilen\Http\Request;
 use Swilen\Http\Response;
@@ -32,6 +34,11 @@ class BinaryFileResponse extends Response
     protected $chunkSize = 8 * 1024;
 
     /**
+     * @var string
+     */
+    protected $disposition;
+
+    /**
      * Create new binary file response.
      *
      * @param \SplFileInfo|string $file       The file: filepath or File instance
@@ -39,14 +46,14 @@ class BinaryFileResponse extends Response
      *
      * @return void
      */
-    public function __construct($file, int $status = 200, array $headers = [], bool $attachment = false)
+    public function __construct($file, int $status = 200, array $headers = [], ?string $disposition = '')
     {
         parent::__construct(null, $status, $headers);
 
         $this->setBinaryFile($file);
 
-        if ($attachment) {
-            $this->setContentDisposition();
+        if (!empty($disposition)) {
+            $this->addContentDisposition($disposition);
         }
     }
 
@@ -79,15 +86,18 @@ class BinaryFileResponse extends Response
     /**
      * Make content disposition to file for download.
      */
-    protected function setContentDisposition()
+    protected function addContentDisposition(string $disposition)
     {
         $filename = $this->file->getFilename();
 
         $this->withHeaders([
             'Content-Description' => 'File Transfer',
             'Cache-Control' => 'no-cache, must-revalidate',
-            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
+
+        $this->headers->makeDisposition($disposition, $filename);
+
+        $this->disposition = $disposition;
     }
 
     /**
@@ -99,7 +109,9 @@ class BinaryFileResponse extends Response
      */
     public function updateFilename(string $filename)
     {
-        $this->headers->replace('Content-Disposition', 'attachment; filename="'.$filename.'"');
+        $this->headers->makeDisposition(
+            $this->disposition ?? ResponseHeaderHunt::DISPOSITION_ATTACHMENT, $filename
+        );
 
         return $this;
     }
@@ -122,7 +134,7 @@ class BinaryFileResponse extends Response
         $this->offset = 0;
         $this->maxlen = -1;
 
-        if (false === $fileSize = $this->file->getSize()) {
+        if ($fileSize = $this->file->getSize() === false) {
             return $this;
         }
 
@@ -132,7 +144,7 @@ class BinaryFileResponse extends Response
             $this->headers->set('Accept-Ranges', $request->isMethodSafe() ? 'bytes' : 'none');
         }
 
-        if ($request->headers->has('Range') && $request->getMethod() === 'GET') {
+        if ($request->headers->has('Range') && $request->getMethod() === Http::METHOD_GET) {
             // Process the range headers.
             if (!$request->headers->has('If-Range')) {
                 $range = $request->headers->get('Range');
@@ -152,13 +164,13 @@ class BinaryFileResponse extends Response
                     if ($start <= $end) {
                         $end = min($end, $fileSize - 1);
                         if ($start < 0 || $start > $end) {
-                            $this->setStatusCode(416);
+                            $this->setStatusCode(Http::REQUESTED_RANGE_NOT_SATISFIABLE);
                             $this->headers->set('Content-Range', sprintf('bytes */%s', $fileSize));
                         } elseif ($end - $start < $fileSize - 1) {
                             $this->maxlen = $end < $fileSize ? $end - $start + 1 : -1;
                             $this->offset = $start;
 
-                            $this->setStatusCode(206);
+                            $this->setStatusCode(Http::PARTIAL_CONTENT);
                             $this->headers->set('Content-Range', sprintf('bytes %s-%s/%s', $start, $end, $fileSize));
                             $this->headers->set('Content-Length', $end - $start + 1);
                         }
@@ -175,39 +187,39 @@ class BinaryFileResponse extends Response
      *
      * @return $this
      */
-    protected function sendResponseContent()
+    protected function sendBody()
     {
         if (!$this->isSuccessful()) {
-            return parent::sendResponseContent();
+            return parent::sendBody();
         }
 
         if ($this->maxlen === 0) {
             return $this;
         }
 
-        $InputStream  = fopen($this->file->getPathname(), 'r');
-        $OutputStream = fopen('php://output', 'w');
+        $file = fopen($this->file->getPathname(), 'r');
+        $out  = fopen('php://output', 'w');
 
         ignore_user_abort(true);
 
         if ($this->offset !== 0) {
-            fseek($InputStream, $this->offset);
+            fseek($file, $this->offset);
         }
 
         $length = $this->maxlen;
-        while ($length && !feof($InputStream)) {
+        while ($length && !feof($file)) {
             $read = ($length > $this->chunkSize) ? $this->chunkSize : $length;
             $length -= $read;
 
-            stream_copy_to_stream($InputStream, $OutputStream, $read);
+            stream_copy_to_stream($file, $out, $read);
 
             if (connection_aborted()) {
                 break;
             }
         }
 
-        fclose($OutputStream);
-        fclose($InputStream);
+        fclose($file);
+        fclose($out);
 
         return $this;
     }

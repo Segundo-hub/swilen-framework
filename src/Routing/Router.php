@@ -4,13 +4,13 @@ namespace Swilen\Routing;
 
 use Swilen\Container\Container;
 use Swilen\Http\Common\Http;
-use Swilen\Http\Common\HttpTransformJson;
 use Swilen\Http\Request;
 use Swilen\Http\Response;
 use Swilen\Http\Response\JsonResponse;
 use Swilen\Pipeline\Pipeline;
 use Swilen\Routing\Contract\RouterContract;
 use Swilen\Shared\Support\Arr;
+use Swilen\Shared\Support\Json;
 use Swilen\Shared\Support\Stringable;
 
 class Router implements RouterContract
@@ -361,7 +361,7 @@ class Router implements RouterContract
 
         if ($response instanceof Stringable || is_string($response)) {
             $response = new Response((string) $response, 200, ['Content-Type' => 'text/html']);
-        } elseif (HttpTransformJson::shouldBeJson($response)) {
+        } elseif (Json::shouldBeJson($response)) {
             $response = new JsonResponse($response);
         } else {
             $response = new Response($response);

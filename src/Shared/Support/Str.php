@@ -15,7 +15,7 @@ class Str
     public static function contains(string $haystack, $needles): bool
     {
         return static::compare($haystack, $needles, function ($haystack, $needle) {
-            return $needle === '' || mb_strpos($haystack, $needle) !== false;
+            return $needle !== '' && mb_strpos($haystack, $needle) !== false;
         });
     }
 
@@ -200,5 +200,17 @@ class Str
                 : '/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/',
             $uuid
         );
+    }
+
+    /**
+     * Remove slashes at the beginning and end of the path..
+     *
+     * @param string $path
+     *
+     * @return string
+     */
+    public static function trimPath($path = '')
+    {
+        return !is_string($path) ? '' : '/'.trim($path ?: '/', '\/');
     }
 }

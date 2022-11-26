@@ -7,7 +7,7 @@ use Swilen\Shared\Support\Func;
 /**
  * @internal Package
  */
-final class BoundMethod
+final class Method
 {
     /**
      * Call the given Closure / class@method and inject its dependencies.
@@ -22,7 +22,7 @@ final class BoundMethod
      * @throws \ReflectionException
      * @throws \InvalidArgumentException
      */
-    public static function call($container, $callback, array $parameters = [], $defaultMethod = null)
+    public static function call($container, $callback, array $parameters = [], string $defaultMethod = null)
     {
         if (is_string($callback) && !$defaultMethod && method_exists($callback, '__invoke')) {
             $defaultMethod = '__invoke';
@@ -56,7 +56,7 @@ final class BoundMethod
         $method = count($segments) === 2
             ? $segments[1] : $defaultMethod;
 
-        if (is_null($method)) {
+        if (is_null($method) || empty($method)) {
             throw new \InvalidArgumentException('Method not provided.');
         }
 
@@ -188,7 +188,7 @@ final class BoundMethod
         } elseif ($parameter->isDefaultValueAvailable()) {
             $dependencies[] = $parameter->getDefaultValue();
         } elseif (!$parameter->isOptional() && !array_key_exists($paramName, $parameters)) {
-            $message = "Unable to resolve dependency [{$parameter}] in class {$parameter->getDeclaringClass()->getName()}";
+            $message = 'Unable to resolve dependency ['.$parameter.'] in class '.$parameter->getDeclaringClass()->getName();
 
             throw new \RuntimeException($message);
         }

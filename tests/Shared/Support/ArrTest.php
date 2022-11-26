@@ -65,6 +65,34 @@ it('Set array with reference', function () {
     expect($arrayAccess)->toBe(['data' => ['FOO' => 'BAR']]);
 });
 
+it('Remove array values based in keys', function () {
+    $array = [
+        'todo' => 'ok',
+        'completed' => true,
+        'date' => date('Y-m-d'),
+    ];
+
+    expect($array)->toHaveKeys(['todo', 'completed', 'date']);
+    $array = Arr::except($array, ['todo', 'complete']);
+
+    expect($array)->not->toHaveKeys(['todo', 'complete']);
+    expect($array)->toHaveKey('date');
+});
+
+it('Morph to array given mixed type', function () {
+    expect(Arr::morph([]))->toBeArray();
+    expect(Arr::morph(new UserStoreStub()))->toBeArray();
+    expect(Arr::morph(new UserStoreJsonSerializableStub()))->toBeArray();
+});
+
+class UserStoreJsonSerializableStub implements JsonSerializable
+{
+    public function jsonSerialize()
+    {
+        return [];
+    }
+}
+
 function makeArrayAccess(array $items = [])
 {
     return new class($items) implements ArrayAccess {

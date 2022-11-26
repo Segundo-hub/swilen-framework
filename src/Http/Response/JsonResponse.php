@@ -2,12 +2,20 @@
 
 namespace Swilen\Http\Response;
 
-use Swilen\Http\Common\HttpTransformJson;
 use Swilen\Http\Response;
+use Swilen\Shared\Support\Arr;
+use Swilen\Shared\Support\Json;
 use Swilen\Shared\Support\Jsonable;
 
 class JsonResponse extends Response
 {
+    /**
+     * The mimeType for the response.
+     *
+     * @var string
+     */
+    public const CONTENT_TYPE = 'application/json; charset=UTF-8';
+
     /**
      * The original content to pased in given instance.
      *
@@ -20,7 +28,7 @@ class JsonResponse extends Response
      *
      * @var int
      */
-    protected $encodingOptions = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
+    protected $encodingOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
     /**
      * Create new JsonResponse instance and prepare content to json.
@@ -32,9 +40,9 @@ class JsonResponse extends Response
      */
     public function __construct($content = null, int $status = 200, array $headers = [], bool $json = false)
     {
-        parent::__construct(null, $status, array_merge(['Content-Type' => 'application/json'], $headers));
+        parent::__construct(null, $status, $headers + ['Content-Type' => self::CONTENT_TYPE]);
 
-        $this->setContent($content, $json);
+        $this->setBody($content, $json);
     }
 
     /**
@@ -48,17 +56,17 @@ class JsonResponse extends Response
      * @throws \JsonException
      * @throws \TypeError
      */
-    public function setContent($content, bool $json = false)
+    public function setBody($content, bool $json = false)
     {
         $this->original = $content;
 
         $content = $content ? $content : new \ArrayObject([]);
 
-        if (!$json && (!HttpTransformJson::shouldBeJson($content))) {
+        if (!$json && (!Json::shouldBeJson($content))) {
             throw new \TypeError(sprintf('The type "%s" is not JSON serializable', get_debug_type($content)));
         }
 
-        parent::setContent($json ? $content : $this->toJson($content));
+        parent::setBody($json ? $content : $this->toJson($content));
     }
 
     /**
@@ -77,9 +85,7 @@ class JsonResponse extends Response
         }
 
         if ($content) {
-            $content = HttpTransformJson::morphToJsonable($content);
-
-            return (new HttpTransformJson($content))->encode($this->encodingOptions);
+            return Json::from(Arr::morph($content))->encode($this->encodingOptions);
         }
 
         return $content;
@@ -88,9 +94,9 @@ class JsonResponse extends Response
     /**
      * Create new JsonResponse instance from json.
      *
-     * @param string $content - The json serialized
-     * @param int    $status  - The http status code
-     * @param array  $headers - The headers collection
+     * @param string $content The json serialized
+     * @param int    $status  The http status code
+     * @param array  $headers The headers collection
      *
      * @return static
      */

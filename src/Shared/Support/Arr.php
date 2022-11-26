@@ -169,4 +169,28 @@ class Arr
 
         return $target;
     }
+
+    /**
+     * Morph givent target to array.
+     *
+     * @param mixed $target
+     *
+     * @return array
+     */
+    public static function morph($target)
+    {
+        if (is_array($target)) {
+            return $target;
+        }
+
+        if ($target instanceof Arrayable) {
+            $target = $target->toArray();
+        } elseif ($target instanceof \JsonSerializable) {
+            $target = $target->jsonSerialize();
+        } elseif ($target instanceof \stdClass) {
+            $target = (array) $target;
+        }
+
+        return static::wrap($target);
+    }
 }

@@ -18,7 +18,7 @@ class Application extends Container implements ArthropodApplication, HttpApplica
      *
      * @var string
      */
-    public const VERSION = '0.6.5-alpha';
+    public const VERSION = '0.7.0-alpha';
 
     /**
      * Indicates if the application has been bootstrapped before.

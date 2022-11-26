@@ -46,7 +46,7 @@ class StreamedResponse extends Response
      *
      * @return $this
      */
-    protected function sendResponseHeaders()
+    protected function sendHeaders()
     {
         if ($this->sent) {
             return $this;
@@ -54,7 +54,7 @@ class StreamedResponse extends Response
 
         $this->sent = true;
 
-        return parent::sendResponseHeaders();
+        return parent::sendHeaders();
     }
 
     /**
@@ -64,7 +64,7 @@ class StreamedResponse extends Response
      *
      * @return $this
      */
-    protected function sendResponseContent()
+    protected function sendBody()
     {
         if ($this->streamed) {
             return $this;

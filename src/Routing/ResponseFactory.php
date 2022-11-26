@@ -2,6 +2,7 @@
 
 namespace Swilen\Routing;
 
+use Swilen\Http\Component\ResponseHeaderHunt;
 use Swilen\Http\Response;
 use Swilen\Http\Response\BinaryFileResponse;
 use Swilen\Http\Response\JsonResponse;
@@ -17,7 +18,7 @@ final class ResponseFactory implements ContractResponseFactory
      *
      * @return \Swilen\Http\Response
      */
-    public function make($content = null, int $status = 200, array $headers = [])
+    public function make(?string $content = null, int $status = 200, array $headers = [])
     {
         return new Response($content, $status, $headers);
     }
@@ -55,7 +56,7 @@ final class ResponseFactory implements ContractResponseFactory
      */
     public function file($file, array $headers = [])
     {
-        return new BinaryFileResponse($file, 200, $headers);
+        return new BinaryFileResponse($file, 200, $headers, null);
     }
 
     /**
@@ -65,9 +66,9 @@ final class ResponseFactory implements ContractResponseFactory
      *
      * @return \Swilen\Http\Response\BinaryFileResponse
      */
-    public function download($file, $name = null, array $headers = [], bool $attachment = true)
+    public function download($file, $name = null, array $headers = [], string $disposition = 'attachment')
     {
-        $factory = new BinaryFileResponse($file, 200, $headers, $attachment);
+        $factory = new BinaryFileResponse($file, 200, $headers, $disposition);
 
         if ($name !== null) {
             $factory->updateFilename($name);

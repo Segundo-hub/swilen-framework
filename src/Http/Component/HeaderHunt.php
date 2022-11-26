@@ -73,6 +73,22 @@ class HeaderHunt implements \Countable, \IteratorAggregate
     }
 
     /**
+     * Replace headers with given headers array.
+     *
+     * @param array<string,mixed> $headers
+     *
+     * @return void
+     */
+    public function replace(array $headers = [])
+    {
+        $this->headers = [];
+
+        foreach ($headers as $name => $value) {
+            $this->set($name, $value);
+        }
+    }
+
+    /**
      * Remove a header from collection searched by key.
      *
      * @param string $key
@@ -93,9 +109,7 @@ class HeaderHunt implements \Countable, \IteratorAggregate
      */
     public function removeAt($keys)
     {
-        $keys = is_array($keys) ? $keys : func_get_args();
-
-        foreach ($keys as $value) {
+        foreach (is_array($keys) ? $keys : func_get_args() as $value) {
             $this->remove($value);
         }
     }
@@ -110,19 +124,6 @@ class HeaderHunt implements \Countable, \IteratorAggregate
     public function has($key)
     {
         return isset($this->headers[$key]);
-    }
-
-    /**
-     * Replace existing header in collection.
-     *
-     * @param string $key
-     * @param mixed  $replaced
-     *
-     * @return bool
-     */
-    public function replace($key, $replaced)
-    {
-        $this->headers[$key] = $replaced;
     }
 
     /**

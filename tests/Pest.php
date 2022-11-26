@@ -91,6 +91,15 @@ function debug_json($value)
     print_r(PHP_EOL.json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_SLASHES).PHP_EOL);
 }
 
+function getBuffer(\Closure $closure)
+{
+    ob_start();
+    $object = $closure();
+    $content = trim(ob_get_clean());
+
+    return [$object, $content];
+}
+
 /*
 |--------------------------------------------------------------------------
 | Common stubs

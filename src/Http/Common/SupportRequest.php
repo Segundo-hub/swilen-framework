@@ -12,15 +12,15 @@ class SupportRequest
      * @param array                $parameters The query (GET) or request (POST) parameters
      * @param array                $files      The request files ($_FILES)
      * @param array                $server     The server parameters ($_SERVER)
-     * @param string|resource|null $content    The raw body data
+     * @param string|resource|null $body    The raw body data
      *
      * @return static
      */
-    public static function make(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $content = null)
+    public static function make(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $body = null)
     {
-        [$server, $files, $request, $query, $content] = self::createServerRequest($uri, $method, $parameters, $files, $server);
+        [$server, $files, $request, $query, $body] = self::createServerRequest($uri, $method, $parameters, $files, $server);
 
-        return new static($server, $files, $request, $query, $content);
+        return new static($server, $files, $request, $query, $body);
     }
 
     /**
@@ -31,11 +31,11 @@ class SupportRequest
      * @param array                $parameters The query (GET) or request (POST) parameters
      * @param array                $files      The request files ($_FILES)
      * @param array                $server     The server parameters ($_SERVER)
-     * @param string|resource|null $content    The raw body data
+     * @param string|resource|null $body    The raw body data
      *
      * @return array
      */
-    protected static function createServerRequest(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $content = null)
+    protected static function createServerRequest(string $uri, string $method = 'GET', array $parameters = [], array $files = [], array $server = [], $body = null)
     {
         $server = static::replaceServerVars($server, $method);
 
@@ -109,7 +109,7 @@ class SupportRequest
         $server['REQUEST_URI']  = $components['path'].($queryString !== '' ? '?'.$queryString : '');
         $server['QUERY_STRING'] = $queryString;
 
-        return [$server, $files, $request, $query, $content];
+        return [$server, $files, $request, $query, $body];
     }
 
     /**

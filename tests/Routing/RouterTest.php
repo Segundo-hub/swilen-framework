@@ -27,7 +27,7 @@ it('Match route current request', function () {
     $response = $this->router->dispatch(fetch('/test'));
 
     expect($response)->toBeInstanceOf(Response::class);
-    expect($response->getContent())->toBeJson();
+    expect($response->getBody())->toBeJson();
 });
 
 it('Throw not found if route not matches', function () {
@@ -91,7 +91,7 @@ it('Route attributes as registered', function () {
 
     $response = $this->router->dispatch(fetch('/hello/lima'));
 
-    expect($response->getContent())->toBeNumeric();
+    expect($response->getBody())->toBeNumeric();
     expect($response->headers->get('Fo'))->toBe('bar');
 
     expect($route->parameter('world'))->toBe('lima');
@@ -115,7 +115,7 @@ it('Shared route attributes registered', function () {
 
     $response = $this->router->dispatch(fetch('/name/route/cuzco'));
 
-    expect($response->getContent())->toBeJson();
+    expect($response->getBody())->toBeJson();
     expect($response->headers->get('Use-Token'))->toBe('true');
 
     /** @var \Swilen\Routing\Route */

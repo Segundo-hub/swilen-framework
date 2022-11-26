@@ -6,22 +6,23 @@ use Swilen\Http\Common\Http;
 use Swilen\Http\Common\SupportResponse;
 use Swilen\Http\Component\ResponseHeaderHunt;
 use Swilen\Http\Contract\ResponseContract;
+use Swilen\Shared\Support\Str;
 
 class Response extends SupportResponse implements ResponseContract
 {
     /**
-     * The response headers collection.
+     * The headers collection for the response.
      *
      * @var \Swilen\Http\Component\ResponseHeaderHunt
      */
     public $headers;
 
     /**
-     * The parsed content as string or resource for put into client.
+     * The parsed body as string or resource for put into client.
      *
-     * @var string|resource
+     * @var string|null
      */
-    protected $content;
+    protected $body;
 
     /**
      * The http version for the response.
@@ -31,21 +32,21 @@ class Response extends SupportResponse implements ResponseContract
     protected $version;
 
     /**
-     * The status code for response.
+     * The status code for the response.
      *
      * @var int
      */
     protected $statusCode;
 
     /**
-     * The status text for response.
+     * The status text for the response.
      *
      * @var string
      */
     protected $statusText;
 
     /**
-     * The charset encoding for response.
+     * The charset encoding for the response.
      *
      * @var string
      */
@@ -54,19 +55,18 @@ class Response extends SupportResponse implements ResponseContract
     /**
      * Create new response instance.
      *
-     * @param mixed $content The content for send client
-     * @param int   $status  The http status for response
-     * @param array $headers The headers collection for response
+     * @param string|null $body    The body content for send client
+     * @param int         $status  The http status for response
+     * @param array       $headers The headers collection for response
      *
      * @return void
      */
-    public function __construct($content = null, int $status = 200, array $headers = [])
+    public function __construct(?string $body = null, int $status = 200, array $headers = [])
     {
         $this->headers = new ResponseHeaderHunt($headers);
-
+        $this->version = '1.0';
         $this->setStatusCode($status);
-        $this->setContent($content);
-        $this->setProtocolVersion('1.0');
+        $this->setBody($body);
     }
 
     /**
@@ -88,7 +88,7 @@ class Response extends SupportResponse implements ResponseContract
             if (!$this->headers->has('Content-Type')) {
                 $this->headers->set('Content-Type', 'text/html; charset='.$charset);
             } elseif (stripos($this->headers->get('Content-Type'), 'text/') === 0 && stripos($this->headers->get('Content-Type'), 'charset') === false) {
-                // add the charset
+                // Add the charset
                 $this->headers->set('Content-Type', $this->headers->get('Content-Type').'; charset='.$charset);
             }
 
@@ -99,16 +99,16 @@ class Response extends SupportResponse implements ResponseContract
 
             // @see https://www.rfc-editor.org/rfc/rfc7231#section-4.3.2
             if ($request->getMethod() === Http::METHOD_HEAD) {
-                $this->setContent(null);
+                $this->setBody(null);
                 $this->headers->set('Content-Length', $this->headers->get('Content-Length'));
             }
         }
 
-        if ('HTTP/1.0' != $request->server->get('SERVER_PROTOCOL')) {
+        if ($request->server->get('SERVER_PROTOCOL') !== 'HTTP/1.0') {
             $this->setProtocolVersion('1.1');
         }
 
-        if ('1.1' == $this->getProtocolVersion() && mb_strpos($this->headers->get('Cache-Control', ''), 'no-cache') !== false) {
+        if ($this->getProtocolVersion() === '1.1' && Str::contains($this->headers->get('Cache-Control', ''), 'no-cache')) {
             $this->headers->set('pragma', 'no-cache');
             $this->headers->set('expires', -1);
         }
@@ -123,9 +123,8 @@ class Response extends SupportResponse implements ResponseContract
      */
     protected function prepareEmptyResponse()
     {
-        $this->setContent(null);
-        $this->headers->remove('Content-Type');
-        $this->headers->remove('Content-Length');
+        $this->setBody(null);
+        $this->headers->removeAt('Content-Type', 'Content-Length');
         // prevent PHP from sending the Content-Type header based on default_mimetype
         @ini_set('default_mimetype', '');
     }
@@ -137,14 +136,14 @@ class Response extends SupportResponse implements ResponseContract
      */
     public function terminate()
     {
-        $this->sendResponseHeaders();
+        $this->sendHeaders();
 
-        $this->sendResponseContent();
+        $this->sendBody();
 
         if (function_exists('fastcgi_finish_request')) {
             fastcgi_finish_request();
         } elseif (!in_array(\PHP_SAPI, ['cli', 'phpdbg'], true)) {
-            parent::closeOutputBuffer(0, true);
+            SupportResponse::closeOutputBuffer(0, true);
             flush();
         }
 
@@ -156,9 +155,9 @@ class Response extends SupportResponse implements ResponseContract
      *
      * @return $this
      */
-    protected function sendResponseContent()
+    protected function sendBody()
     {
-        $this->morphSendContent($this->content);
+        echo $this->getBody();
 
         return $this;
     }
@@ -168,11 +167,11 @@ class Response extends SupportResponse implements ResponseContract
      *
      * @return $this
      */
-    protected function sendResponseHeaders()
+    protected function sendHeaders()
     {
         if (headers_sent() === false) {
             $this->headers->each(function ($name, $value) {
-                header($name.': '.$value, strcasecmp($name, 'Content-Type') === 0, $this->statusCode);
+                header($name.':'.$value, strcasecmp($name, 'Content-Type') === 0, $this->statusCode);
             });
 
             $this->sendStatusLine();
@@ -182,7 +181,7 @@ class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Send status line to response. `HTTP/1.1 200 OK`.
+     * Send status line to response. e.g. `HTTP/1.1 200 OK`.
      *
      * @return void
      */
@@ -191,18 +190,6 @@ class Response extends SupportResponse implements ResponseContract
         header(
             sprintf('HTTP/%s %s %s', $this->version, $this->statusCode, $this->statusText), true, $this->statusCode
         );
-    }
-
-    /**
-     * Morph send content to client.
-     *
-     * @param mixed $content
-     *
-     * @return void
-     */
-    private function morphSendContent($content)
-    {
-        echo (string) $content;
     }
 
     /**
@@ -313,7 +300,7 @@ class Response extends SupportResponse implements ResponseContract
     final public function setNotModified()
     {
         $this->setStatusCode(304);
-        $this->setContent(null);
+        $this->setBody(null);
 
         // Remove headers that MUST NOT be included with 304 Not Modified responses
         $this->headers->removeAt(['Allow', 'Content-Encoding', 'Content-Language', 'Content-Length', 'Content-MD5', 'Content-Type', 'Last-Modified']);
@@ -322,37 +309,37 @@ class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Get current content.
+     * Get the response body.
      *
-     * @return mixed
+     * @return string|null
      */
-    public function getContent()
+    public function getBody()
     {
-        return $this->content;
+        return $this->body;
     }
 
     /**
-     * Set new content or override if exists content.
+     * Set new body content or override if exists body.
      *
-     * @param mixed $content
+     * @param string $body
      *
      * @return void
      */
-    public function setContent($content)
+    public function setBody(?string $body)
     {
-        $this->content = $content;
+        $this->body = $body;
     }
 
     /**
-     * Alias for setContent and return this instance.
+     * Alias for setBody and return this instance.
      *
-     * @param mixed $content
+     * @param mixed $body
      *
      * @return $this
      */
-    public function content($content)
+    public function withBody($body)
     {
-        $this->content = $content;
+        $this->setBody($body);
 
         return $this;
     }
@@ -412,25 +399,34 @@ class Response extends SupportResponse implements ResponseContract
     /**
      * Set status code.
      *
-     * @param int    $status
+     * @see https://www.rfc-editor.org/rfc/rfc7231#section-6
+     *
+     * @param int    $code
      * @param string $text
      *
      * @return void
      */
-    final public function setStatusCode(int $status, string $text = null)
+    final public function setStatusCode(int $code, string $text = null)
     {
-        $this->statusCode = $status;
-        $this->statusText = $text ?? static::STATUS_TEXTS[$this->getStatusCode()] ?? 'Internal Server Error';
+        $this->statusCode = $code;
+
+        if ($this->isInvalid()) {
+            throw new \InvalidArgumentException(sprintf('The HTTP status code "%s" is not valid.', $code));
+        }
+
+        $this->statusText = $text ?? static::STATUS_TEXTS[$code] ?? 'unknown status';
     }
 
     /**
      * Set status code and return this instance.
      *
+     * @param int $code
+     *
      * @return $this
      */
-    public function status(int $status)
+    public function withStatus(int $code)
     {
-        $this->setStatusCode($status);
+        $this->setStatusCode($code);
 
         return $this;
     }
@@ -456,9 +452,11 @@ class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Returns current HTTP version.
+     * Retrieves the HTTP protocol version as a string.
      *
-     * @return void
+     * The string MUST contain only the HTTP version number (e.g., "1.1", "1.0").
+     *
+     * @return string
      */
     public function getProtocolVersion()
     {
@@ -470,12 +468,10 @@ class Response extends SupportResponse implements ResponseContract
      *
      * @param string $version
      *
-     * @return $this
+     * @return void
      */
-    public function setProtocolVersion($version)
+    public function setProtocolVersion(string $version)
     {
         $this->version = $version;
-
-        return $this;
     }
 }

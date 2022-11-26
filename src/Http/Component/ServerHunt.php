@@ -24,7 +24,7 @@ final class ServerHunt extends ParameterHunt
             if (strpos($key, 'HTTP_') === 0) {
                 $headers[Util::toNormalizeHttp($key)] = $value;
             }
-            // Add additional server headers to headers
+            // Add additional server headers to headers collection
             // CONTENT_* headers are not prefixed with HTTP_.
             elseif (isset($additional[$key])) {
                 $headers[Util::toNormalize($key)] = $value;

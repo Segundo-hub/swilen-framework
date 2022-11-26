@@ -2,13 +2,13 @@
 
 namespace Swilen\Http;
 
-use Swilen\Http\Common\HttpTransformJson;
 use Swilen\Http\Common\SupportRequest;
 use Swilen\Http\Component\FileHunt;
 use Swilen\Http\Component\HeaderHunt;
 use Swilen\Http\Component\InputHunt;
 use Swilen\Http\Component\ServerHunt;
 use Swilen\Http\Exception\HttpNotOverridableMethodException;
+use Swilen\Shared\Support\Json;
 use Swilen\Shared\Support\Str;
 
 class Request extends SupportRequest implements \ArrayAccess
@@ -60,7 +60,7 @@ class Request extends SupportRequest implements \ArrayAccess
      *
      * @var string|resource
      */
-    protected $content;
+    protected $body;
 
     /**
      * Http current request method.
@@ -105,11 +105,11 @@ class Request extends SupportRequest implements \ArrayAccess
      * @param array                $files   The request files collection
      * @param array                $request The request variables sending from client collection
      * @param array                $query   The request query params or send from client into form
-     * @param string|resource|null $content The raw body data
+     * @param string|resource|null $body    The raw body data
      *
      * @return void
      */
-    public function __construct(array $server = [], array $files = [], array $request = [], array $query = [], $content = null)
+    public function __construct(array $server = [], array $files = [], array $request = [], array $query = [], $body = null)
     {
         $this->server  = new ServerHunt($server);
         $this->headers = new HeaderHunt($this->server->headers());
@@ -117,7 +117,7 @@ class Request extends SupportRequest implements \ArrayAccess
         $this->request = new InputHunt($request);
         $this->query   = new InputHunt($query);
 
-        $this->content = $content;
+        $this->body = $body;
     }
 
     /**
@@ -191,7 +191,7 @@ class Request extends SupportRequest implements \ArrayAccess
 
         $method = strtoupper($method);
 
-        if (\in_array($method, $this->acceptMethodOverrides, true)) {
+        if (in_array($method, $this->acceptMethodOverrides, true)) {
             return $this->method = $method;
         }
 
@@ -231,7 +231,7 @@ class Request extends SupportRequest implements \ArrayAccess
             return $this->pathInfo;
         }
 
-        return $this->pathInfo = $this->trimed(preg_replace('/\\?.*/', '', $this->filteredRequestUri()));
+        return $this->pathInfo = Str::trimPath(preg_replace('/\\?.*/', '', $this->filteredRequestUri()));
     }
 
     /**
@@ -249,25 +249,13 @@ class Request extends SupportRequest implements \ArrayAccess
     }
 
     /**
-     * Remove slashes at the beginning and end of the path.
-     *
-     * @param string|null $path
-     *
-     * @return string
-     */
-    private function trimed($path)
-    {
-        return '/'.trim($path ?: '/', '\/');
-    }
-
-    /**
      * Check if uri contains query string.
      *
      * @return bool
      */
     public function hasQueryString()
     {
-        return strpos($this->server->get('REQUEST_URI'), '?') !== false;
+        return Str::contains($this->server->get('REQUEST_URI'), '?');
     }
 
     /**
@@ -292,7 +280,7 @@ class Request extends SupportRequest implements \ArrayAccess
     public function morphInputSource()
     {
         if ($this->json === null) {
-            $content = (new HttpTransformJson($this->getBody()))->decode(true);
+            $content = Json::from($this->getBody())->decode(true);
 
             return $this->json = new InputHunt($content);
         }
@@ -345,17 +333,17 @@ class Request extends SupportRequest implements \ArrayAccess
      */
     public function getBody()
     {
-        if (\is_resource($this->content)) {
-            rewind($this->content);
+        if (\is_resource($this->body)) {
+            rewind($this->body);
 
-            return stream_get_contents($this->content);
+            return stream_get_contents($this->body);
         }
 
-        if ($this->content === null || $this->content === false) {
-            $this->content = file_get_contents('php://input');
+        if ($this->body === null || $this->body === false) {
+            $this->body = file_get_contents('php://input');
         }
 
-        return $this->content;
+        return $this->body;
     }
 
     /**

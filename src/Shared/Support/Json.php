@@ -1,23 +1,27 @@
 <?php
 
-namespace Swilen\Http\Common;
+namespace Swilen\Shared\Support;
 
-use Swilen\Shared\Support\Arrayable;
-use Swilen\Shared\Support\Jsonable;
-
-final class HttpTransformJson
+final class Json
 {
     /**
      * The transform json encoding options.
      *
      * @var int
      */
-    private $encodingOptions = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
+    private $encodingOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
     /**
-     * The content to transform as json.
+     * The transform jsonp encoding options.
      *
-     * @var mixed
+     * @var int
+     */
+    private $encodingJsonpOptions = JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT;
+
+    /**
+     * The content for transform as json.
+     *
+     * @var array|string|mixed
      */
     private $content;
 
@@ -36,7 +40,9 @@ final class HttpTransformJson
     ];
 
     /**
-     * @param string|array|object $content
+     * Create new Json serializer instance.
+     *
+     * @param array|string|mixed $content
      *
      * @return void
      */
@@ -46,11 +52,25 @@ final class HttpTransformJson
     }
 
     /**
+     * Create new instance from given content.
+     *
+     * @param array|string|mixed $content
+     *
+     * @return static
+     */
+    public static function from($content)
+    {
+        return new static($content);
+    }
+
+    /**
      * Transform given content as json.
      *
      * @param int $encodingOptions
      *
      * @return string
+     *
+     * @throws \JsonException
      */
     public function encode(int $encodingOptions = null)
     {
@@ -59,7 +79,7 @@ final class HttpTransformJson
         $content = json_encode($this->content, $encodingOptions ?: $this->encodingOptions);
 
         if (!$this->jsonSerializedWithoutErrors($content)) {
-            $this->handleJsonException('Failed encode to json');
+            $this->handleJsonException('Failed encode json');
         }
 
         return $content;
@@ -72,15 +92,22 @@ final class HttpTransformJson
      * @param int  $encodingOptions
      *
      * @return array|object
+     *
+     * @throws \InvalidArgumentException
+     * @throws \JsonException
      */
     public function decode(bool $assoc = false, int $decodingOptions = 0)
     {
         @json_decode('[]');
 
+        if (!is_string($this->content)) {
+            throw new \InvalidArgumentException(sprintf('Invalid data for decode. Expect string, found "%s"', get_debug_type($this->content)));
+        }
+
         $content = json_decode($this->content, $assoc, 512, $decodingOptions);
 
         if (!$this->jsonSerializedWithoutErrors($content)) {
-            $this->handleJsonException('Failed decode from json');
+            $this->handleJsonException('Failed decode json');
         }
 
         return $content;
@@ -110,7 +137,7 @@ final class HttpTransformJson
     private function handleJsonException(string $info)
     {
         $code    = json_last_error();
-        $message = static::$errorMessages[$code] ?? json_last_error_msg();
+        $message = static::$errorMessages[$code] ?? json_last_error_msg() ?: 'Unknow error in encode/decode json';
 
         throw new \JsonException($info.': '.$message, $code);
     }
@@ -127,28 +154,32 @@ final class HttpTransformJson
         return $content instanceof Arrayable ||
                $content instanceof Jsonable ||
                $content instanceof \ArrayObject ||
-               $content instanceof \JsonSerializable ||
+               $content instanceof JsonSerializable ||
                $content instanceof \stdClass ||
                is_array($content);
     }
 
     /**
-     * Morph the given content into Array for after serialization.
+     * Serialize the given content into json.
      *
      * @param mixed $content
      *
-     * @return mixed|array
+     * @return string
      */
-    public static function morphToJsonable($content)
+    public static function morphToJson($content)
     {
+        if ($content instanceof Jsonable) {
+            return $content->toJson();
+        }
+
         if ($content instanceof Arrayable) {
-            return $content->toArray();
+            $content = $content->toArray();
+        } elseif ($content instanceof \JsonSerializable) {
+            $content = $content->jsonSerialize();
+        } elseif ($content instanceof \stdClass) {
+            $content = (array) $content;
         }
 
-        if ($content instanceof \JsonSerializable) {
-            return $content->jsonSerialize();
-        }
-
-        return $content;
+        return json_encode($content);
     }
 }
