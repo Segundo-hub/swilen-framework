@@ -2,7 +2,7 @@
     "name": "swilen/framework",
     "description": "Fast Routing inspired in Laravel and Expressjs",
     "license": "MIT",
-    "version": "0.6.5-alpha",
+    "version": "0.7.0-alpha",
     "keywords": [
         "routing",
         "framework",
@@ -23,7 +23,8 @@
             "Swilen\\": "src"
         },
         "files": [
-            "src/Arthropod/helpers.php"
+            "src/Arthropod/helpers.php",
+            "src/Shared/functions.php"
         ]
     },
     "require": {
