@@ -3,9 +3,7 @@
 namespace Swilen\Http\Response;
 
 use Swilen\Http\Response;
-use Swilen\Shared\Support\Arr;
 use Swilen\Shared\Support\Json;
-use Swilen\Shared\Support\Jsonable;
 
 class JsonResponse extends Response
 {
@@ -40,7 +38,7 @@ class JsonResponse extends Response
      */
     public function __construct($content = null, int $status = 200, array $headers = [], bool $json = false)
     {
-        parent::__construct(null, $status, $headers + ['Content-Type' => self::CONTENT_TYPE]);
+        parent::__construct(null, $status, ['Content-Type' => self::CONTENT_TYPE] + $headers);
 
         $this->setBody($content, $json);
     }
@@ -60,11 +58,11 @@ class JsonResponse extends Response
     {
         $this->original = $content;
 
-        $content = $content ? $content : new \ArrayObject([]);
-
-        if (!$json && (!Json::shouldBeJson($content))) {
-            throw new \TypeError(sprintf('The type "%s" is not JSON serializable', get_debug_type($content)));
+        if ($json && !is_string($content) && !is_numeric($content)) {
+            throw new \TypeError(sprintf('"%s": If $json is set to true, argument $data must be a string, "%s" given.', __METHOD__, get_debug_type($content)));
         }
+
+        $content = (!$json && $content === null) ? new \ArrayObject() : $content;
 
         parent::setBody($json ? $content : $this->toJson($content));
     }
@@ -80,15 +78,7 @@ class JsonResponse extends Response
      */
     private function toJson($content = null)
     {
-        if ($content instanceof Jsonable) {
-            return $content->toJson($this->encodingOptions);
-        }
-
-        if ($content) {
-            return Json::from(Arr::morph($content))->encode($this->encodingOptions);
-        }
-
-        return $content;
+        return Json::morphToJson($content, $this->encodingOptions);
     }
 
     /**

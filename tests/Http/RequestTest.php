@@ -1,5 +1,6 @@
 <?php
 
+use Swilen\Http\Component\File\UploadedFile;
 use Swilen\Http\Exception\HttpNotOverridableMethodException;
 use Swilen\Http\Request;
 
@@ -83,7 +84,7 @@ it('Access current request instance attributes ass array or object by magic meth
     expect($request->all())->toBeEmpty();
 });
 
-it('Request content-Type has json', function () {
+it('Decode json request Content-Type has json', function () {
     /**
      * @var \Mockery\MockInterface|\Mockery\LegacyMockInterface|Request $request
      */
@@ -93,6 +94,7 @@ it('Request content-Type has json', function () {
     $request->shouldReceive('isJsonRequest')
         ->with()->andReturn(true);
 
+    expect($request->getInputSource()->all())->toBe(['test' => true]);
     expect($request->getInputSource()->all())->toBe(['test' => true]);
     expect($request->request->all())->toBeEmpty();
 });
@@ -182,16 +184,20 @@ it('Its filter when APP_BASE_URI provided', function () {
     unset($_ENV['APP_BASE_URI']);
 });
 
-it('Detect content type is json', function () {
+it('Detect content type', function () {
     $request = Request::make('app/other/value', 'GET', [], [], [
         'Authorization' => '',
     ]);
 
     expect($request->isJsonRequest())->toBeFalse();
-
     $request->headers->set('Content-Type', 'application/json');
-
     expect($request->isJsonRequest())->toBeTrue();
+
+    expect($request->isFormRequest())->toBeFalse();
+    $request->headers->set('Content-Type', 'multipart/form-data');
+    expect($request->isFormRequest())->toBeTrue();
+
+    expect($request->hasHeader('Content-Type'))->toBeTrue();
 });
 
 it('Request pathInfo is cached', function () {
@@ -226,4 +232,21 @@ it('Read content is stream or resource', function () {
     $request = new Request([], [], [], [], $file);
 
     expect(trim($request->getBody()))->toBe('test');
+});
+
+it('Get file from request', function () {
+    $request = new Request([], [
+        'test-file' => [
+            'name' => 'File.txt',
+            'type' => 'plain/txt',
+            'tmp_name' => getReadableFileStub(),
+            'error' => UPLOAD_ERR_OK,
+            'size' => 98174,
+        ],
+    ]);
+
+    expect($request->hasFile('test-file'))->toBeTrue();
+    expect($request->files->get('test-file'))->toBeInstanceOf(UploadedFile::class);
+    expect($request->hasFile('not-found'))->toBeFalse();
+    expect($request->files->get('not-found'))->toBeNull();
 });

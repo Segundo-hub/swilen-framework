@@ -42,7 +42,6 @@ class ResponseHeaderHunt extends HeaderHunt
     public function disableVersionHeader()
     {
         @header_remove('X-Powered-By');
-
         $this->remove('X-Powered-By');
     }
 

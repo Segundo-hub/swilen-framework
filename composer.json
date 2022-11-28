@@ -2,7 +2,7 @@
     "name": "swilen/framework",
     "description": "Fast Routing inspired in Laravel and Expressjs",
     "license": "MIT",
-    "version": "0.7.0-alpha",
+    "version": "0.7.2-alpha",
     "keywords": [
         "routing",
         "framework",

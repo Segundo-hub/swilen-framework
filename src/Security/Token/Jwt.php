@@ -2,12 +2,12 @@
 
 namespace Swilen\Security\Token;
 
-use Swilen\Security\Contract\TokenContract;
+use Swilen\Security\Contract\JwtService;
 use Swilen\Security\Exception\JwtDomainException;
 use Swilen\Security\Exception\JwtInvalidSignatureException;
 use Swilen\Security\Exception\JwtTokenExpiredException;
 
-final class Jwt implements TokenContract
+final class Jwt implements JwtService
 {
     /**
      * The token header.
@@ -84,7 +84,7 @@ final class Jwt implements TokenContract
     private function useConfig(string $secret, array $signOptions)
     {
         $this->secretKey   = $secret;
-        $this->signOptions = (new ValidateSignOptions())->validate($signOptions);
+        $this->signOptions = OptionsValidator::validate($signOptions);
         $this->configured  = true;
 
         return $this;

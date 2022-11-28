@@ -189,9 +189,7 @@ class RouteCollection implements Arrayable, \IteratorAggregate, \Countable
      */
     protected function methodNotAllowed(string $method, array $methods = [])
     {
-        $message = sprintf('The %s method is not supported. Must be one of: %s.', $method, $methods = strtoupper(implode(', ', $methods)));
-
-        throw (new HttpMethodNotAllowedException($message))->withHeader('Allow', $methods);
+        throw HttpMethodNotAllowedException::forMethod($method, $methods);
     }
 
     /**

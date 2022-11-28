@@ -30,11 +30,11 @@ class StreamedResponse extends Response
     /**
      * Create new Streamed response.
      *
-     * @param \Closure $callback The callback for call once
+     * @param callable $callback The callback for call once
      *
      * @return void
      */
-    public function __construct(\Closure $callback, int $status = 200, array $headers = [])
+    public function __construct(callable $callback, int $status = 200, array $headers = [])
     {
         parent::__construct(null, $status, $headers);
 

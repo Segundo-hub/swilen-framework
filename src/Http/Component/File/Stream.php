@@ -70,29 +70,15 @@ class Stream implements StreamInterface
     protected $finished;
 
     /**
-     * The stream for caching.
-     *
-     * @var \Psr\Http\Message\StreamInterface
-     */
-    protected $cache;
-
-    /**
      * Create new Streamed reasource implmented by PSR standar.
      *
-     * @param resource                          $stream a PHP resource handle
-     * @param \Psr\Http\Message\StreamInterface $cache  A stream to cache $stream
+     * @param resource $stream a PHP resource handle
      *
      * @throws InvalidArgumentException
      */
-    public function __construct($stream, StreamInterface $cache = null)
+    public function __construct($stream)
     {
         $this->attach($stream);
-
-        if ($cache && (!$cache->isSeekable() || !$cache->isWritable())) {
-            throw new \RuntimeException('Cache stream must be seekable and writable');
-        }
-
-        $this->cache = $cache;
     }
 
     /**
@@ -151,8 +137,6 @@ class Stream implements StreamInterface
         $this->seekable = null;
         $this->size     = null;
         $this->isPipe   = null;
-
-        $this->cache    = null;
         $this->finished = false;
 
         return $old;
@@ -306,9 +290,6 @@ class Stream implements StreamInterface
         }
 
         if (is_string($data)) {
-            if ($this->cache) {
-                $this->cache->write($data);
-            }
             if ($this->eof()) {
                 $this->finished = true;
             }
@@ -344,12 +325,6 @@ class Stream implements StreamInterface
      */
     public function getContents(): string
     {
-        if ($this->cache && $this->finished) {
-            $this->cache->rewind();
-
-            return $this->cache->getContents();
-        }
-
         $contents = false;
 
         if ($this->stream) {
@@ -357,9 +332,6 @@ class Stream implements StreamInterface
         }
 
         if (is_string($contents)) {
-            if ($this->cache) {
-                $this->cache->write($contents);
-            }
             if ($this->eof()) {
                 $this->finished = true;
             }
@@ -400,11 +372,7 @@ class Stream implements StreamInterface
         if (!$this->stream) {
             return '';
         }
-        if ($this->cache && $this->finished) {
-            $this->cache->rewind();
 
-            return $this->cache->getContents();
-        }
         if ($this->isSeekable()) {
             $this->rewind();
         }

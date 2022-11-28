@@ -83,6 +83,8 @@ it('Morph to array given mixed type', function () {
     expect(Arr::morph([]))->toBeArray();
     expect(Arr::morph(new UserStoreStub()))->toBeArray();
     expect(Arr::morph(new UserStoreJsonSerializableStub()))->toBeArray();
+    expect(Arr::morph(new \ArrayObject()))->toBeArray();
+    expect(Arr::morph(new \stdClass()))->toBeArray();
 });
 
 class UserStoreJsonSerializableStub implements JsonSerializable

@@ -3,10 +3,11 @@
 namespace Swilen\Petiole\Facades;
 
 use Swilen\Petiole\Facade;
+use Swilen\Routing\Contract\ResponseFactory;
 
 /**
- * @method static \Swilen\Http\Response                    make(?string $content = null, int $status = 200, array $headers = [])
- * @method static \Swilen\Http\Response\JsonResponse       send(mixed $content = null, int $status = 200, array $headers = [])
+ * @method static \Swilen\Http\Response                    send(?string $content = null, int $status = 200, array $headers = [])
+ * @method static \Swilen\Http\Response                    status(int $status = 200, array $headers = [])
  * @method static \Swilen\Http\Response\JsonResponse       json(mixed $content = null, int $status = 200, array $headers = [])
  * @method static \Swilen\Http\Response\BinaryFileResponse file(\SplFileInfo|string $file = '', array $headers = [])
  * @method static \Swilen\Http\Response\BinaryFileResponse download(\SplFileInfo|string $file = '', string $name = ' , array $headers = [])

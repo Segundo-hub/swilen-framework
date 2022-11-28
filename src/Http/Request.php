@@ -432,11 +432,35 @@ class Request extends SupportRequest implements \ArrayAccess
      *
      * @param string $filename The filename
      *
-     * @return \Swilen\Http\Component\File\UploadedFile|null
+     * @return \Swilen\Http\Component\File\UploadedFile|\Swilen\Http\Component\File\UploadedFile[]|null
      */
     public function file(string $filename)
     {
         return $this->files->get($filename);
+    }
+
+    /**
+     * Verify given filename is exists in collection.
+     *
+     * @param string $filename
+     *
+     * @return bool
+     */
+    public function hasFile(string $filename)
+    {
+        return $this->files->has($filename);
+    }
+
+    /**
+     * Verify given filename is exists in collection.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasHeader(string $name)
+    {
+        return $this->headers->has($name);
     }
 
     /**

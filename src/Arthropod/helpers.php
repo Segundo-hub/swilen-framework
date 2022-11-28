@@ -27,24 +27,11 @@ if (!function_exists('response')) {
     /**
      * Helper function for manage response factory.
      *
-     * @param mixed $content
-     * @param int   $status
-     * @param array $headers
-     *
-     * @return \Swilen\Http\Response|\Swilen\Routing\Contract\ResponseFactory
+     * @return \Swilen\Routing\Contract\ResponseFactory
      */
-    function response($content = null, int $status = 200, array $headers = [])
+    function response()
     {
-        /**
-         * @var \Swilen\Routing\Contract\ResponseFactory
-         */
-        $response = app()->make(ResponseFactory::class);
-
-        if ($content !== null) {
-            return $response->make($content, $status, $headers);
-        }
-
-        return $response;
+        return app()->make(ResponseFactory::class);
     }
 }
 

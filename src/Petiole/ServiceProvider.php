@@ -22,7 +22,7 @@ abstract class ServiceProvider
     }
 
     /**
-     * Overwritable public function to register the dependencies or logic needed to start this service.
+     * Register services to application.
      *
      * @return void
      */

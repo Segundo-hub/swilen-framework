@@ -2,7 +2,7 @@
 
 namespace Swilen\Security\Contract;
 
-interface TokenContract
+interface JwtService
 {
     /**
      * Sing Json Web Token with given payload.

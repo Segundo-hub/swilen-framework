@@ -46,13 +46,13 @@ class BinaryFileResponse extends Response
      *
      * @return void
      */
-    public function __construct($file, int $status = 200, array $headers = [], ?string $disposition = '')
+    public function __construct($file, int $status = 200, array $headers = [], ?string $disposition = null)
     {
         parent::__construct(null, $status, $headers);
 
         $this->setBinaryFile($file);
 
-        if (!empty($disposition)) {
+        if ($disposition) {
             $this->addContentDisposition($disposition);
         }
     }
@@ -125,16 +125,24 @@ class BinaryFileResponse extends Response
      */
     public function prepare(Request $request)
     {
-        $this->headers->set('Content-Type', $this->file->getMimeType() ?: 'application/octet-stream');
+        if ($this->isInformational() || $this->isEmpty()) {
+            parent::prepare($request);
 
-        if ($request->server->get('SERVER_PROTOCOL') !== 'HTTP/1.0') {
-            $this->setProtocolVersion('1.1');
+            $this->maxlen = 0;
+
+            return $this;
         }
+
+        if (!$this->headers->has('Content-Type')) {
+            $this->headers->set('Content-Type', $this->file->getMimeType() ?: 'application/octet-stream');
+        }
+
+        parent::prepare($request);
 
         $this->offset = 0;
         $this->maxlen = -1;
 
-        if ($fileSize = $this->file->getSize() === false) {
+        if (($fileSize = $this->file->getSize()) === false) {
             return $this;
         }
 
@@ -177,6 +185,10 @@ class BinaryFileResponse extends Response
                     }
                 }
             }
+        }
+
+        if ($request->getMethod() === Http::METHOD_HEAD) {
+            $this->maxlen = 0;
         }
 
         return $this;

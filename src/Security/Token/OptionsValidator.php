@@ -4,28 +4,18 @@ namespace Swilen\Security\Token;
 
 use Swilen\Security\Exception\JwtDomainException;
 
-class ValidateSignOptions
+class OptionsValidator
 {
-    /**
-     * Valid time suffixes in string.
-     *
-     * @var string
-     */
-    protected const SECOND_SUFFIX = 's';
-    protected const MINUTE_SUFFIX = 'm';
-    protected const HOUR_SUFFIX = 'h';
-    protected const DAY_SUFFIX = 'd';
-
     /**
      * Time hash table with time valued in seconds.
      *
      * @var array<string, int>
      */
-    protected $timesSuffix = [
-        self::SECOND_SUFFIX => 1,
-        self::MINUTE_SUFFIX => 60,
-        self::HOUR_SUFFIX => 3600,
-        self::DAY_SUFFIX => 86400,
+    protected const TIME_SUFFIXES = [
+        's' => 1,
+        'm' => 60,
+        'h' => 3600,
+        'd' => 86400,
     ];
 
     /**
@@ -35,7 +25,7 @@ class ValidateSignOptions
      *
      * @return array
      */
-    public function validate(array $signOptions)
+    public static function validate(array $signOptions)
     {
         $allowedOptions = ['expires', 'algorithm', 'issued'];
 
@@ -49,7 +39,7 @@ class ValidateSignOptions
             throw new JwtDomainException('Missing expires option');
         }
 
-        $suffixs = array_keys($this->timesSuffix);
+        $suffixs = array_keys(static::TIME_SUFFIXES);
 
         if (!in_array($suffix = substr($expires, -1), $suffixs, true)) {
             throw new JwtDomainException(sprintf('The "%s" is not valid time suffix. Valid options: %s', $suffix, implode(', ', $suffixs)));
@@ -59,7 +49,7 @@ class ValidateSignOptions
             throw new JwtDomainException('Expires options expect to int value with time prefix like "60s"');
         }
 
-        $signOptions['expires'] = intval($value) * $this->timesSuffix[$suffix];
+        $signOptions['expires'] = intval($value) * static::TIME_SUFFIXES[$suffix];
 
         return $signOptions;
     }

@@ -5,7 +5,7 @@ namespace Swilen\Http\Component\File;
 use Psr\Http\Message\UploadedFileInterface;
 use Swilen\Http\Exception\FileException;
 
-class UploadedFile extends File implements UploadedFileInterface, \JsonSerializable
+class UploadedFile extends File implements UploadedFileInterface
 {
     /**
      * The client-provided full path to the file.
@@ -215,19 +215,5 @@ class UploadedFile extends File implements UploadedFileInterface, \JsonSerializa
         $message = $errors[$this->error] ?? 'The file "%s" was not uploaded due to an unknown error.';
 
         throw new FileException(sprintf($message, $this->getClientFilename()));
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function jsonSerialize()
-    {
-        return [
-            'file' => $this->file,
-            'name' => $this->name,
-            'size' => $this->getSize(),
-            'type' => $this->getMimeType(),
-            'ext' => $this->getClientOriginalExtension(),
-        ];
     }
 }

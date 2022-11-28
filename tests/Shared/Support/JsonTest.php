@@ -2,6 +2,7 @@
 
 use Swilen\Shared\Support\Arrayable;
 use Swilen\Shared\Support\Json;
+use Swilen\Shared\Support\Jsonable;
 
 uses()->group('Http', 'Transform');
 
@@ -43,15 +44,24 @@ it('Throw content for transform is invalid decoded', function () {
     expect($decoder->encode())->toBeArray();
 
     fclose($file);
-})->throws(JsonException::class, 'Failed encode json: Type is not supported');
+})->throws(JsonException::class, 'Failed encode json: A value of a type that cannot be encoded was given.');
 
 it('Should type is valid json transform', function () {
     expect(Json::shouldBeJson([]))->toBeTrue();
     expect(Json::shouldBeJson(new stdClass()))->toBeTrue();
     expect(Json::shouldBeJson(new UserStoreStub()))->toBeTrue();
+    expect(Json::shouldBeJson(new JsonableStub()))->toBeTrue();
 
     expect(Json::shouldBeJson(20))->toBeFalse();
     expect(Json::shouldBeJson('string'))->toBeFalse();
+});
+
+it('Morph content to json', function () {
+    expect(Json::morphToJson([]))->toBeJson();
+    expect(Json::morphToJson(new stdClass()))->toBeJson();
+    expect(Json::morphToJson(new UserStoreStub()))->toBeJson();
+    expect(Json::morphToJson(new JsonableStub()))->toBeJson();
+    expect(Json::morphToJson(new JsonSerializableStub()))->toBeJson();
 });
 
 class UserStoreStub implements Arrayable
@@ -59,5 +69,22 @@ class UserStoreStub implements Arrayable
     public function toArray()
     {
         return [];
+    }
+}
+
+class JsonableStub implements Jsonable
+{
+    public function toJson($options = 0)
+    {
+        return json_encode(['foo'], $options);
+    }
+}
+
+class JsonSerializableStub implements JsonSerializable
+{
+    #[ReturnTypeWillChange]
+    public function jsonSerialize()
+    {
+        return ['foo'];
     }
 }

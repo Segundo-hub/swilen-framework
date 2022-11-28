@@ -87,9 +87,9 @@ class Response extends SupportResponse implements ResponseContract
             $charset = $this->charset ?: 'utf-8';
             if (!$this->headers->has('Content-Type')) {
                 $this->headers->set('Content-Type', 'text/html; charset='.$charset);
-            } elseif (stripos($this->headers->get('Content-Type'), 'text/') === 0 && stripos($this->headers->get('Content-Type'), 'charset') === false) {
+            } elseif (stripos($mime = $this->headers->get('Content-Type', ''), 'text/') === 0 && !Str::contains($mime, 'charset')) {
                 // Add the charset
-                $this->headers->set('Content-Type', $this->headers->get('Content-Type').'; charset='.$charset);
+                $this->headers->set('Content-Type', $mime.'; charset='.$charset);
             }
 
             // Fix Content-Length
@@ -345,6 +345,18 @@ class Response extends SupportResponse implements ResponseContract
     }
 
     /**
+     * Checks if a header exists by the given name.
+     *
+     * @param string $name
+     *
+     * @return bool
+     */
+    public function hasHeader(string $name)
+    {
+        return $this->headers->has($name);
+    }
+
+    /**
      * Insert header scollection to response.
      *
      * @return $this
@@ -414,7 +426,7 @@ class Response extends SupportResponse implements ResponseContract
             throw new \InvalidArgumentException(sprintf('The HTTP status code "%s" is not valid.', $code));
         }
 
-        $this->statusText = $text ?? static::STATUS_TEXTS[$code] ?? 'unknown status';
+        $this->statusText = $text ?? SupportResponse::STATUS_TEXTS[$code] ?? 'Unknown status';
     }
 
     /**
@@ -442,11 +454,13 @@ class Response extends SupportResponse implements ResponseContract
     }
 
     /**
-     * Returns current status text.
+     * Gets the response reason phrase associated with the status code.
+     *
+     * @see http://www.iana.org/assignments/http-status-codes/http-status-codes.xhtml
      *
      * @return string
      */
-    public function statusText()
+    public function getReasonPhrase()
     {
         return $this->statusText;
     }

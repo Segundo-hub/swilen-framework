@@ -2,32 +2,33 @@
 
 namespace Swilen\Routing\Contract;
 
+use Swilen\Http\Common\Http;
+
 interface ResponseFactory
 {
     /**
-     * Create new response from values of params args.
+     * Sends the HTTP response with given content.
      *
-     * @param string|null $content
-     * @param int         $status
-     * @param array       $headers
+     * @param string $content
+     * @param int    $status
+     * @param array  $headers
      *
-     * @return \Swilen\Http\Response
+     * @return \Swilen\Http\Response\Response
      */
-    public function make(?string $content = null, int $status = 200, array $headers = []);
+    public function send(?string $content = null, int $status = 200, array $headers = []);
 
     /**
-     * Create response with json content.
+     * Send empty response with given status code.
      *
-     * @param mixed $content
      * @param int   $status
      * @param array $headers
      *
-     * @return \Swilen\Http\Response\JsonResponse
+     * @return \Swilen\Http\Response\Response
      */
-    public function send($content = null, int $status = 200, array $headers = []);
+    public function status(int $status = Http::OK, array $headers = []);
 
     /**
-     * Alias for send() method.
+     * Send a JSON response (with the correct content-type).
      *
      * @param mixed $content
      * @param int   $status
@@ -38,7 +39,7 @@ interface ResponseFactory
     public function json($content = null, int $status = 200, array $headers = []);
 
     /**
-     * Create response with file and sending to client.
+     * Transfers the file at the given path or File instance.
      *
      * @param \SplFileInfo|string $file
      * @param array               $headers
@@ -46,6 +47,17 @@ interface ResponseFactory
      * @return \Swilen\Http\Response\BinaryFileResponse
      */
     public function file($file, array $headers = []);
+
+    /**
+     * Transfer the file in the path as an "attachment" for download.
+     *
+     * @param \SplFileInfo|string $file
+     * @param string|null         $name
+     * @param array               $headers
+     *
+     * @return \Swilen\Http\Response\BinaryFileResponse
+     */
+    public function download($file, ?string $name = null, array $headers = [], string $disposition = 'attachment');
 
     /**
      * Create streamed response.
@@ -57,15 +69,4 @@ interface ResponseFactory
      * @return \Swilen\Http\Response\StreamedResponse
      */
     public function stream(\Closure $callback, int $status = 200, array $headers = []);
-
-    /**
-     * Create downloadble file response.
-     *
-     * @param \SplFileInfo|string $file
-     * @param string|null         $name
-     * @param array               $headers
-     *
-     * @return \Swilen\Http\Response\BinaryFileResponse
-     */
-    public function download($file, string $name = null, array $headers = [], string $disposition = 'attachment');
 }

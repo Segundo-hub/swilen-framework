@@ -41,7 +41,7 @@ it('Response with empty content', function () {
 it('Throw error when insert invalid status code', function () {
     $response = new Response();
 
-    $response->setStatusCode(10);
+    $response->withStatus(10);
 })->throws(InvalidArgumentException::class, 'The HTTP status code "10" is not valid.');
 
 it('Work with status codes', function () {
@@ -52,40 +52,41 @@ it('Work with status codes', function () {
     expect($response->isServerError())->toBeFalse();
 
     $response = $response->withStatus(100);
-
     expect($response->isInformational())->toBeTrue();
     expect($response->isOk())->toBeFalse();
 
     $response = $response->withStatus(Http::NO_CONTENT);
-
     expect($response->isEmpty())->toBeTrue();
     expect($response->isOk())->toBeFalse();
 
     $response = $response->withStatus(Http::MOVED_PERMANENTLY);
-
     expect($response->isRedirection())->toBeTrue();
     expect($response->isOk())->toBeFalse();
 
     $response = $response->withStatus(400);
-
     expect($response->isClientError())->toBeTrue();
     expect($response->isOk())->toBeFalse();
 
     $response = $response->withStatus(Http::NOT_FOUND);
-
     expect($response->isNotFound())->toBeTrue();
     expect($response->isClientError())->toBeTrue();
 
     $response = $response->withStatus(500);
-
     expect($response->isServerError())->toBeTrue();
     expect($response->isClientError())->toBeFalse();
     expect($response->isOk())->toBeFalse();
 
     $response = $response->withStatus(403);
-
     expect($response->isForbidden())->toBeTrue();
     expect($response->isOk())->toBeFalse();
+});
+
+it('Status text in response', function () {
+    $response = new Response();
+    expect($response->getReasonPhrase())->toBe('OK');
+
+    $response->withStatus(100);
+    expect($response->getReasonPhrase())->toBe('Continue');
 });
 
 it('Insert header succesfully', function () {
@@ -115,9 +116,7 @@ it('Interact with response body', function () {
     $response = new Response();
 
     expect($response->getBody())->toBeNull();
-
     $response = $response->withBody('test');
-
     expect($response->getBody())->toBe('test');
 });
 
@@ -131,3 +130,57 @@ it('Body to send client', function () {
     expect($response->headers->get('Content-Type'))->toBeIn(['text/html', 'text/html; charset=utf-8']);
     expect($response->getBody())->toBe('simple-text');
 });
+
+it('Content-Type and charset fixed in response', function () {
+    $response = new Response(null);
+
+    expect($response->headers->get('Content-Type'))->toBeNull();
+
+    $response->withHeader('Content-Type', 'text/html');
+    expect($response->headers->get('Content-Type'))->not->toBeNull();
+
+    $response->prepare(Request::make(''));
+    expect($response->headers->get('Content-Type'))->toMatch('/^text\/html;\scharset=+/');
+});
+
+it('Fix content length when found Transfer-Encoding present', function () {
+    $response = new Response(null);
+
+    $response->withHeader('Transfer-Encoding', 'gzip')->prepare(Request::make(''));
+    expect($response->headers->has('Content-Length'))->toBeFalse();
+});
+
+it('Fix cache headers based in server protocol', function () {
+    $response = new Response();
+
+    expect($response->getProtocolVersion())->toBe('1.0');
+    $response->prepare(Request::make(''));
+    expect($response->getProtocolVersion())->toBe('1.1');
+
+    $response = (new Response(null, 200, [
+        'Cache-Control' => 'no-cache',
+    ]))->prepare(Request::make('/'));
+
+    expect($response->hasHeader('pragma'))->toBeTrue();
+    expect($response->hasHeader('expires'))->toBeTrue();
+});
+
+it('finish request with fastcgi_finish_request', function () {
+    list($response, $content) = getBuffer(function () {
+		mockFinishRequestFunc();
+        return (new Response())->prepare(Request::make('/'))->terminate();
+    });
+
+    expect($content)->toBe('');
+    expect($response->getBody())->toBeNull();
+});
+
+function mockFinishRequestFunc()
+{
+    if (!function_exists('fastcgi_finish_request')) {
+        function fastcgi_finish_request()
+        {
+            return null;
+        }
+    }
+}

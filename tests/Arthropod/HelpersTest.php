@@ -30,12 +30,8 @@ it('Response helper is instaceof Routing\ResponsiFactory', function () {
     $app = new Application();
 
     expect(response())->toBeInstanceOf(ResponseFactory::class);
-    expect(response())->not->toHaveProperties(['getContent']);
 
-    expect(response('content'))->toBeInstanceOf(Response::class);
-
-    expect(response()->make())->toBeInstanceOf(Response::class);
-    expect(response()->send())->toBeInstanceOf(JsonResponse::class);
+    expect(response()->send())->toBeInstanceOf(Response::class);
     expect(response()->file(new File(getReadableFileStub())))->toBeInstanceOf(BinaryFileResponse::class);
     expect(response()->download(new File(getReadableFileStub())))->toBeInstanceOf(BinaryFileResponse::class);
     expect(response()->json())->toBeInstanceOf(JsonResponse::class);

@@ -5,11 +5,13 @@ namespace Swilen\Petiole\Facades;
 use Swilen\Petiole\Facade;
 
 /**
+ * @method static array                                    all()
  * @method static \Swilen\Http\Component\UploadedFile|null file(string $filename)
  * @method static mixed                                    input(string $key, mixed $default = null)
  * @method static mixed                                    query(string $key, mixed $default = null)
  * @method static mixed                                    server(string $key, mixed $default = null)
- * @method static array                                    all()
+ * @method static bool                                     hasFile(string $filename)
+ * @method static bool                                     hasHeader(string $name)
  * @method static \Swilen\Http\Request                     withUser(object|array $user)
  * @method static object|array|null                        user()
  * @method static \Swilen\Http\Request                     withMethod(string $method)
