@@ -189,6 +189,8 @@ class Arr
             $target = $target->jsonSerialize();
         } elseif ($target instanceof \stdClass) {
             $target = (array) $target;
+        } elseif ($target instanceof \ArrayObject) {
+            $target = $target->getArrayCopy();
         }
 
         return static::wrap($target);

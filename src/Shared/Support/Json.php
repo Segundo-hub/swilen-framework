@@ -9,7 +9,7 @@ final class Json
      *
      * @var int
      */
-    private $encodingOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+    private static $encodingOptions = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
 
     /**
      * The transform jsonp encoding options.
@@ -31,12 +31,17 @@ final class Json
      * @var array<int, string>
      */
     public static $errorMessages = [
-        JSON_ERROR_NONE => 'No error has occurred',
-        JSON_ERROR_DEPTH => 'The maximum stack depth has been exceeded',
-        JSON_ERROR_STATE_MISMATCH => 'Invalid or malformed JSON',
-        JSON_ERROR_CTRL_CHAR => 'Control character error, possibly incorrectly encoded',
-        JSON_ERROR_SYNTAX => 'Syntax error',
-        JSON_ERROR_UTF8 => 'Malformed UTF-8 characters, possibly incorrectly encoded',
+        JSON_ERROR_NONE => 'No error has occurred.',
+        JSON_ERROR_DEPTH => 'The maximum stack depth has been exceeded.',
+        JSON_ERROR_STATE_MISMATCH => 'Invalid or malformed JSON.',
+        JSON_ERROR_CTRL_CHAR => 'Control character error, possibly incorrectly encoded.',
+        JSON_ERROR_SYNTAX => 'Syntax error.',
+        JSON_ERROR_UTF8 => 'Malformed UTF-8 characters, possibly incorrectly encoded.',
+        JSON_ERROR_RECURSION => 'The object or array passed to json_encode include recursive references and cannot be encoded..',
+        JSON_ERROR_INF_OR_NAN => 'One or more NAN or INF values in the value to be encoded.',
+        JSON_ERROR_UNSUPPORTED_TYPE => 'A value of a type that cannot be encoded was given.',
+        JSON_ERROR_INVALID_PROPERTY_NAME => 'A property name that cannot be encoded was given.',
+        JSON_ERROR_UTF16 => 'Malformed UTF-16 characters, possibly incorrectly encoded.',
     ];
 
     /**
@@ -76,7 +81,7 @@ final class Json
     {
         @json_decode('[]');
 
-        $content = json_encode($this->content, $encodingOptions ?: $this->encodingOptions);
+        $content = json_encode($this->content, $encodingOptions ?? static::$encodingOptions);
 
         if (!$this->jsonSerializedWithoutErrors($content)) {
             $this->handleJsonException('Failed encode json');
@@ -99,10 +104,6 @@ final class Json
     public function decode(bool $assoc = false, int $decodingOptions = 0)
     {
         @json_decode('[]');
-
-        if (!is_string($this->content)) {
-            throw new \InvalidArgumentException(sprintf('Invalid data for decode. Expect string, found "%s"', get_debug_type($this->content)));
-        }
 
         $content = json_decode($this->content, $assoc, 512, $decodingOptions);
 
@@ -136,8 +137,8 @@ final class Json
      */
     private function handleJsonException(string $info)
     {
-        $code    = json_last_error();
-        $message = static::$errorMessages[$code] ?? json_last_error_msg() ?: 'Unknow error in encode/decode json';
+        $code    = (int) json_last_error();
+        $message = static::$errorMessages[$code] ?? json_last_error_msg() ?: 'Unknow error in encode/decode json.';
 
         throw new \JsonException($info.': '.$message, $code);
     }
@@ -163,23 +164,22 @@ final class Json
      * Serialize the given content into json.
      *
      * @param mixed $content
+     * @param int   $options
      *
      * @return string
      */
-    public static function morphToJson($content)
+    public static function morphToJson($content, int $options = 0)
     {
         if ($content instanceof Jsonable) {
-            return $content->toJson();
+            return $content->toJson($options);
         }
 
         if ($content instanceof Arrayable) {
             $content = $content->toArray();
         } elseif ($content instanceof \JsonSerializable) {
             $content = $content->jsonSerialize();
-        } elseif ($content instanceof \stdClass) {
-            $content = (array) $content;
         }
 
-        return json_encode($content);
+        return static::from($content)->encode($options);
     }
 }
